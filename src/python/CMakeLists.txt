@@ -46,6 +46,7 @@ if(PYTHONINTERP_FOUND)
     set(GUDHI_PYTHON_MODULES "${GUDHI_PYTHON_MODULES}'bottleneck', ")
     set(GUDHI_PYTHON_MODULES_EXTRA "${GUDHI_PYTHON_MODULES_EXTRA}'hera', ")
     set(GUDHI_PYTHON_MODULES_EXTRA "${GUDHI_PYTHON_MODULES_EXTRA}'clustering', ")
+    set(GUDHI_PYTHON_MODULES "${GUDHI_PYTHON_MODULES}'edge_collapse', ")
   endif()
   if(CYTHON_FOUND)
     set(GUDHI_PYTHON_MODULES "${GUDHI_PYTHON_MODULES}'off_reader', ")
@@ -130,6 +131,8 @@ if(PYTHONINTERP_FOUND)
       add_gudhi_debug_info("Eigen3 version ${EIGEN3_VERSION}")
       # No problem, even if no CGAL found
       set(GUDHI_PYTHON_EXTRA_COMPILE_ARGS "${GUDHI_PYTHON_EXTRA_COMPILE_ARGS}'-DCGAL_EIGEN3_ENABLED', ")
+
+      set(GUDHI_PYBIND11_MODULES "${GUDHI_PYBIND11_MODULES}'edge_collapse', ")
     endif (EIGEN3_FOUND)
 
     set(GUDHI_CYTHON_MODULES "${GUDHI_CYTHON_MODULES}'off_reader', ")
