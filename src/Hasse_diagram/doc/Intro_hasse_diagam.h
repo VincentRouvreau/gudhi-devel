@@ -62,15 +62,15 @@ namespace Hasse_diagram {
  * Note that all the iterators on the data structure do not automatically skip the deleted
  * elements. It is up to the user to filter the deleted cells out. 
  * 
- * Objects of a type Hasse_diagram_cell can be constructed by constitutive addition
- * of new cells, by reading the data strucutre from a file (the format is described below).
+ * Objects of a type Hasse_diagram_cell can be constructed by consecutive addition
+ * of new cells, by reading the data structure from a file (the format is described below).
  * One can also store the intermediate data structures in a file by using write_to_file
  * method. 
  * 
  * The format of a file with the Hasse diagram is as follows:
  * The first line contains a positive integer being the number of cells in the complex.
  * Next lines contains the information about the cells. Information about every single
- * cells is stored in two constitutive lines. 
+ * cells is stored in two consecutive lines. 
  * In the first line, the cell id (which is supposed to be a positive integer from the range
  * between 0 and number of cells) that uniquely identify the cell, its dimension are to be
  * provided. In addition to that one can also provide the third parameter which is the filtration

@@ -32,7 +32,7 @@ public:
 	typedef unspecified Incidence_type;
 	
 	/**
-	 * Must provide an oder, and implement << operator.
+	 * Must provide an order, and implement << operator.
 	**/ 
 	typedef unspecified Filtration_type;
 	

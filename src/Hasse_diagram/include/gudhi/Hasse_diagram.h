@@ -190,7 +190,7 @@ public:
 	}
 	
 	/**
-	 * A procedure writng Hasse diagram to file. The Hasse diagram can be later
+	 * A procedure writing Hasse diagram to file. The Hasse diagram can be later
 	 * reconstructed using Hasse_diagram( const char* filename ) constructor.
 	**/ 
 	void write_to_file( const char* filename );
