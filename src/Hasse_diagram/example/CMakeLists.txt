@@ -1,0 +1,25 @@
+project(Hasse_diagram_examples)
+
+add_executable ( Hasse_diagram_basic_example Hasse_diagram_example.cpp )
+if (TBB_FOUND)
+  target_link_libraries(Hasse_diagram_basic_example ${TBB_LIBRARIES})
+endif()
+add_test(NAME Hasse_diagram_basic_example COMMAND $<TARGET_FILE:Hasse_diagram_basic_example>)
+
+add_executable ( Hasse_diagram_from_cubical_complex_example Hasse_diagram_from_cubical_complex.cpp )
+if (TBB_FOUND)
+  target_link_libraries(Hasse_diagram_from_cubical_complex_example ${TBB_LIBRARIES})
+endif()
+add_test(NAME Hasse_diagram_from_cubical_complex_example COMMAND $<TARGET_FILE:Hasse_diagram_from_cubical_complex_example>)
+
+add_executable ( Hasse_diagram_from_simplex_tree_example Hasse_diagram_from_simplex_tree.cpp )
+if (TBB_FOUND)
+  target_link_libraries(Hasse_diagram_from_simplex_tree_example ${TBB_LIBRARIES})
+endif()
+add_test(NAME Hasse_diagram_from_simplex_tree_example COMMAND $<TARGET_FILE:Hasse_diagram_from_simplex_tree_example>)
+
+add_executable ( Hasse_diagram_insertion_and_removal_example Insertion_and_removal_operations_on_Hasse_diagrams.cpp )
+if (TBB_FOUND)
+  target_link_libraries(Hasse_diagram_insertion_and_removal_example ${TBB_LIBRARIES})
+endif()
+add_test(NAME Hasse_diagram_insertion_and_removal_example COMMAND $<TARGET_FILE:Hasse_diagram_insertion_and_removal_example>)
