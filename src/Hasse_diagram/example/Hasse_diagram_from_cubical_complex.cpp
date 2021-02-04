@@ -65,9 +65,9 @@ int main()
 	};
 	Bitmap_cubical_complex b(sizes,top_dimensional_cells_data);
 	
-	typedef Gudhi::Hasse_diagram::Hasse_diagram_cell<int,double,double> Cell;	
-    typedef Gudhi::Hasse_diagram::Hasse_diagram_persistence<Cell> Hasse_diag;
-    Hasse_diag* hd = Gudhi::Hasse_diagram::convert_to_Hasse_diagram_persistence<Bitmap_cubical_complex,Cell>( b );
+	typedef Gudhi::hasse_diagram::Hasse_diagram_cell<int,double,double> Cell;	
+    typedef Gudhi::hasse_diagram::Hasse_diagram_persistence<Cell> Hasse_diag;
+    Hasse_diag* hd = Gudhi::hasse_diagram::convert_to_Hasse_diagram_persistence<Bitmap_cubical_complex,Cell>( b );
     
     std::cout << "Here is the Hasse diagram obtained from the cunical complex : " << *hd << std::endl;
     

@@ -62,8 +62,8 @@ int main()
     // At evey step we will display the data structure and compute 
     // its homology.
     
-    typedef Gudhi::Hasse_diagram::Hasse_diagram_cell<int,double,double> Cell;	
-    typedef Gudhi::Hasse_diagram::Hasse_diagram_persistence<Cell> Hasse_diag;
+    typedef Gudhi::hasse_diagram::Hasse_diagram_cell<int,double,double> Cell;	
+    typedef Gudhi::hasse_diagram::Hasse_diagram_persistence<Cell> Hasse_diag;
     typedef Gudhi::persistent_cohomology::Field_Zp Field_Zp;	
 	
 	Cell* a = new Cell( 0,0. );
@@ -125,7 +125,7 @@ int main()
 	//Let us now compute homology of this diagram:	
 	typedef Gudhi::persistent_cohomology::Field_Zp Field_Zp;
 	typedef Gudhi::persistent_cohomology::Persistent_cohomology
-	<Gudhi::Hasse_diagram::Hasse_diagram_persistence<Cell>, Field_Zp> Persistent_cohomology;
+	<Gudhi::hasse_diagram::Hasse_diagram_persistence<Cell>, Field_Zp> Persistent_cohomology;
 
 	Persistent_cohomology pcoh(hd);  
 	int field_characteristic = 11;

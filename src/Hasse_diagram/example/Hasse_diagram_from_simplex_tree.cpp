@@ -50,9 +50,9 @@ int main()
 	using Field_Zp = Gudhi::persistent_cohomology::Field_Zp;
 	using Persistent_cohomology_simplex_tree = Gudhi::persistent_cohomology::Persistent_cohomology<Simplex_tree, Field_Zp >;	
 	//for Hasse diagrams:
-	typedef Gudhi::Hasse_diagram::Hasse_diagram_cell<int,double,double> Cell;	
-    typedef Gudhi::Hasse_diagram::Hasse_diagram_persistence<Cell> Hasse_diag;
-	using Persistent_cohomology_Hasse_diagram = Gudhi::persistent_cohomology::Persistent_cohomology<Gudhi::Hasse_diagram::Hasse_diagram_persistence<Cell>, Field_Zp>;
+	typedef Gudhi::hasse_diagram::Hasse_diagram_cell<int,double,double> Cell;	
+    typedef Gudhi::hasse_diagram::Hasse_diagram_persistence<Cell> Hasse_diag;
+	using Persistent_cohomology_Hasse_diagram = Gudhi::persistent_cohomology::Persistent_cohomology<Gudhi::hasse_diagram::Hasse_diagram_persistence<Cell>, Field_Zp>;
 	
 	//Here is the point cloud of the circle:
 	std::vector< std::vector<double> > circle_pt_cloud = 
@@ -104,7 +104,7 @@ int main()
 	
 	//Now let us convert the simplex tree into the Hasse diagram and compute
 	//persistence of the Hasse diagram:
-    Hasse_diag* hd = Gudhi::Hasse_diagram::convert_to_Hasse_diagram_persistence<Simplex_tree,Cell>( simplex_tree );
+    Hasse_diag* hd = Gudhi::hasse_diagram::convert_to_Hasse_diagram_persistence<Simplex_tree,Cell>( simplex_tree );
 
 	//And compute persistence of Hasse diagram with the same parametes as 
 	//for the simplex tree above:	

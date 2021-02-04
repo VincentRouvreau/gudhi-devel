@@ -34,7 +34,7 @@
 
 int main(int argc, char** argv) 
 { 
-  typedef Gudhi::Hasse_diagram::Hasse_diagram_cell<int,double,double> Cell;
+  typedef Gudhi::hasse_diagram::Hasse_diagram_cell<int,double,double> Cell;
   // in this example we will construct a CW decomposition of two dimensional torus:
   //  ______________________
   //  |A|__B___|C|___D___|A|     
@@ -163,7 +163,7 @@ int main(int argc, char** argv)
   
   
   // Here is a construction of a standard Hasse diagram:
-  // Gudhi::Hasse_diagram::Hasse_diagram<Cell> hd( vect_of_cells );  
+  // Gudhi::hasse_diagram::Hasse_diagram<Cell> hd( vect_of_cells );  
   // std::cout << "Here is the Hasse diagam : " << std::endl << hd << std::endl;
   
   // Here is a construction of a Hasse_diagram_persistence and computations of 
@@ -171,7 +171,7 @@ int main(int argc, char** argv)
   // classes of torus and the generators of the three squares. 
   
   
-  typedef Gudhi::Hasse_diagram::Hasse_diagram_persistence<Cell> Hasse_diag_persistence;
+  typedef Gudhi::hasse_diagram::Hasse_diagram_persistence<Cell> Hasse_diag_persistence;
   typedef Gudhi::persistent_cohomology::Field_Zp Field_Zp;
   typedef Gudhi::persistent_cohomology::Persistent_cohomology<Hasse_diag_persistence, Field_Zp> Persistent_cohomology;
 

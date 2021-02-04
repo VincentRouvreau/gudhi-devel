@@ -63,8 +63,8 @@ int main(int argc, char** argv)
 	  field_characteristic = (unsigned)(atoi(argv[3]));
   }
   
-  typedef Gudhi::Hasse_diagram::Hasse_diagram_cell<int,double,double> Cell;	
-  typedef Gudhi::Hasse_diagram::Hasse_diagram_persistence<Cell> Hasse_diag;
+  typedef Gudhi::hasse_diagram::Hasse_diagram_cell<int,double,double> Cell;	
+  typedef Gudhi::hasse_diagram::Hasse_diagram_persistence<Cell> Hasse_diag;
     
   Hasse_diag hd( filename ); 
   typedef Gudhi::persistent_cohomology::Field_Zp Field_Zp;
