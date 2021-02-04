@@ -1,10 +1,16 @@
 project(Hasse_diagram_examples)
 
-add_executable ( Hasse_diagram_basic_example Hasse_diagram_example.cpp )
+add_executable ( Hasse_diagram_basic_example Hasse_diagram_basic_example.cpp )
 if (TBB_FOUND)
   target_link_libraries(Hasse_diagram_basic_example ${TBB_LIBRARIES})
 endif()
 add_test(NAME Hasse_diagram_basic_example COMMAND $<TARGET_FILE:Hasse_diagram_basic_example>)
+
+add_executable ( Hasse_diagram_torus_example Hasse_diagram_torus_example.cpp )
+if (TBB_FOUND)
+  target_link_libraries(Hasse_diagram_torus_example ${TBB_LIBRARIES})
+endif()
+add_test(NAME Hasse_diagram_torus_example COMMAND $<TARGET_FILE:Hasse_diagram_torus_example>)
 
 add_executable ( Hasse_diagram_from_cubical_complex_example Hasse_diagram_from_cubical_complex.cpp )
 if (TBB_FOUND)

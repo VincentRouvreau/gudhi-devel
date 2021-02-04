@@ -42,14 +42,17 @@ namespace Hasse_diagram {
  * and coboundary of cells elements in a constant time (and get the incidence coefficients). 
  * In addition to that, they store information about the cell like dimension, filtration. Additional 
  * information can also be stored when the template parameter Additional_information_ 
- * is set to a class to store the additional information. Please consult the picture
- * below for a simple example of a Hasse diagram representing two vertices
- * and two edges forming a loop.
- * \image html "Hasse_diag.png" 
+ * is set to a class to store the additional information.
  * 
- * Hasse diagram is a dynamic data structure. Addition and removal of cells 
+ * Please consult the picture and the corresponding code below for a simple example of a Hasse diagram representing
+ * two vertices and two edges forming a loop.
+ * \image html "Hasse_diag.png"
+ * 
+ * \include Hasse_diagram/Hasse_diagram_basic_example.cpp
+ * 
+ * Hasse diagram is a dynamic data structure. Addition and removal of cells
  * can be performed by using add_cell and remove_cell methods. Please consult
- * an example folder for the details of the usage. 
+ * an example folder for the details of the usage.
  * The Hasse_diagram class uses a 'lazy delete' philosophy, 
  * i.e. cells that has been deleted are marked as deleted. They can be 
  * physically removed from the data structure by invoking the clean_up_the_structure() 

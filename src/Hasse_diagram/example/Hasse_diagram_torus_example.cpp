@@ -185,7 +185,7 @@ int main(int argc, char** argv)
   pcoh_hd.output_diagram(output_pers);
   std::string obtained_output = output_pers.str();
   
-  std::cout << "Here is the obtained persistence diagram : " << obtained_output << std::endl;
+  std::cout << "Here is the obtained persistence diagram : \n" << obtained_output << std::endl;
   
   delete A;
   delete B;
@@ -206,4 +206,3 @@ int main(int argc, char** argv)
   
   return 0;
 }
-

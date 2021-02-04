@@ -92,7 +92,8 @@
  * @example Persistence_representations/persistence_landscapes/create_landscapes.cpp
  * @example Persistence_representations/persistence_landscapes/compute_distance_of_landscapes.cpp
  * @example Persistence_representations/persistence_landscapes/plot_landscapes.cpp
- * @example Hasse_diagram/Hasse_diagram_example.cpp
+ * @example Hasse_diagram/Hasse_diagram_basic_example.cpp
+ * @example Hasse_diagram/Hasse_diagram_torus_example.cpp
  * @example Hasse_diagram/Hasse_diagram_from_cubical_complex.cpp
  * @example Hasse_diagram/Hasse_diagram_from_simplex_tree.cpp
  * @example Hasse_diagram/Insertion_and_removal_operations_on_Hasse_diagrams.cpp

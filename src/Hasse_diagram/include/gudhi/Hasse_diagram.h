@@ -24,7 +24,7 @@
 #include <vector>
 #include <algorithm>
 #include <string>
-#include <sstream>
+#include <fstream>
 
 #include <gudhi/Hasse_diagram_cell.h>
 
