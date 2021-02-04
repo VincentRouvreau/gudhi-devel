@@ -135,6 +135,36 @@
  </tr>
 </table>
 
+### Chain complexes
+ 
+<table>
+  <tr>
+    <td width="35%" rowspan=2>
+      \image html "Hasse_diag.png"
+    </td>
+    <td width="50%">
+     A Hasse diagram is a general structure to store and operate on
+     <a href="https://en.wikipedia.org/wiki/Chain_complex">chain complexes</a>. 
+     Hasse diagram is essentially a vector of cells. It implements functionality of a cell (generator) 
+     of an arbitrary chain complex. It allows to access to both boundary 
+     and coboundary of cells elements in a constant time (and get the incidence coefficients). 
+     In addition to that, they store information about the cells like dimension, filtration.
+     A template parameter, called additional information, allows to store any additional information
+     on each cell if needed.<br>
+    </td>
+    <td width="15%">
+      <b>Author:</b> Pawel Dlotko<br>
+      <b>Introduced in:</b> GUDHI 3.X.0<br>
+      <b>Copyright:</b> MIT<br>
+    </td>
+ </tr>
+ <tr>
+    <td colspan=2 height="25">
+    <b>User manual:</b> \ref hasse_diagram
+    </td>
+ </tr>
+</table>
+
 ## Filtrations and reconstructions {#FiltrationsReconstructions}
 ### Alpha complex
 

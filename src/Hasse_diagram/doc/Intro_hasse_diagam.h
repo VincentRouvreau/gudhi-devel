@@ -35,7 +35,7 @@ namespace Hasse_diagram {
  * @{
  *
  * A Hasse diagram (implemented in the class Hasse_diagram) is a general 
- * structure to store and operate on chain complexes. 
+ * structure to store and operate on <a href="https://en.wikipedia.org/wiki/Chain_complex">chain complexes</a>.
  * Hasse_diagram is essentially a vector of elements of the class 
  * Hasse_diagram_cell. They implement functionality of a cell (generator) 
  * of an arbitrary chain complex. They allow to access to both boundary 
@@ -87,9 +87,6 @@ namespace Hasse_diagram {
  * Gudhi can be converted to a Hasse_diagrams by using convert_to_Hasse_diagram() 
  * and convert_to_Hasse_diagram_persistence(). In the example folder the conversions
  * from Simplex tree and Cubical complex are presented. 
- *
- * 
- * \copyright GNU General Public License v3.
  */
 /** @} */  // end defgroup Hasse_diagram
 
