@@ -34,7 +34,7 @@
 
 namespace Gudhi {
 
-namespace Hasse_diagram {
+namespace hasse_diagram {
 	
 
 template <typename Cell_type> class is_before_in_dimension;
@@ -270,6 +270,7 @@ protected:
 	**/ 
 	void set_up_positions();
 	
+	//! Percentage of removed cells to trigger automatically `clean_up_the_structure()`. Default value is 0.5.
 	static double proportion_of_removed_cells_that_triggers_reorganization_of_structure;
 	
 	/**
@@ -607,7 +608,7 @@ Hasse_diagram<Cell_type>* convert_to_Hasse_diagram( Complex_type& cmplx )
 
 
 
-}//namespace Hasse_diagram
-}//namespace Gudhi
+}  // namespace hasse_diagram
+}  // namespace Gudhi
 
 #endif //HASSE_DIAGRAM_H

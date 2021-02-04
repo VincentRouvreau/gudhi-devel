@@ -37,7 +37,7 @@
 
 
 namespace Gudhi {
-namespace Hasse_diagram {
+namespace hasse_diagram {
 
 
 template < typename Cell_type > class Hasse_diagram;
@@ -314,7 +314,7 @@ protected:
 
 
 
-}//namespace Hasse_diagram
-}//namespace Gudhi
+}  // namespace hasse_diagram
+}  // namespace Gudhi
 
 #endif //CELL_H

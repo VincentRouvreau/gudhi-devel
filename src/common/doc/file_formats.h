@@ -157,4 +157,17 @@ namespace Gudhi {
 */
 }  // namespace Gudhi
 
+/* TODO(VR): check with text above
+ * The format of a file with the Hasse diagram is as follows:
+ * The first line contains a positive integer being the number of cells in the complex.
+ * Next lines contains the information about the cells. Information about every single
+ * cells is stored in two consecutive lines. 
+ * In the first line, the cell id (which is supposed to be a positive integer from the range
+ * between 0 and number of cells) that uniquely identify the cell, its dimension are to be
+ * provided. In addition to that one can also provide the third parameter which is the filtration
+ * of that cells. The second line contains the information about boundaries of the cell. It is a 
+ * vector of cell id and the incidence coefficient. 
+ * Lines starting from # are ignored when reading the file. 
+ */
+
 #endif  // DOC_COMMON_FILE_FORMAT_H_

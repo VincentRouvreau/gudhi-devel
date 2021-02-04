@@ -43,7 +43,7 @@
 
 namespace Gudhi {
 
-namespace Hasse_diagram {
+namespace hasse_diagram {
 	
 template <typename Cell_type> class is_before_in_filtration;
 
@@ -443,7 +443,7 @@ public:
 protected:	
 	  std::vector< unsigned > key_associated_to_cell;
       std::vector< unsigned > cell_associated_to_key;   
-};//Hasse_diagram
+};  // Hasse_diagram
 
 
 
@@ -520,7 +520,7 @@ Hasse_diagram_persistence<Cell_type>* convert_to_Hasse_diagram_persistence( Comp
 }//convert_to_Hasse_diagram
 
 
-}//namespace Hasse_diagram_persistence
-}//namespace Gudhi
+}  // namespace hasse_diagram_persistence
+}  // namespace Gudhi
 
 #endif //HASSE_DIAGRAM_PERSISTENCE_H
