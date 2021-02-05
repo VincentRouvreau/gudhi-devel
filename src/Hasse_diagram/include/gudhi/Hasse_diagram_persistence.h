@@ -392,9 +392,7 @@ public:
 	int dimension_;
 	};
 
-	/**
-	* @brief Class needed for compatibility with Gudhi. Not useful for other purposes.
-	**/
+	/** \brief Range over the simplices of the skeleton of the chain complex, for a given dimension. **/
 	class Skeleton_simplex_range {
 	// Range over the simplices of the complex in the order of the filtration.
 	// .begin() and .end() return type Filtration_simplex_iterator.
@@ -421,9 +419,10 @@ public:
 	unsigned dimension_;
 	};
 
-	/**
-	* Function needed for compatibility with Gudhi. Not useful for other purposes.
-	**/
+	/** \brief Returns a range over the simplices of the dim-skeleton of the complex.
+	 *
+	 * @param[in] dimension The maximal dimension of the cell in the skeleton.
+	 **/
 	Skeleton_simplex_range skeleton_simplex_range(unsigned dimension) 
 	{	
 		return Skeleton_simplex_range(this, dimension);
