@@ -57,7 +57,7 @@ int main() {
   //   |                   |
   //  |r|-------u---------|s|
   //
-  // At evey step we will display the data structure and compute
+  // At every step we will display the data structure and compute
   // its homology.
 
   typedef Gudhi::hasse_diagram::Hasse_diagram_cell<int, double, double> Cell;
@@ -117,7 +117,7 @@ int main() {
 
   // And now we create the Hasse diagram:
   Hasse_diag hd(vector_of_initial_cells);
-  std::cout << "Here is the initial Hasse diagam : " << std::endl << hd << std::endl;
+  std::cout << "Here is the initial Hasse diagram : " << std::endl << hd << std::endl;
 
   // Let us now compute homology of this diagram:
   typedef Gudhi::persistent_cohomology::Field_Zp Field_Zp;
@@ -152,7 +152,7 @@ int main() {
 
   // Please note that deletion of the cell is already done by the clean_up_the_structure() procedure
   // This procedure is called every time the number of deleted cells is above a certain fraction.
-  // This procedure also have to be invoken before computing persistence and before further operations
+  // This procedure also have to be invoked before computing persistence and before further operations
   // on the data structure:
 
   hd.clean_up_the_structure();
@@ -186,7 +186,7 @@ int main() {
   boundary_of_w.push_back(std::pair<Cell*, int>(s, 1));
   boundary_of_w.push_back(std::pair<Cell*, int>(c, 1));
 
-  // And then add them to the sturcture:
+  // And then add them to the structure:
   hd.add_cell(r);
   hd.add_cell(s);
   hd.add_cell(t);

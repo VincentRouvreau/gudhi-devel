@@ -39,7 +39,7 @@ int main(int argc, char** argv) {
   std::cout << "The cells are assumed to be enumerated from 0 to the number of cells." << std::endl;
   std::cout << "Each cell is given in the following format:" << std::endl;
   std::cout << "Id of a cell followed by its dimension and optionally a filtration (in the first line)" << std::endl;
-  std::cout << "Sequence of ids of boundary elements followed by the incidence coeficient between given cell and the "
+  std::cout << "Sequence of ids of boundary elements followed by the incidence coefficient between given cell and the "
                "boundary element (all of them in the second line)"
             << std::endl
             << std::endl;

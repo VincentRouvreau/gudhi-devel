@@ -105,7 +105,7 @@ class Hasse_diagram {
     // count the number of not deleted cells:
     size_t number_of_non_deleted_cells = this->cells.size() - this->number_of_deleted_cells;
 
-    // create a new vector to store the undeleted cells:
+    // create a new vector to store the non-deleted cells:
     Cell_range new_cells;
     new_cells.reserve(number_of_non_deleted_cells);
     // fill the new vector in and adjust the new positions.
@@ -135,7 +135,7 @@ class Hasse_diagram {
   void add_cell(Cell_type* cell) {
     cell->position = static_cast<unsigned>(this->cells.size());
     this->cells.push_back(cell);
-    // we still need to check if cobounadies of boundary elements of this
+    // we still need to check if coboundaries of boundary elements of this
     // cell are set up in the correct way:
     for (size_t bd = 0; bd != cell->boundary.size(); ++bd) {
       cell->boundary[bd].first->coBoundary.push_back(std::make_pair(cell, cell->boundary[bd].second));
@@ -303,7 +303,7 @@ Hasse_diagram<Cell_type>::Hasse_diagram(const char* filename) {
     std::cout << "Number of cells : " << number_of_cells << std::endl;
   }
 
-  size_t size_of_last_boundary = 10;  // to initially reserve a vector for bounary elements.
+  size_t size_of_last_boundary = 10;  // to initially reserve a vector for boundary elements.
   for (size_t i = 0; i != number_of_cells; ++i) {
     Cell_type* new_cell = this->cells[i];
     while (line[0] == '#') {
@@ -449,7 +449,7 @@ Cell_range convert_to_vector_of_Cell_type(Complex_type& cmplx) {
     cells_of_Hasse_diag[i] = new Cell_type();
   }
 
-  // First we need to assign keys. It is not neccessary for cubical complexes,
+  // First we need to assign keys. It is not necessary for cubical complexes,
   // but in simplex tree this is not done by default.
   std::vector<typename Complex_type::Simplex_key> boundary;
   typename Complex_type::Filtration_simplex_range range = cmplx.filtration_simplex_range();

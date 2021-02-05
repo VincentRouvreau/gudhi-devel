@@ -402,7 +402,7 @@ void Hasse_diagram_persistence<Cell_type>::set_up_the_arrays() {
   }
 
   // Just for debugging purposes, remove later.
-  // std::cout << "cell_associated_to_key, just for degugging. : \n";
+  // std::cout << "cell_associated_to_key, just for debugging. : \n";
   // for ( size_t i = 0 ; i != this->cell_associated_to_key.size() ; ++i )
   //{
   //	std::cout << this->cell_associated_to_key[i] << " ";

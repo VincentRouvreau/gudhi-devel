@@ -132,7 +132,7 @@ class Hasse_diagram_cell {
   inline int& get_dimension() { return this->dimension; }
 
   /**
-   * Procedure to get additional information about the cell.s
+   * Procedure to get additional information about the cell.
    **/
   inline Additional_information& get_additional_information() { return this->additional_info; }
 
@@ -154,7 +154,7 @@ class Hasse_diagram_cell {
 
   /**
    * A procedure used to check if the cell is deleted. It is used by the
-   * subsequent implementation of Hasse diagram that is absed on lazy
+   * subsequent implementation of Hasse diagram that is based on lazy
    * delete.
    **/
   inline bool deleted() { return this->deleted_; }
@@ -198,7 +198,7 @@ class Hasse_diagram_cell {
   friend std::ostream& operator<<(
       std::ostream& out, const Hasse_diagram_cell<Incidence_type, Filtration_type, Additional_information>& c) {
     // cout << "position : " << c.position << ", dimension : " << c.dimension << ", filtration: " << c.filtration << ",
-    // size of boudary : " <<  c.boundary.size() << "\n";
+    // size of boundary : " <<  c.boundary.size() << "\n";
     out << c.position << " " << c.dimension << " " << c.filtration << std::endl;
     for (size_t bd = 0; bd != c.boundary.size(); ++bd) {
       // do not write out the cells that has been deleted
@@ -223,7 +223,7 @@ class Hasse_diagram_cell {
   }
 
   /**
-   * Procedure that return vector of positios of boundary elements of a given cell.
+   * Procedure that return vector of positions of boundary elements of a given cell.
    **/
   inline std::vector<unsigned> get_list_of_positions_of_boundary_elements() {
     std::vector<unsigned> result;

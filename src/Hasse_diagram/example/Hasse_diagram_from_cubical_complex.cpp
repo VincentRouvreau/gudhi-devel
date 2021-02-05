@@ -58,7 +58,7 @@ int main() {
   typedef Gudhi::hasse_diagram::Hasse_diagram_persistence<Cell> Hasse_diag;
   Hasse_diag* hd = Gudhi::hasse_diagram::convert_to_Hasse_diagram_persistence<Bitmap_cubical_complex, Cell>(b);
 
-  std::cout << "Here is the Hasse diagram obtained from the cunical complex : " << *hd << std::endl;
+  std::cout << "Here is the Hasse diagram obtained from the cubical complex : " << *hd << std::endl;
 
   typedef Gudhi::persistent_cohomology::Field_Zp Field_Zp;
   typedef Gudhi::persistent_cohomology::Persistent_cohomology<Hasse_diag, Field_Zp> Persistent_cohomology;
