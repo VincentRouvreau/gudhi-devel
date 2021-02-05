@@ -413,11 +413,13 @@ void Hasse_diagram_persistence<Cell_type>::set_up_the_arrays() {
 /**
  * This is a function to convert any representation that implements Hasse_complex interface
  * into Hasse_diagram_persistence
+ *
+ * \ingroup hasse_diagram
  **/
 template <typename Complex_type, typename Cell_type>
 Hasse_diagram_persistence<Cell_type>* convert_to_Hasse_diagram_persistence(Complex_type& cmplx) {
   return new Hasse_diagram_persistence<Cell_type>(convert_to_cell_range<Complex_type, Cell_type>(cmplx));
-}  // convert_to_Hasse_diagram
+}
 
 }  // namespace hasse_diagram
 }  // namespace Gudhi

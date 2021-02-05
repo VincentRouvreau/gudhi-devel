@@ -513,11 +513,13 @@ Cell_range convert_to_cell_range(Complex_type& cmplx) {
 /**
  * This is a function to convert any representation that implements Hasse_complex interface
  * into Hasse diagram
+ *
+ * \ingroup hasse_diagram
  **/
 template <typename Complex_type, typename Cell_type>
 Hasse_diagram<Cell_type>* convert_to_Hasse_diagram(Complex_type& cmplx) {
   return new Hasse_diagram<Cell_type>(convert_to_cell_range(cmplx));
-}  // convert_to_Hasse_diagram
+}
 
 }  // namespace hasse_diagram
 }  // namespace Gudhi
