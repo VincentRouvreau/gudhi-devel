@@ -22,107 +22,101 @@
 
 /**
  * A class to implement general cell type.
-**/ 
-class Cell_type
-{
-public:
-    /**
-     * Must be numerical, assignable, from a ring or field.
-    **/ 
-	typedef unspecified Incidence_type;
-	
-	/**
-	 * Must provide an order, and implement << operator.
-	**/ 
-	typedef unspecified Filtration_type;
-	
-    /**
-     * Default constructor.
-    **/
-	Hasse_diagram_cell();
+ **/
+class Cell_type {
+ public:
+  /**
+   * Must be numerical, assignable, from a ring or field.
+   **/
+  typedef unspecified Incidence_type;
 
-	/**
-     * Procedure to obtain the boundary of a given cell. It returns a 
-     * vector of pairs of pointers to boundary elements and incidence
-     * coefficients.
-    **/
-	inline std::vector< std::pair<Cell_type*,Incidence_type> >& get_boundary();
+  /**
+   * Must provide an order, and implement << operator.
+   **/
+  typedef unspecified Filtration_type;
 
-	/**
-     * Return the dimension of a cell.
-    **/
-	inline unsigned& get_dimension();
+  /**
+   * Default constructor.
+   **/
+  Hasse_diagram_cell();
 
-	/**
-	 * Return position of a cell in a structure. Class Cell_type is required
-	 * to be able to store a its position in a Hasse diagram. 
-	**/
-	inline size_t& get_position();
-	
-	/**
-	 * Return the filtration of the cell.
-	**/
-	inline Filtration_type& get_filtration();
+  /**
+   * Procedure to obtain the boundary of a given cell. It returns a
+   * vector of pairs of pointers to boundary elements and incidence
+   * coefficients.
+   **/
+  inline std::vector<std::pair<Cell_type*, Incidence_type> >& get_boundary();
 
-	/**
-	 * Implementation of Hasse diagram assume that the Cell_type allows removal
-	 * and addition of cells. This procedure is used to check if the cell has 
-	 * not been removed.  
-	**/
-	inline bool deleted();
+  /**
+   * Return the dimension of a cell.
+   **/
+  inline unsigned& get_dimension();
 
-	/**
-	 * Have to be a friend to a class Hasse_diagram implemented in Hasse_diagram.h
-	**/ 
-	template < typename Cell_type >
-	friend class Hasse_diagram;
-	
-	/**
-	 * Have to be a friend with a class is_before_in_filtration implemented in 
-	 * Hasse_diagram_persistence.h. It is required to sort the cells according
-	 * filtration in the persistence algorithm.
-	**/ 
-	template < typename Cell_type >
-	friend class is_before_in_filtration;
-	
-	/**
-	 * Function convert_to_vector_of_Cell_type is used to cinvert any class that 
-	 * implement Hasse_complex interface into Hasse diagram.
-	**/ 
-	template <typename Complex_type , typename Cell_type, typename Cell_range>  
-	friend Cell_range convert_to_vector_of_Cell_type( Complex_type& cmplx );
+  /**
+   * Return position of a cell in a structure. Class Cell_type is required
+   * to be able to store a its position in a Hasse diagram.
+   **/
+  inline size_t& get_position();
 
-	/**
-	 * Procedure to remove deleted boundary and coboundary elements from the
-	 * vectors of boundary and coboundary elements of this cell. Should use
-	 * deleted() method to check if boundary or coboudnary elements has been deleted.
-	**/
-	void remove_deleted_elements_from_boundary_and_coboundary();
+  /**
+   * Return the filtration of the cell.
+   **/
+  inline Filtration_type& get_filtration();
 
+  /**
+   * Implementation of Hasse diagram assume that the Cell_type allows removal
+   * and addition of cells. This procedure is used to check if the cell has
+   * not been removed.
+   **/
+  inline bool deleted();
 
-	/**
-	 * Writing to a stream operator.
-	**/
-	friend std::ostream& operator<<( std::ostream& out, const Cell_type& c );
+  /**
+   * Have to be a friend to a class Hasse_diagram implemented in Hasse_diagram.h
+   **/
+  template <typename Cell_type>
+  friend class Hasse_diagram;
 
-	
-	/**
-	 * Procedure that return vector of positios of boundary elements of a given cell.
-	**/  	
-	inline std::vector< unsigned > get_list_of_positions_of_boundary_elements();
+  /**
+   * Have to be a friend with a class is_before_in_filtration implemented in
+   * Hasse_diagram_persistence.h. It is required to sort the cells according
+   * filtration in the persistence algorithm.
+   **/
+  template <typename Cell_type>
+  friend class is_before_in_filtration;
 
-	
-	/**
-	 * Function that display a string being a signature of a structure. 
-	 * Used mainly for debugging purposes, but required for the tests. 
-	**/ 
-	std::string full_signature_of_the_structure();
-	
-	
-	/**
-	 * Class Cell_type is required to store boundary elements in the following vector.  
-	**/ 
-	std::vector< std::pair<Cell_type*,Incidence_type> > boundary;
+  /**
+   * Function convert_to_vector_of_Cell_type is used to cinvert any class that
+   * implement Hasse_complex interface into Hasse diagram.
+   **/
+  template <typename Complex_type, typename Cell_type, typename Cell_range>
+  friend Cell_range convert_to_vector_of_Cell_type(Complex_type& cmplx);
 
+  /**
+   * Procedure to remove deleted boundary and coboundary elements from the
+   * vectors of boundary and coboundary elements of this cell. Should use
+   * deleted() method to check if boundary or coboudnary elements has been deleted.
+   **/
+  void remove_deleted_elements_from_boundary_and_coboundary();
 
-};//Cell_type
+  /**
+   * Writing to a stream operator.
+   **/
+  friend std::ostream& operator<<(std::ostream& out, const Cell_type& c);
+
+  /**
+   * Procedure that return vector of positios of boundary elements of a given cell.
+   **/
+  inline std::vector<unsigned> get_list_of_positions_of_boundary_elements();
+
+  /**
+   * Function that display a string being a signature of a structure.
+   * Used mainly for debugging purposes, but required for the tests.
+   **/
+  std::string full_signature_of_the_structure();
+
+  /**
+   * Class Cell_type is required to store boundary elements in the following vector.
+   **/
+  std::vector<std::pair<Cell_type*, Incidence_type> > boundary;
+
+};  // Cell_type
