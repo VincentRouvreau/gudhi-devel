@@ -62,7 +62,8 @@ class is_before_in_dimension;
 template <typename Cell_type>
 class Hasse_diagram {
  public:
-  using Cell_range = std::vector<Cell_type*>;
+  using Cell_handle = Cell_type*;
+  using Cell_range = std::vector<Cell_handle>;
 
   /**
    * Default constructor.
@@ -132,7 +133,7 @@ class Hasse_diagram {
    * automatically fill in coboundaries of boundary elements, so do not
    * duplicate it.
    **/
-  void add_cell(Cell_type* cell) {
+  void add_cell(Cell_handle cell) {
     cell->position = static_cast<unsigned>(this->cells.size());
     this->cells.push_back(cell);
     // we still need to check if coboundaries of boundary elements of this
@@ -145,7 +146,7 @@ class Hasse_diagram {
   /**
    * Procedure that allow to remove a cell into the structure.
    **/
-  void remove_cell(Cell_type* cell) {
+  void remove_cell(Cell_handle cell) {
     // if the flag enable_checking_validity_of_complex is set to true,
     // we will check if the cell that is to be deleted do not have
     // a non deleted cell in the coboundary and if this is the case, we
@@ -216,7 +217,7 @@ class Hasse_diagram {
    * Note that this cell will change after calling clean_up_the_structure()
    * procedure.
    **/
-  inline Cell_type* at(size_t pos) {
+  inline Cell_handle at(size_t pos) {
     if (pos < this->cells.size()) {
       return this->cells[pos];
     } else {
@@ -305,7 +306,7 @@ Hasse_diagram<Cell_type>::Hasse_diagram(const char* filename) {
 
   size_t size_of_last_boundary = 10;  // to initially reserve a vector for boundary elements.
   for (size_t i = 0; i != number_of_cells; ++i) {
-    Cell_type* new_cell = this->cells[i];
+    Cell_handle new_cell = this->cells[i];
     while (line[0] == '#') {
       std::getline(in, line);
     }
@@ -385,7 +386,7 @@ void Hasse_diagram<Cell_type>::set_up_coboundaries() {
   size_t number_of_cells = this->cells.size();
   std::vector<unsigned> sizes_of_coboundary(number_of_cells, 0);
   for (size_t i = 0; i != number_of_cells; ++i) {
-    std::vector<std::pair<Cell_type*, typename Cell_type::Incidence_type>> bdry = this->cells[i]->get_boundary();
+    auto bdry = this->cells[i]->get_boundary();
     for (size_t bd = 0; bd != bdry.size(); ++bd) {
       sizes_of_coboundary[bdry[bd].first->get_position()]++;
     }
@@ -431,12 +432,11 @@ void Hasse_diagram<Cell_type>::write_to_file(const char* filename) {
 }  // template < typename Cell_type >
 
 /**
- * This is a function that take any representation that implements Hasse_complex
- * interface and return vector of Cell_type* based on it. It is used to construct
- * objects of class Hasse_diagram and Hasse_diagram_persistence
+ * This is a function that take any representation that implements Hasse_complex interface and a cell range based on
+ * it. It is used to construct objects of class Hasse_diagram and Hasse_diagram_persistence.
  **/
 template <typename Complex_type, typename Cell_type, typename Cell_range = typename std::vector<Cell_type*>>
-Cell_range convert_to_vector_of_Cell_type(Complex_type& cmplx) {
+Cell_range convert_to_cell_range(Complex_type& cmplx) {
   bool dbg = false;
 
   if (dbg) {
@@ -444,7 +444,7 @@ Cell_range convert_to_vector_of_Cell_type(Complex_type& cmplx) {
   }
 
   // create vector of cells of suitable length:
-  std::vector<Cell_type*> cells_of_Hasse_diag(cmplx.num_simplices());
+  Cell_range cells_of_Hasse_diag(cmplx.num_simplices());
   for (size_t i = 0; i != cmplx.num_simplices(); ++i) {
     cells_of_Hasse_diag[i] = new Cell_type();
   }
@@ -464,7 +464,7 @@ Cell_range convert_to_vector_of_Cell_type(Complex_type& cmplx) {
     if (dbg) {
       std::cout << "This is cell number : " << counter << std::endl;
     }
-    Cell_type* this_cell = cells_of_Hasse_diag[counter];
+    Cell_handle this_cell = cells_of_Hasse_diag[counter];
 
     this_cell->get_dimension() = static_cast<int>(cmplx.dimension(*it));
     this_cell->get_filtration() = static_cast<typename Cell_type::Filtration_type>(cmplx.filtration(*it));
@@ -508,7 +508,7 @@ Cell_range convert_to_vector_of_Cell_type(Complex_type& cmplx) {
     ++counter;
   }
   return cells_of_Hasse_diag;
-}  // convert_to_vector_of_Cell_type
+}  // convert_to_cell_range
 
 /**
  * This is a function to convert any representation that implements Hasse_complex interface
@@ -516,7 +516,7 @@ Cell_range convert_to_vector_of_Cell_type(Complex_type& cmplx) {
  **/
 template <typename Complex_type, typename Cell_type>
 Hasse_diagram<Cell_type>* convert_to_Hasse_diagram(Complex_type& cmplx) {
-  return new Hasse_diagram<Cell_type>(convert_to_vector_of_Cell_type(cmplx));
+  return new Hasse_diagram<Cell_type>(convert_to_cell_range(cmplx));
 }  // convert_to_Hasse_diagram
 
 }  // namespace hasse_diagram

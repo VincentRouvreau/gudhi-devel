@@ -85,11 +85,11 @@ class Cell_type {
   friend class is_before_in_filtration;
 
   /**
-   * Function convert_to_vector_of_Cell_type is used to cinvert any class that
+   * Function convert_to_cell_range is used to cinvert any class that
    * implement Hasse_complex interface into Hasse diagram.
    **/
   template <typename Complex_type, typename Cell_type, typename Cell_range>
-  friend Cell_range convert_to_vector_of_Cell_type(Complex_type& cmplx);
+  friend Cell_range convert_to_cell_range(Complex_type& cmplx);
 
   /**
    * Procedure to remove deleted boundary and coboundary elements from the

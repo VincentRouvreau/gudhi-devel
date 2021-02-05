@@ -166,7 +166,7 @@ class Hasse_diagram_cell {
   friend class is_before_in_filtration;
 
   template <typename Complex_type, typename Cell_type, typename Cell_range>
-  friend Cell_range convert_to_vector_of_Cell_type(Complex_type& cmplx);
+  friend Cell_range convert_to_cell_range(Complex_type& cmplx);
 
   /**
    * Procedure to remove deleted boundary and coboundary elements from the

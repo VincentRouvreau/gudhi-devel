@@ -166,7 +166,7 @@ class Hasse_diagram_persistence : public Hasse_diagram<Cell_type> {
     if (sh == null_simplex()) {
       return std::pair<Simplex_handle, Simplex_handle>(null_simplex(), null_simplex());
     }
-    std::vector<std::pair<Cell_type*, typename Cell_type::Incidence_type> > boundary = this->cells[sh]->get_boundary();
+    auto boundary = this->cells[sh]->get_boundary();
     return std::pair<Simplex_handle, Simplex_handle>(boundary[0].first->get_position(),
                                                      boundary[1].first->get_position());
   }
@@ -416,7 +416,7 @@ void Hasse_diagram_persistence<Cell_type>::set_up_the_arrays() {
  **/
 template <typename Complex_type, typename Cell_type>
 Hasse_diagram_persistence<Cell_type>* convert_to_Hasse_diagram_persistence(Complex_type& cmplx) {
-  return new Hasse_diagram_persistence<Cell_type>(convert_to_vector_of_Cell_type<Complex_type, Cell_type>(cmplx));
+  return new Hasse_diagram_persistence<Cell_type>(convert_to_cell_range<Complex_type, Cell_type>(cmplx));
 }  // convert_to_Hasse_diagram
 
 }  // namespace hasse_diagram
