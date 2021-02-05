@@ -220,24 +220,6 @@ public:
 	Simple_all_cells_iterator_range simple_all_cells_iterator_range(){return this->cells;}
 	
 	/**
-	 * Procedure that retuns a cell in the position pos in the vector of cells.
-	 * Note that this cell will change after calling clean_up_the_structure()
-	 * procedure.
-	**/ 
-	inline Cell_type* give_me_cell_at_position( size_t pos )
-	{
-		if ( pos < this->cells.size() )
-		{
-			return this->cells[pos];
-		}
-		else
-		{
-			std::cerr << "Wrong position of a cell in the give_me_cell_at_position function.\n";
-			throw "Wrong position of a cell in the give_me_cell_at_position function.\n";
-		}		
-	}
-	
-	/**
 	 * Function that display a string being a signature of a structure. 
 	 * Used mainly for debugging purposes. 
 	**/ 
@@ -251,7 +233,27 @@ public:
 		return result;
 	}	
 	
-protected:	
+	
+private:	
+	/**
+	 * Procedure that returns a cell in the position pos in the vector of cells.
+	 * Note that this cell will change after calling clean_up_the_structure()
+	 * procedure.
+	**/ 
+	inline Cell_type* at( size_t pos )
+	{
+		if ( pos < this->cells.size() )
+		{
+			return this->cells[pos];
+		}
+		else
+		{
+			std::cerr << "Wrong position of a cell in the give_me_cell_at_position function.\n";
+			throw "Wrong position of a cell in the give_me_cell_at_position function.\n";
+		}		
+	}
+
+protected:
 	Cell_range cells;
 	
 	//to check how fragmented the data structure is (as a result of removing cells).
