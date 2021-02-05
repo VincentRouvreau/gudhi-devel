@@ -653,7 +653,7 @@ BOOST_AUTO_TEST_CASE( computations_of_persistence_test_cubical_complex_conversio
 	0.9286763233,0.2625846171,0.6679543864,0.7168741848,0.4050888666,0.6722856015,
 	0.1900163866,0.4200847822,0.0461202529,0.2983607783,0.1813348292};
 	
-	//Now contruct the cibical complex.
+	//Now construct the cibical complex.
 	typedef Gudhi::cubical_complex::Bitmap_cubical_complex_base<double> Bitmap_cubical_complex_base;
     typedef Gudhi::cubical_complex::Bitmap_cubical_complex<Bitmap_cubical_complex_base> Bitmap_cubical_complex;
     

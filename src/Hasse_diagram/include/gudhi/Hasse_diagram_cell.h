@@ -110,20 +110,20 @@ public:
 	position(0),deleted_(false){}
 
 	/**
-     * Construcor of a cell of dimension dim having given additional information.
+     * Constructor of a cell of dimension dim having given additional information.
     **/
 	Hasse_diagram_cell(Additional_information ai, int dim ):
 	dimension(dim),additional_info(ai),position(0),deleted_(false){}
 
 	/**
-     * Procedure to get the boundary of a fiven cell. The output format
+     * Procedure to get the boundary of a given cell. The output format
      * is a vector of pairs of pointers to boundary elements and incidence
      * coefficients.
     **/
 	inline Boundary_range& get_boundary(){return this->boundary;}
 
 	/**
-     * Procedure to get the coboundary of a fiven cell. The output format
+     * Procedure to get the coboundary of a given cell. The output format
      * is a vector of pairs of pointers to coboundary elements and incidence
      * coefficients.
     **/
