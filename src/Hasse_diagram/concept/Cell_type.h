@@ -89,8 +89,8 @@ public:
 	 * Function convert_to_vector_of_Cell_type is used to cinvert any class that 
 	 * implement Hasse_complex interface into Hasse diagram.
 	**/ 
-	template <typename Complex_type , typename Cell_type >  
-	friend std::vector<Cell_type*> convert_to_vector_of_Cell_type( Complex_type& cmplx );
+	template <typename Complex_type , typename Cell_type, typename Cell_range>  
+	friend Cell_range convert_to_vector_of_Cell_type( Complex_type& cmplx );
 
 	/**
 	 * Procedure to remove deleted boundary and coboundary elements from the

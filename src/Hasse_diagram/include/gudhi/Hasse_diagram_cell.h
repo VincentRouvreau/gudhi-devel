@@ -51,27 +51,26 @@ template < typename Cell_type > class Hasse_diagram;
  * \ingroup Hasse_diagram
  *
  * \details
- * This is a data structure to store a cell in a general Hasse diagram data structure. 	It store the following information about the cell:
- * References to boundary and coBoundary elements, dimension of a cell and its filtration. It also allow to store any additional
- * information of a type Additional_information which is a template parameter of the class (set by default to void). 
- *
- * Please refer to \ref Hasse_diagram for examples.
- *
- * The complex is a template class requiring the following parameters:
- * Incidence_type_ - determine the type of incidence coefficients. Use integers in most general case. 
- * Filtration_type_ - type of filtration of cells.
- * Additional_information_ (set by default to void) - allows to store any 
- * additional information in the cells of Hasse diagrams.
- *
+ * This is a data structure to store a cell in a general Hasse diagram data structure. 
+ * It store the following information about the cell:
+ *    + references to boundary and coBoundary elements
+ *    + dimension of a cell 
+ *    + its filtration.
+ * 
+ * It also allows to store any additional information if needed.
  */
 template <typename Incidence_type_, typename Filtration_type_ , typename Additional_information_ = void>
 class Hasse_diagram_cell
 {
 public:
-	typedef Incidence_type_ Incidence_type;
-	typedef Filtration_type_ Filtration_type;
-	typedef Additional_information_ Additional_information;
-	using Cell_range = std::vector< std::pair<Hasse_diagram_cell*,Incidence_type> >;
+	/** Determine the type of incidence coefficients. Use integers in most general case. **/
+	using Incidence_type = Incidence_type_;
+	/** Type of filtration of cells. **/
+	using Filtration_type = Filtration_type_;
+	/** Allows to store any additional information in the cells of Hasse diagrams. Default is void). **/
+	using Additional_information = Additional_information_;
+	/** A range over boundaries or coboundaries of a cell. **/ 
+	using Boundary_range = std::vector< std::pair<Hasse_diagram_cell*,Incidence_type> >;
 
     /**
      * Default constructor.
@@ -91,13 +90,13 @@ public:
 	/**
      * Constructor of a cell of dimension dim with a given boundary.
     **/	
-	Hasse_diagram_cell( const Cell_range& boundary_ , int dim ):
+	Hasse_diagram_cell( const Boundary_range& boundary_ , int dim ):
 	dimension(dim),boundary(boundary_),position(0),deleted_(false){}
 
 	/**
      * Constructor of a cell of dimension dim with a given boundary and coboundary.
     **/
-	Hasse_diagram_cell( const Cell_range&  boundary_ , const Cell_range& coboundary_,
+	Hasse_diagram_cell( const Boundary_range&  boundary_ , const Boundary_range& coboundary_,
 		 int dim ):dimension(dim),boundary(boundary_),coBoundary(coboundary_),
 		 position(0),deleted_(false){}
 
@@ -105,7 +104,7 @@ public:
      * Constructor of a cell of dimension dim with a given boundary, coboundary and
      * additional information.
     **/
-	Hasse_diagram_cell( const Cell_range&  boundary_ , const Cell_range&  coboundary_,
+	Hasse_diagram_cell( const Boundary_range&  boundary_ , const Boundary_range&  coboundary_,
 	const Additional_information& ai, int dim ):
 	dimension(dim),boundary(boundary_),coBoundary(coboundary_),additional_info(ai),
 	position(0),deleted_(false){}
@@ -121,14 +120,14 @@ public:
      * is a vector of pairs of pointers to boundary elements and incidence
      * coefficients.
     **/
-	inline Cell_range& get_boundary(){return this->boundary;}
+	inline Boundary_range& get_boundary(){return this->boundary;}
 
 	/**
      * Procedure to get the coboundary of a fiven cell. The output format
      * is a vector of pairs of pointers to coboundary elements and incidence
      * coefficients.
     **/
-	inline Cell_range& get_coBoundary(){return this->coBoundary;}
+	inline Boundary_range& get_coBoundary(){return this->coBoundary;}
 
 	/**
      * Procedure to get the dimension of a cell.
@@ -171,8 +170,8 @@ public:
 	friend class is_before_in_filtration;
 	
 	
-	template <typename Complex_type , typename Cell_type >  
-	friend std::vector<Cell_type*> convert_to_vector_of_Cell_type( Complex_type& cmplx );
+	template <typename Complex_type , typename Cell_type, typename Cell_range>  
+	friend Cell_range convert_to_vector_of_Cell_type( Complex_type& cmplx );
 
 	/**
 	 * Procedure to remove deleted boundary and coboundary elements from the
@@ -180,7 +179,7 @@ public:
 	**/
 	void remove_deleted_elements_from_boundary_and_coboundary()
 	{
-		Cell_range new_boundary;
+		Boundary_range new_boundary;
 		new_boundary.reserve( this->boundary.size() );
 		for ( size_t bd = 0 ; bd != this->boundary.size() ; ++bd )
 		{
@@ -191,7 +190,7 @@ public:
 		}
 		this->boundary.swap( new_boundary );
 
-		Cell_range new_coBoundary;
+		Boundary_range new_coBoundary;
 		new_coBoundary.reserve( this->coBoundary.size() );
 		for ( size_t cbd = 0 ; cbd != this->coBoundary.size() ; ++cbd )
 		{
@@ -295,8 +294,8 @@ public:
 		
 	
 protected:
-	Cell_range boundary;
-	Cell_range coBoundary;
+	Boundary_range boundary;
+	Boundary_range coBoundary;
 	int dimension;
 	Additional_information additional_info;
 	unsigned position;

@@ -506,9 +506,8 @@ void Hasse_diagram<Cell_type>::write_to_file( const char* filename )
  * interface and return vector of Cell_type* based on it. It is used to construct 
  * objects of class Hasse_diagram and Hasse_diagram_persistence
 **/ 
-
-template <typename Complex_type , typename Cell_type>
-std::vector<Cell_type*> convert_to_vector_of_Cell_type( Complex_type& cmplx )
+template <typename Complex_type , typename Cell_type, typename Cell_range = typename std::vector<Cell_type*>>  
+Cell_range convert_to_vector_of_Cell_type( Complex_type& cmplx )
 {
 	bool dbg = false;
 	

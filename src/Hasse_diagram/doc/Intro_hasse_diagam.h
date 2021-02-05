@@ -88,7 +88,7 @@ namespace hasse_diagram {
  * 
  * In order to compute homology or persistent homology of a Hasse diagram, one should
  * use the derived class `Gudhi::hasse_diagram::Hasse_diagram_persistence`. It can be used directly with 
- * `Persistent_cohomology`.
+ * `Gudhi::persistent_cohomology::Persistent_cohomology`.
  * Please consult the example
  * <a href="_hasse_diagram_2_hasse_diagram_torus_example_8cpp-example.html">Hasse_diagram_torus_example.cpp</a>.
  * 
