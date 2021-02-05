@@ -69,6 +69,8 @@ template < typename Cell_type >
 class Hasse_diagram_persistence : public Hasse_diagram<Cell_type>
 {
 public:
+	using Cell_range = typename Gudhi::hasse_diagram::Hasse_diagram<Cell_type>::Cell_range;
+
 	/**
 	 * Default constructor.
 	**/ 
@@ -94,7 +96,7 @@ public:
 	 * boundaries set up. Setting up the coboundaries will be done in the 
 	 * constructor based on the information about boundaries. 
 	**/ 
-    Hasse_diagram_persistence( const std::vector< Cell_type* >& cells_ ):
+    Hasse_diagram_persistence( const Cell_range& cells_ ):
     Hasse_diagram<Cell_type>(cells_)
     {		
 		this->set_up_the_arrays();

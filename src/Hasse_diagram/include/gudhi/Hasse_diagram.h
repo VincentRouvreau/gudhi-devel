@@ -114,7 +114,7 @@ public:
 		size_t number_of_non_deleted_cells = this->cells.size() - this->number_of_deleted_cells;
 		
 		//create a new vector to store the undeleted cells:
-		std::vector< Cell_type* > new_cells;
+		Cell_range new_cells;
 		new_cells.reserve( number_of_non_deleted_cells );
 		//fill the new vector in and adjust the new positions.
 		//In the same time make sure that the boundary and coboundary vectors 
@@ -215,9 +215,8 @@ public:
 	 * A basic iterator that iterate through all the cells in the structure. It is the 
 	 * user's responsibility to check if the cell is deleted or not. 
 	**/ 
-	typedef typename std::vector<Cell_type*>::iterator Simple_all_cells_iterator;
-	typedef typename std::vector<Cell_type*> Simple_all_cells_iterator_range;
-	Simple_all_cells_iterator_range simple_all_cells_iterator_range(){return this->cells;}
+	typedef typename Cell_range::iterator Simple_all_cells_iterator;
+	Cell_range simple_all_cells_iterator_range(){return this->cells;}
 	
 	/**
 	 * Function that display a string being a signature of a structure. 
@@ -519,7 +518,7 @@ std::vector<Cell_type*> convert_to_vector_of_Cell_type( Complex_type& cmplx )
 	}
 	
 	//create vector of cells of suitable length:
-	std::vector< Cell_type* > cells_of_Hasse_diag( cmplx.num_simplices() );
+	std::vector<Cell_type*> cells_of_Hasse_diag( cmplx.num_simplices() );
 	for ( size_t i = 0 ; i != cmplx.num_simplices() ; ++i ) 
 	{
 		cells_of_Hasse_diag[i] = new Cell_type();
