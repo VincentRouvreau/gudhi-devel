@@ -321,7 +321,7 @@ Hasse_diagram<Cell_type>::Hasse_diagram(const char* filename) {
 
 #ifdef DEBUG_TRACES
     std::clog << "Position and dimension of the cell : " << new_cell->position << " , " << new_cell->dimension
-                << std::endl;
+              << std::endl;
 #endif  // DEBUG_TRACES
 
     if (new_cell->position != i) {
