@@ -85,7 +85,10 @@ class Hasse_diagram {
    * that all the cells have boundaries set up. Setting up the coboundaries will
    * be done in the constructor based on the information about boundaries.
    **/
-  Hasse_diagram(const Cell_range& cells_) : cells(cells_), number_of_deleted_cells(0) {
+  template<class CellRange = std::initializer_list<Cell_handle>>
+  Hasse_diagram(const CellRange& cells_)
+   : cells(std::begin(cells_), std::end(cells_)),
+     number_of_deleted_cells(0) {
     this->set_up_positions();
     this->set_up_coboundaries();
   }
