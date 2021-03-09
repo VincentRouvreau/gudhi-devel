@@ -146,7 +146,7 @@ class Hasse_diagram {
     // we still need to check if coboundaries of boundary elements of this
     // cell are set up in the correct way:
     for (size_t bd = 0; bd != cell->boundary.size(); ++bd) {
-      cell->boundary[bd].first->coBoundary.push_back(std::make_pair(cell, cell->boundary[bd].second));
+      cell->boundary[bd].first->coboundary.push_back(std::make_pair(cell, cell->boundary[bd].second));
     }
   }
 
@@ -159,8 +159,8 @@ class Hasse_diagram {
     // a non deleted cell in the coboundary and if this is the case, we
     // will print out the warning, since this can potentially be an error.
     if (enable_checking_validity_of_complex) {
-      for (size_t cbd = 0; cbd != cell->coBoundary.size(); ++cbd) {
-        if (!cell->coBoundary[cbd].first->deleted()) {
+      for (size_t cbd = 0; cbd != cell->coboundary.size(); ++cbd) {
+        if (!cell->coboundary[cbd].first->deleted()) {
           std::cout << "Warning, you are deleting cell which have non-deleted cells in the coboundary. This may lead "
                        "inconsistencies in the data structure.\n";
           break;
@@ -405,13 +405,13 @@ void Hasse_diagram<Cell_type>::set_up_coboundaries() {
 
   // now we reserve the space for all coboundaries
   for (size_t i = 0; i != number_of_cells; ++i) {
-    this->cells[i]->coBoundary.reserve(sizes_of_coboundary[i]);
+    this->cells[i]->coboundary.reserve(sizes_of_coboundary[i]);
   }
 
   // and now we set up the coboundaries.
   for (size_t i = 0; i != number_of_cells; ++i) {
     for (size_t bd = 0; bd != this->cells[i]->boundary.size(); ++bd) {
-      this->cells[this->cells[i]->boundary[bd].first->position]->coBoundary.push_back(
+      this->cells[this->cells[i]->boundary[bd].first->position]->coboundary.push_back(
           std::make_pair(this->cells[i], this->cells[i]->boundary[bd].second));
     }
   }

@@ -47,7 +47,7 @@ class Hasse_diagram;
  * \details
  * This is a data structure to store a cell in a general Hasse diagram data structure.
  * It store the following information about the cell:
- *    + references to boundary and coBoundary elements
+ *    + references to boundary and coboundary elements
  *    + dimension of a cell
  *    + its filtration.
  *
@@ -91,7 +91,7 @@ class Hasse_diagram_cell {
    * Constructor of a cell of dimension dim with a given boundary and coboundary.
    **/
   Hasse_diagram_cell(const Boundary_range& boundary_, const Boundary_range& coboundary_, int dim)
-      : dimension(dim), boundary(boundary_), coBoundary(coboundary_), position(0), deleted_(false) {}
+      : dimension(dim), boundary(boundary_), coboundary(coboundary_), position(0), deleted_(false) {}
 
   /**
    * Constructor of a cell of dimension dim with a given boundary, coboundary and
@@ -101,7 +101,7 @@ class Hasse_diagram_cell {
                      const Additional_information& ai, int dim)
       : dimension(dim),
         boundary(boundary_),
-        coBoundary(coboundary_),
+        coboundary(coboundary_),
         additional_info(ai),
         position(0),
         deleted_(false) {}
@@ -124,7 +124,7 @@ class Hasse_diagram_cell {
    * is a vector of pairs of pointers to coboundary elements and incidence
    * coefficients.
    **/
-  inline Boundary_range& get_coBoundary() { return this->coBoundary; }
+  inline Boundary_range& get_coboundary() { return this->coboundary; }
 
   /**
    * Procedure to get the dimension of a cell.
@@ -182,14 +182,14 @@ class Hasse_diagram_cell {
     }
     this->boundary.swap(new_boundary);
 
-    Boundary_range new_coBoundary;
-    new_coBoundary.reserve(this->coBoundary.size());
-    for (size_t cbd = 0; cbd != this->coBoundary.size(); ++cbd) {
-      if (!this->coBoundary[cbd].first->deleted()) {
-        new_coBoundary.push_back(this->coBoundary[cbd]);
+    Boundary_range new_coboundary;
+    new_coboundary.reserve(this->coboundary.size());
+    for (size_t cbd = 0; cbd != this->coboundary.size(); ++cbd) {
+      if (!this->coboundary[cbd].first->deleted()) {
+        new_coboundary.push_back(this->coboundary[cbd]);
       }
     }
-    this->coBoundary.swap(new_coBoundary);
+    this->coboundary.swap(new_coboundary);
   }
 
   /**
@@ -263,10 +263,10 @@ class Hasse_diagram_cell {
       result += ") ";
     }
 
-    result += " coBoundary ";
-    for (size_t cbd = 0; cbd != this->coBoundary.size(); ++cbd) {
-      result += "( " + std::to_string(this->coBoundary[cbd].first->position);
-      result += " " + std::to_string(this->coBoundary[cbd].second);
+    result += " coboundary ";
+    for (size_t cbd = 0; cbd != this->coboundary.size(); ++cbd) {
+      result += "( " + std::to_string(this->coboundary[cbd].first->position);
+      result += " " + std::to_string(this->coboundary[cbd].second);
       result += ") ";
     }
 
@@ -275,7 +275,7 @@ class Hasse_diagram_cell {
 
  protected:
   Boundary_range boundary;
-  Boundary_range coBoundary;
+  Boundary_range coboundary;
   int dimension;
   Additional_information additional_info;
   unsigned position;

@@ -152,26 +152,26 @@ BOOST_AUTO_TEST_CASE(check_construction) {
   // std::cout << hd.full_signature_of_the_structure();
 
   std::string reference_output =
-      "dimension: 0 filtration: 0.000000 position: 0 deleted_: 0 boundary  coBoundary \
+      "dimension: 0 filtration: 0.000000 position: 0 deleted_: 0 boundary  coboundary \
 ( 1 1) ( 3 1) ( 4 1) ( 12 1) dimension: 1 filtration: 1.000000 position: 1 \
-deleted_: 0 boundary ( 0 1) ( 2 1)  coBoundary ( 5 1) ( 13 1) dimension: 0 \
-filtration: 1.000000 position: 2 deleted_: 0 boundary  coBoundary ( 1 1) ( 3 1) \
+deleted_: 0 boundary ( 0 1) ( 2 1)  coboundary ( 5 1) ( 13 1) dimension: 0 \
+filtration: 1.000000 position: 2 deleted_: 0 boundary  coboundary ( 1 1) ( 3 1) \
 ( 6 1) ( 14 1) dimension: 1 filtration: 1.000000 position: 3 deleted_: 0 boundary \
-( 0 1) ( 2 1)  coBoundary ( 7 1) ( 15 1) dimension: 1 filtration: 1.000000 position: \
-4 deleted_: 0 boundary ( 0 1) ( 8 1)  coBoundary ( 5 1) ( 7 1) dimension: 2 filtration: \
-2.000000 position: 5 deleted_: 0 boundary ( 1 1) ( 4 1) ( 6 1) ( 9 1)  coBoundary dimension: \
-1 filtration: 1.000000 position: 6 deleted_: 0 boundary ( 10 1) ( 2 1)  coBoundary ( 5 1) \
+( 0 1) ( 2 1)  coboundary ( 7 1) ( 15 1) dimension: 1 filtration: 1.000000 position: \
+4 deleted_: 0 boundary ( 0 1) ( 8 1)  coboundary ( 5 1) ( 7 1) dimension: 2 filtration: \
+2.000000 position: 5 deleted_: 0 boundary ( 1 1) ( 4 1) ( 6 1) ( 9 1)  coboundary dimension: \
+1 filtration: 1.000000 position: 6 deleted_: 0 boundary ( 10 1) ( 2 1)  coboundary ( 5 1) \
 ( 7 1) dimension: 2 filtration: 2.000000 position: 7 deleted_: 0 boundary ( 3 1) ( 4 1) \
-( 11 1) ( 6 1)  coBoundary dimension: 0 filtration: 1.000000 position: 8 deleted_: 0 boundary  \
-coBoundary ( 4 1) ( 9 1) ( 11 1) ( 12 1) dimension: 1 filtration: 1.000000 position: 9 \
-deleted_: 0 boundary ( 8 1) ( 10 1)  coBoundary ( 5 1) ( 13 1) dimension: 0 filtration: \
-1.000000 position: 10 deleted_: 0 boundary  coBoundary ( 6 1) ( 9 1) ( 11 1) ( 14 1) dimension: \
-1 filtration: 1.000000 position: 11 deleted_: 0 boundary ( 10 1) ( 8 1)  coBoundary ( 7 1) ( 15 1) \
-dimension: 1 filtration: 1.000000 position: 12 deleted_: 0 boundary ( 0 1) ( 8 1)  coBoundary \
+( 11 1) ( 6 1)  coboundary dimension: 0 filtration: 1.000000 position: 8 deleted_: 0 boundary  \
+coboundary ( 4 1) ( 9 1) ( 11 1) ( 12 1) dimension: 1 filtration: 1.000000 position: 9 \
+deleted_: 0 boundary ( 8 1) ( 10 1)  coboundary ( 5 1) ( 13 1) dimension: 0 filtration: \
+1.000000 position: 10 deleted_: 0 boundary  coboundary ( 6 1) ( 9 1) ( 11 1) ( 14 1) dimension: \
+1 filtration: 1.000000 position: 11 deleted_: 0 boundary ( 10 1) ( 8 1)  coboundary ( 7 1) ( 15 1) \
+dimension: 1 filtration: 1.000000 position: 12 deleted_: 0 boundary ( 0 1) ( 8 1)  coboundary \
 ( 13 1) ( 15 1) dimension: 2 filtration: 2.000000 position: 13 deleted_: 0 boundary ( 9 1) \
-( 12 1) ( 14 1) ( 1 1)  coBoundary dimension: 1 filtration: 1.000000 position: 14 deleted_: 0 \
-boundary ( 10 1) ( 2 1)  coBoundary ( 13 1) ( 15 1) dimension: 2 filtration: 2.000000 position: \
-15 deleted_: 0 boundary ( 11 1) ( 14 1) ( 12 1) ( 3 1)  coBoundary ";
+( 12 1) ( 14 1) ( 1 1)  coboundary dimension: 1 filtration: 1.000000 position: 14 deleted_: 0 \
+boundary ( 10 1) ( 2 1)  coboundary ( 13 1) ( 15 1) dimension: 2 filtration: 2.000000 position: \
+15 deleted_: 0 boundary ( 11 1) ( 14 1) ( 12 1) ( 3 1)  coboundary ";
 
   BOOST_CHECK(reference_output.compare(hd.full_signature_of_the_structure()) == 0);
 
@@ -199,23 +199,23 @@ BOOST_AUTO_TEST_CASE(Hasse_diagram_from_file_test) {
   // std::cout << hd.full_signature_of_the_structure();
 
   std::string reference_output =
-      "dimension: 0 filtration: 0.000000 position: 0 deleted_: 0 boundary  coBoundary ( 4 1) \
+      "dimension: 0 filtration: 0.000000 position: 0 deleted_: 0 boundary  coboundary ( 4 1) \
 ( 5 1) ( 8 1) ( 9 1) dimension: 0 filtration: 0.000000 position: 1 deleted_: 0 boundary  \
-coBoundary ( 6 1) ( 7 1) ( 8 1) ( 9 1) dimension: 0 filtration: 0.000000 position: 2 deleted_: \
-0 boundary  coBoundary ( 4 1) ( 5 1) ( 10 1) ( 11 1) dimension: 0 filtration: 0.000000 position: 3 \
-deleted_: 0 boundary  coBoundary ( 6 1) ( 7 1) ( 10 1) ( 11 1) dimension: 1 filtration: 0.000000 position: \
-4 deleted_: 0 boundary ( 0 1) ( 2 1)  coBoundary ( 12 1) ( 13 1) dimension: 1 filtration: 0.000000 position: \
-5 deleted_: 0 boundary ( 0 1) ( 2 1)  coBoundary ( 14 1) ( 15 1) dimension: 1 filtration: 0.000000 position: \
-6 deleted_: 0 boundary ( 1 1) ( 3 1)  coBoundary ( 12 1) ( 13 1) dimension: 1 filtration: 0.000000 position: \
-7 deleted_: 0 boundary ( 1 1) ( 3 1)  coBoundary ( 14 1) ( 15 1) dimension: 1 filtration: 0.000000 position: \
-8 deleted_: 0 boundary ( 0 1) ( 1 1)  coBoundary ( 12 1) ( 14 1) dimension: 1 filtration: 0.000000 position: \
-9 deleted_: 0 boundary ( 0 1) ( 1 1)  coBoundary ( 13 1) ( 15 1) dimension: 1 filtration: 0.000000 position: \
-10 deleted_: 0 boundary ( 2 1) ( 3 1)  coBoundary ( 12 1) ( 14 1) dimension: 1 filtration: 0.000000 position: \
-11 deleted_: 0 boundary ( 2 1) ( 3 1)  coBoundary ( 13 1) ( 15 1) dimension: 2 filtration: 0.000000 position: \
-12 deleted_: 0 boundary ( 4 1) ( 6 1) ( 8 1) ( 10 1)  coBoundary dimension: 2 filtration: 0.000000 position: \
-13 deleted_: 0 boundary ( 4 1) ( 6 1) ( 9 1) ( 11 1)  coBoundary dimension: 2 filtration: 0.000000 position: \
-14 deleted_: 0 boundary ( 5 1) ( 7 1) ( 8 1) ( 10 1)  coBoundary dimension: 2 filtration: 0.000000 position: \
-15 deleted_: 0 boundary ( 5 1) ( 7 1) ( 9 1) ( 11 1)  coBoundary ";
+coboundary ( 6 1) ( 7 1) ( 8 1) ( 9 1) dimension: 0 filtration: 0.000000 position: 2 deleted_: \
+0 boundary  coboundary ( 4 1) ( 5 1) ( 10 1) ( 11 1) dimension: 0 filtration: 0.000000 position: 3 \
+deleted_: 0 boundary  coboundary ( 6 1) ( 7 1) ( 10 1) ( 11 1) dimension: 1 filtration: 0.000000 position: \
+4 deleted_: 0 boundary ( 0 1) ( 2 1)  coboundary ( 12 1) ( 13 1) dimension: 1 filtration: 0.000000 position: \
+5 deleted_: 0 boundary ( 0 1) ( 2 1)  coboundary ( 14 1) ( 15 1) dimension: 1 filtration: 0.000000 position: \
+6 deleted_: 0 boundary ( 1 1) ( 3 1)  coboundary ( 12 1) ( 13 1) dimension: 1 filtration: 0.000000 position: \
+7 deleted_: 0 boundary ( 1 1) ( 3 1)  coboundary ( 14 1) ( 15 1) dimension: 1 filtration: 0.000000 position: \
+8 deleted_: 0 boundary ( 0 1) ( 1 1)  coboundary ( 12 1) ( 14 1) dimension: 1 filtration: 0.000000 position: \
+9 deleted_: 0 boundary ( 0 1) ( 1 1)  coboundary ( 13 1) ( 15 1) dimension: 1 filtration: 0.000000 position: \
+10 deleted_: 0 boundary ( 2 1) ( 3 1)  coboundary ( 12 1) ( 14 1) dimension: 1 filtration: 0.000000 position: \
+11 deleted_: 0 boundary ( 2 1) ( 3 1)  coboundary ( 13 1) ( 15 1) dimension: 2 filtration: 0.000000 position: \
+12 deleted_: 0 boundary ( 4 1) ( 6 1) ( 8 1) ( 10 1)  coboundary dimension: 2 filtration: 0.000000 position: \
+13 deleted_: 0 boundary ( 4 1) ( 6 1) ( 9 1) ( 11 1)  coboundary dimension: 2 filtration: 0.000000 position: \
+14 deleted_: 0 boundary ( 5 1) ( 7 1) ( 8 1) ( 10 1)  coboundary dimension: 2 filtration: 0.000000 position: \
+15 deleted_: 0 boundary ( 5 1) ( 7 1) ( 9 1) ( 11 1)  coboundary ";
 
   BOOST_CHECK(reference_output.compare(hd.full_signature_of_the_structure()) == 0);
 }
