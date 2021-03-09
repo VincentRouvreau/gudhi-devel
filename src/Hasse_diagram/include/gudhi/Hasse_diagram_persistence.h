@@ -113,8 +113,20 @@ class Hasse_diagram_persistence : public Hasse_diagram<Cell_type> {
   // From here on we have implementation of methods that are required to use
   // this class with persistent homology engine.
 
+  /** \brief Type for the value of the filtration function.
+   **/
   typedef typename Cell_type::Filtration_type Filtration_value;
+
+  /** \brief Handle type to a key contained in the chain complex represented by the Hasse diagram.
+   *
+   * They are essentially indices into internal sorted filtration vector, created by `set_up_the_arrays`.
+   * `simplex(key = 0)` will return the handle on the simplex with the lowest filtration, and so on.
+   * */
   typedef unsigned Simplex_key;
+
+  /** \brief Handle type to a simplex contained in the chain complex represented by the Hasse diagram.
+   *
+   * They are essentially indices into internal vectors. */
   typedef Simplex_key Simplex_handle;
 
   size_t num_simplices() { return this->cells.size(); }
@@ -347,6 +359,9 @@ class Hasse_diagram_persistence : public Hasse_diagram<Cell_type> {
   //********************************************************************************************
   typedef typename std::vector<Simplex_handle>::iterator Boundary_simplex_iterator;
   typedef typename std::vector<Simplex_handle> Boundary_simplex_range;
+  /** \brief Returns a range over the simplices of the boundary of a simplex.
+   *
+   * @param[in] sh Simplex for which the boundary is computed. */
   Boundary_simplex_range boundary_simplex_range(Simplex_handle sh) {
     return this->cells[sh]->get_list_of_positions_of_boundary_elements();
   }
