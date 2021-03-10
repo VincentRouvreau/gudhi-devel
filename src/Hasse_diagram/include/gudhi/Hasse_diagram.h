@@ -149,7 +149,7 @@ class Hasse_diagram {
   }
 
   /**
-   * Procedure that allows to remove a cell into the structure.
+   * Procedure that allows to remove a cell of the structure.
    **/
   void remove_cell(Cell_handle cell) {
     // if the flag enable_checking_validity_of_complex is set to true,
