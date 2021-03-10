@@ -137,7 +137,7 @@ class Hasse_diagram_cell {
   inline Additional_information& get_additional_information() { return this->additional_info; }
 
   /**
-   * Procedure to retrive position of the cell in the structure. It is used in
+   * Procedure to retrieve position of the cell in the structure. It is used in
    * the implementation of Hasse diagram and set by it. Note that removal of
    * cell and subsequent call of clean_up_the_structure will change those
    * positions.
