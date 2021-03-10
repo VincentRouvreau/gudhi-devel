@@ -55,8 +55,6 @@ class is_before_in_filtration;
  * are the ones required by Gudhi for persistent homology computations. Please
  * refer to Hasse_diagram class for further details
  *
- * Please refer to \ref Hasse_diagram for examples.
- *
  * The complex is a template class requiring the following parameters:
  * Cell_type - a parameter describing a cell of Hasse diagram. Please refer to Hasse_diagram_cell.h for further details.
  *
