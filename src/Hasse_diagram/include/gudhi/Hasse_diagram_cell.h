@@ -210,7 +210,7 @@ class Hasse_diagram_cell {
   }
 
   /**
-   * Procedure that return vector of pointers to boundary elements of a given cell.
+   * Procedure that returns vector of pointers to boundary elements of a given cell.
    **/
   inline std::vector<Hasse_diagram_cell*> get_list_of_boundary_elements() {
     std::vector<Hasse_diagram_cell*> result;
@@ -223,7 +223,7 @@ class Hasse_diagram_cell {
   }
 
   /**
-   * Procedure that return vector of positions of boundary elements of a given cell.
+   * Procedure that returns vector of positions of boundary elements of a given cell.
    **/
   inline std::vector<unsigned> get_list_of_positions_of_boundary_elements() {
     std::vector<unsigned> result;
@@ -236,7 +236,7 @@ class Hasse_diagram_cell {
   }
 
   /**
-   * Function that display a string being a signature of a structure.
+   * Function that displays a string being a signature of a structure.
    * Used mainly for debugging purposes.
    **/
   std::string full_signature_of_the_structure() {

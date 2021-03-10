@@ -104,12 +104,12 @@ class Cell_type {
   friend std::ostream& operator<<(std::ostream& out, const Cell_type& c);
 
   /**
-   * Procedure that return vector of positios of boundary elements of a given cell.
+   * Procedure that returns vector of positios of boundary elements of a given cell.
    **/
   inline std::vector<unsigned> get_list_of_positions_of_boundary_elements();
 
   /**
-   * Function that display a string being a signature of a structure.
+   * Function that displays a string being a signature of a structure.
    * Used mainly for debugging purposes, but required for the tests.
    **/
   std::string full_signature_of_the_structure();

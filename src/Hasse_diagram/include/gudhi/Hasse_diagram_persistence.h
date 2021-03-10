@@ -25,7 +25,7 @@
 #include <algorithm>
 #include <string>
 #include <sstream>
-#include <numeric>
+#include <numeric>  // for std::iota
 
 #ifdef GUDHI_USE_TBB
 #include <tbb/parallel_sort.h>

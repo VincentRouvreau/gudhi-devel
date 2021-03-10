@@ -136,7 +136,7 @@ class Hasse_diagram {
   }
 
   /**
-   * Procedure that allow to add a cell into the structure. This procedure
+   * Procedure that allows to add a cell into the structure. This procedure
    * automatically fill in coboundaries of boundary elements, so do not
    * duplicate it.
    **/
@@ -151,7 +151,7 @@ class Hasse_diagram {
   }
 
   /**
-   * Procedure that allow to remove a cell into the structure.
+   * Procedure that allows to remove a cell into the structure.
    **/
   void remove_cell(Cell_handle cell) {
     // if the flag enable_checking_validity_of_complex is set to true,
@@ -200,7 +200,7 @@ class Hasse_diagram {
   friend class is_before_in_dimension<Cell_type>;
 
   /**
-   * A basic iterator that iterate through all the cells in the structure. It is the
+   * A basic iterator that iterates through all the cells in the structure. It is the
    * user's responsibility to check if the cell is deleted or not.
    **/
   typedef typename Cell_range::iterator Simple_all_cells_iterator;
@@ -443,7 +443,7 @@ void Hasse_diagram<Cell_type>::write_to_file(const char* filename) {
 }  // template < typename Cell_type >
 
 /**
- * This is a function that take any representation that implements Hasse_complex interface and a cell range based on
+ * This is a function that takes any representation that implements Hasse_complex interface and a cell range based on
  * it. It is used to construct objects of class Hasse_diagram and Hasse_diagram_persistence.
  **/
 template <typename Complex_type, typename Cell_type, typename Cell_range = typename std::vector<Cell_type*>>
