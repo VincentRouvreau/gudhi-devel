@@ -236,7 +236,7 @@ class Hasse_diagram_cell {
   }
 
   /**
-   * Function that displays a string being a signature of a structure.
+   * Function that returns a string containing the signature of this structure.
    * Used mainly for debugging purposes.
    **/
   std::string full_signature_of_the_structure() {

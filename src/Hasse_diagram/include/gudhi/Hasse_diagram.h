@@ -207,7 +207,7 @@ class Hasse_diagram {
   Cell_range simple_all_cells_iterator_range() { return this->cells; }
 
   /**
-   * Function that display a string being a signature of a structure.
+   * Function that returns a string containing the signature of this structure.
    * Used mainly for debugging purposes.
    **/
   std::string full_signature_of_the_structure() {

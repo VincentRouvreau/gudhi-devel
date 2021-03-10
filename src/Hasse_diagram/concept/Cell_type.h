@@ -48,18 +48,18 @@ class Cell_type {
   inline std::vector<std::pair<Cell_type*, Incidence_type> >& get_boundary();
 
   /**
-   * Return the dimension of a cell.
+   * Returns the dimension of a cell.
    **/
   inline unsigned& get_dimension();
 
   /**
-   * Return position of a cell in a structure. Class Cell_type is required
-   * to be able to store a its position in a Hasse diagram.
+   * Returns position of a cell in a structure. Class Cell_type is required
+   * to be able to store its position in a Hasse diagram.
    **/
   inline size_t& get_position();
 
   /**
-   * Return the filtration of the cell.
+   * Returns the filtration of the cell.
    **/
   inline Filtration_type& get_filtration();
 
@@ -71,13 +71,13 @@ class Cell_type {
   inline bool deleted();
 
   /**
-   * Have to be a friend to a class Hasse_diagram implemented in Hasse_diagram.h
+   * Has to be a friend to a class Hasse_diagram implemented in Hasse_diagram.h
    **/
   template <typename Cell_type>
   friend class Hasse_diagram;
 
   /**
-   * Have to be a friend with a class is_before_in_filtration implemented in
+   * Has to be a friend with a class is_before_in_filtration implemented in
    * Hasse_diagram_persistence.h. It is required to sort the cells according
    * filtration in the persistence algorithm.
    **/
@@ -85,7 +85,7 @@ class Cell_type {
   friend class is_before_in_filtration;
 
   /**
-   * Function convert_to_cell_range is used to cinvert any class that
+   * Function convert_to_cell_range is used to convert any class that
    * implement Hasse_complex interface into Hasse diagram.
    **/
   template <typename Complex_type, typename Cell_type, typename Cell_range>
@@ -104,12 +104,12 @@ class Cell_type {
   friend std::ostream& operator<<(std::ostream& out, const Cell_type& c);
 
   /**
-   * Procedure that returns vector of positios of boundary elements of a given cell.
+   * Procedure that returns vector of positions of boundary elements of a given cell.
    **/
   inline std::vector<unsigned> get_list_of_positions_of_boundary_elements();
 
   /**
-   * Function that displays a string being a signature of a structure.
+   * Function that returns a string containing the signature of this structure.
    * Used mainly for debugging purposes, but required for the tests.
    **/
   std::string full_signature_of_the_structure();

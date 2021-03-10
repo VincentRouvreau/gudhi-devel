@@ -96,7 +96,7 @@ class Hasse_diagram_persistence : public Hasse_diagram<Cell_type> {
    * A version of clean up structure for the Hasse_diagram_persistence
    * class. Note that before computations of the persistence the structure
    * should be cleaned up. This procedure have to be invoked before computations
-   * of persistent homology if some removal operations has been performed on
+   * of persistent homology if some removal operations have been performed on
    * the structure of Hasse diagram.
    **/
   void clean_up_the_structure() {
@@ -105,8 +105,8 @@ class Hasse_diagram_persistence : public Hasse_diagram<Cell_type> {
   }
 
   /**
-   * A procedure that need to be called before computations of persistence after some
-   * addition (but not removal) operations has been performed on the structure.
+   * A procedure that needs to be called before computations of persistence after some
+   * addition (but not removal) operations have been performed on the structure.
    **/
   void set_up_the_arrays();
 
