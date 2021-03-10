@@ -145,7 +145,7 @@ class Hasse_diagram_cell {
   inline unsigned& get_position() { return this->position; }
 
   /**
-   * Accessing the filtration of the cell.
+   * Returns the filtration value of the cell.
    **/
   inline Filtration_type& get_filtration() {
     // std::cout << "Accessing the filtration of a cell : " << *this << std::endl;
