@@ -53,8 +53,6 @@ class is_before_in_dimension;
  * persistent homology. For that purpose, please use the derived class provided in
  * Hasse_diagram_persistence.h
  *
- * Please refer to \ref Hasse_diagram for examples.
- *
  * The complex is a template class requiring the following parameters:
  * Cell_type - a parameter describing a cell of Hasse diagram. Please refer to Hasse_diagram_cell.h for further details.
  *
