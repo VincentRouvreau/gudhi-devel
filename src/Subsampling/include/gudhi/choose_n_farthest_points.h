@@ -13,6 +13,8 @@
 
 #include <boost/range.hpp>
 
+#include <CGAL/number_utils.h>
+
 #include <gudhi/Null_output_iterator.h>
 
 #include <iterator>
@@ -102,9 +104,9 @@ void choose_n_farthest_points(Distance dist,
     *dist_it++ = dist_to_L[curr_max_w];
     std::size_t i = 0;
     for (auto&& p : input_pts) {
-      double curr_dist = dist(p, input_pts[curr_max_w]);
+      auto curr_dist = dist(p, input_pts[curr_max_w]);
       if (curr_dist < dist_to_L[i])
-        dist_to_L[i] = curr_dist;
+        dist_to_L[i] = CGAL::to_double(curr_dist);
       ++i;
     }
     // choose the next curr_max_w

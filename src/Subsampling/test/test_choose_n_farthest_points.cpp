@@ -21,15 +21,16 @@
 #include <vector>
 #include <iterator>
 
+#include <CGAL/Epeck_d.h>
 #include <CGAL/Epick_d.h>
 
-typedef CGAL::Epick_d<CGAL::Dynamic_dimension_tag> K;
-typedef typename K::FT FT;
-typedef typename K::Point_d Point_d;
 
-typedef boost::mpl::list<CGAL::Epick_d<CGAL::Dynamic_dimension_tag>, CGAL::Epick_d<CGAL::Dimension_tag<4>>> list_of_tested_kernels;
+typedef boost::mpl::list<CGAL::Epeck_d<CGAL::Dynamic_dimension_tag>, CGAL::Epeck_d<CGAL::Dimension_tag<4>>,
+                         CGAL::Epick_d<CGAL::Dynamic_dimension_tag>, CGAL::Epick_d<CGAL::Dimension_tag<4>>> list_of_tested_kernels;
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(test_choose_farthest_point, Kernel, list_of_tested_kernels) {
+  static_assert(std::numeric_limits<CGAL::Epeck_d<CGAL::Dimension_tag<4>>::FT>::has_infinity, "the number type needs to support infinity()");
+  CGAL::Epeck_d<CGAL::Dimension_tag<4>>::FT inf = std::numeric_limits<CGAL::Epeck_d<CGAL::Dimension_tag<4>>::FT>::infinity();
   typedef typename Kernel::FT FT;
   typedef typename Kernel::Point_d Point_d;
   std::vector< Point_d > points, landmarks;
@@ -59,8 +60,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(test_choose_farthest_point_limits, Kernel, list_of
   typedef typename Kernel::FT FT;
   typedef typename Kernel::Point_d Point_d;
   std::vector< Point_d > points, landmarks;
-  std::vector< FT > distances;
-  landmarks.clear();
+  std::vector< double > distances;
   Kernel k;
   auto d = k.squared_distance_d_object();
   // Choose -1 farthest points in an empty point cloud
@@ -81,7 +81,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(test_choose_farthest_point_limits, Kernel, list_of
   // Choose -1 farthest points in a one point cloud
   Gudhi::subsampling::choose_n_farthest_points(d, points, -1, -1, std::back_inserter(landmarks), std::back_inserter(distances));
   BOOST_CHECK(landmarks.size() == 1 && distances.size() == 1);
-  BOOST_CHECK(distances[0] == std::numeric_limits<FT>::infinity());
+  BOOST_CHECK(distances[0] == std::numeric_limits<double>::infinity());
   landmarks.clear(); distances.clear();
   // Choose 0 farthest points in a one point cloud
   Gudhi::subsampling::choose_n_farthest_points(d, points, 0, -1, std::back_inserter(landmarks), std::back_inserter(distances));
@@ -90,7 +90,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(test_choose_farthest_point_limits, Kernel, list_of
   // Choose 1 farthest points in a one point cloud
   Gudhi::subsampling::choose_n_farthest_points(d, points, 1, -1, std::back_inserter(landmarks), std::back_inserter(distances));
   BOOST_CHECK(landmarks.size() == 1 && distances.size() == 1);
-  BOOST_CHECK(distances[0] == std::numeric_limits<FT>::infinity());
+  BOOST_CHECK(distances[0] == std::numeric_limits<double>::infinity());
   landmarks.clear(); distances.clear();
 
   std::vector<FT> point2({1.0, 0.0, 0.0, 0.0});
@@ -98,7 +98,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(test_choose_farthest_point_limits, Kernel, list_of
   // Choose all farthest points among 2 points
   Gudhi::subsampling::choose_n_farthest_points(d, points, -1, -1, std::back_inserter(landmarks), std::back_inserter(distances));
   BOOST_CHECK(landmarks.size() == 2 && distances.size() == 2);
-  BOOST_CHECK(distances[0] == std::numeric_limits<FT>::infinity());
+  BOOST_CHECK(distances[0] == std::numeric_limits<double>::infinity());
   BOOST_CHECK(distances[1] == 1);
   landmarks.clear(); distances.clear();
 
@@ -106,7 +106,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(test_choose_farthest_point_limits, Kernel, list_of
   points.emplace_back(point.begin(), point.end());
   Gudhi::subsampling::choose_n_farthest_points(d, points, -1, -1, std::back_inserter(landmarks), std::back_inserter(distances));
   BOOST_CHECK(landmarks.size() == 2 && distances.size() == 2);
-  BOOST_CHECK(distances[0] == std::numeric_limits<FT>::infinity());
+  BOOST_CHECK(distances[0] == std::numeric_limits<double>::infinity());
   BOOST_CHECK(distances[1] == 1);
   landmarks.clear(); distances.clear();
 }
