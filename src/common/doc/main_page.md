@@ -31,6 +31,30 @@
 
 ### Simplicial complexes
 
+#### Hasse diagram
+
+<table>
+  <tr>
+    <td width="35%" rowspan=2>
+      \image html "Hasse_diag.png"
+    </td>
+    <td width="50%">
+    Hasse diagram is a general data structure to store cell complexes and chain complexes. It allows constant time 
+    access to boundary and coboundary elements of a cell.
+    </td>
+    <td width="15%">
+      <b>Author:</b> Pawel Dlotko<br>
+      <b>Introduced in:</b> GUDHI ?.?.?<br>
+      <b>Copyright:</b> MIT<br>
+    </td>
+ </tr>
+ <tr>
+    <td colspan=2 height="25">
+    <b>User manual:</b> \ref hasse_diagram
+    </td>
+ </tr>
+</table>
+
 #### Simplex tree
 <table>
   <tr>
