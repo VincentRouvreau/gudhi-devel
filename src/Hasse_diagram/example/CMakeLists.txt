@@ -1,5 +1,4 @@
-cmake_minimum_required(VERSION 2.6)
-project(Hasse_diagram)
+project(Hasse_diagram_examples)
 
 add_executable ( Hasse_diagram_example Hasse_diagram_example.cpp )
 if (TBB_FOUND)

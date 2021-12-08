@@ -147,10 +147,8 @@ BOOST_AUTO_TEST_CASE(check_construction)
 	boundary_of_P.push_back( std::pair<Cell*,int>( M,1 ) );
 	boundary_of_P.push_back( std::pair<Cell*,int>( D,1 ) );   
 
-	std::vector< Cell* > vect_of_cells = {A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P};
-
 	//Here is a construction of a standard Hasse diagram:
-	Hasse_diag hd( vect_of_cells );  
+	Hasse_diag hd( {A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P} );  
 	
 	//std::cout << hd.full_signature_of_the_structure();
 	
