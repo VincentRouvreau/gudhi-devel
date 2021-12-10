@@ -20,10 +20,6 @@
  *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define BOOST_TEST_DYN_LINK
-#define BOOST_TEST_MODULE "Hasse_diagram"
-#include <boost/test/unit_test.hpp>
-
 #include <gudhi/reader_utils.h>
 #include <gudhi/Hasse_diagram.h>
 #include <gudhi/Hasse_diagram_persistence.h>
@@ -35,8 +31,12 @@
 
 // standard stuff
 #include <iostream>
-#include <sstream>
 #include <vector>
+#include <sstream>
+
+#define BOOST_TEST_DYN_LINK
+#define BOOST_TEST_MODULE "Hasse_diagram"
+#include <boost/test/unit_test.hpp>
 
 typedef Gudhi::Hasse_diagram::Hasse_diagram_cell<int, double, double> Cell;
 typedef Gudhi::Hasse_diagram::Hasse_diagram<Cell> Hasse_diag;

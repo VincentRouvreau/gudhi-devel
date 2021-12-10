@@ -24,8 +24,6 @@
 #include <gudhi/Hasse_diagram.h>
 #include <gudhi/Hasse_diagram_persistence.h>
 #include <gudhi/Persistent_cohomology.h>
-
-#include <gudhi/reader_utils.h>
 #include <gudhi/Bitmap_cubical_complex.h>
 
 // standard stuff

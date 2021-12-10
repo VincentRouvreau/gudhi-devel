@@ -194,7 +194,7 @@ int main() {
   hd.add_cell(w);
 
   // After adding up new cells to the structures some arrays using to compute
-  //(persistent) homology may not be valid. To make them valid we call set_up_the_arrays.
+  // (persistent) homology may not be valid. To make them valid we call set_up_the_arrays.
   // Note that this is only the case after addition. If there are removals, please
   // call clean_up_the_structure(), which automatically call set_up_the_arrays().
   hd.set_up_the_arrays();

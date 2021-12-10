@@ -25,6 +25,7 @@
 #include <algorithm>
 #include <string>
 #include <sstream>
+#include <utility>  // for std::make_pair
 
 #include <gudhi/Hasse_diagram_cell.h>
 
@@ -115,7 +116,7 @@ class Hasse_diagram {
     for (size_t i = 0; i != this->cells.size(); ++i) {
       if (!this->cells[i]->deleted()) {
         new_cells.push_back(this->cells[i]);
-        this->cells[i]->position = static_cast<unsigned>(counter);
+        this->cells[i]->position_ = static_cast<unsigned>(counter);
         this->cells[i]->remove_deleted_elements_from_boundary_and_coboundary();
         ++counter;
       } else {
@@ -133,12 +134,12 @@ class Hasse_diagram {
    * duplicate it.
    **/
   void add_cell(Cell_type* cell) {
-    cell->position = static_cast<unsigned>(this->cells.size());
+    cell->position_ = static_cast<unsigned>(this->cells.size());
     this->cells.push_back(cell);
     // we still need to check if cobounadies of boundary elements of this
     // cell are set up in the correct way:
-    for (size_t bd = 0; bd != cell->boundary.size(); ++bd) {
-      cell->boundary[bd].first->coBoundary.push_back(std::make_pair(cell, cell->boundary[bd].second));
+    for (size_t bd = 0; bd != cell->boundary_.size(); ++bd) {
+      cell->boundary_[bd].first->coboundary_.push_back(std::make_pair(cell, cell->boundary_[bd].second));
     }
   }
 
@@ -151,8 +152,8 @@ class Hasse_diagram {
     // a non deleted cell in the coboundary and if this is the case, we
     // will print out the warning, since this can potentially be an error.
     if (enable_checking_validity_of_complex) {
-      for (size_t cbd = 0; cbd != cell->coBoundary.size(); ++cbd) {
-        if (!cell->coBoundary[cbd].first->deleted()) {
+      for (size_t cbd = 0; cbd != cell->coboundary_.size(); ++cbd) {
+        if (!cell->coboundary_[cbd].first->deleted()) {
           std::cout << "Warning, you are deleting cell which have non-deleted cells in the coboundary. This may lead "
                        "inconsistencies in the data structure.\n";
           break;
@@ -312,24 +313,24 @@ Hasse_diagram<Cell_type>::Hasse_diagram(const char* filename) {
     iss.str("");
     iss.clear();
     iss << line;
-    iss >> new_cell->position >> new_cell->dimension;
+    iss >> new_cell->position_ >> new_cell->dimension_;
 
     if (dbg)
-      std::cout << "Position and dimension of the cell : " << new_cell->position << " , " << new_cell->dimension
+      std::cout << "Position and dimension of the cell : " << new_cell->position_ << " , " << new_cell->dimension_
                 << std::endl;
 
-    if (new_cell->position != i) {
+    if (new_cell->position_ != i) {
       std::cerr << "Wrong numeration of cells in the file. Cell number : " << i
-                << " is marked as : " << new_cell->position << " in the file." << std::endl;
+                << " is marked as : " << new_cell->position_ << " in the file." << std::endl;
       throw "Wrong numeration of cells in the file.";
     }
     if (iss.good()) {
       // in this case we still have a filtration value to be read
       // from the file.
-      iss >> new_cell->filtration;
-      if (dbg) std::cout << "Filtration of the cell : " << new_cell->filtration << std::endl;
+      iss >> new_cell->filtration_;
+      if (dbg) std::cout << "Filtration of the cell : " << new_cell->filtration_ << std::endl;
     } else {
-      new_cell->filtration = 0;
+      new_cell->filtration_ = 0;
     }
 
     std::getline(in, line);
@@ -359,12 +360,12 @@ Hasse_diagram<Cell_type>::Hasse_diagram(const char* filename) {
     }
 
     size_of_last_boundary = bdry.size();
-    new_cell->boundary.reserve(size_of_last_boundary);
+    new_cell->boundary_.reserve(size_of_last_boundary);
     for (size_t bd = 0; bd != size_of_last_boundary; ++bd) {
-      new_cell->boundary.push_back(std::make_pair(this->cells[bdry[bd].first], bdry[bd].second));
+      new_cell->boundary_.push_back(std::make_pair(this->cells[bdry[bd].first], bdry[bd].second));
     }
     if (dbg) {
-      std::cout << "new_cell->boundary.size() : " << new_cell->boundary.size() << std::endl;
+      std::cout << "new_cell->boundary_.size() : " << new_cell->boundary_.size() << std::endl;
       std::cout << "Done with this cell. \n";
       getchar();
     }
@@ -392,14 +393,14 @@ void Hasse_diagram<Cell_type>::set_up_coboundaries() {
 
   // now we reserve the space for all coboundaries
   for (size_t i = 0; i != number_of_cells; ++i) {
-    this->cells[i]->coBoundary.reserve(sizes_of_coboundary[i]);
+    this->cells[i]->coboundary_.reserve(sizes_of_coboundary[i]);
   }
 
   // and now we set up the coboundaries.
   for (size_t i = 0; i != number_of_cells; ++i) {
-    for (size_t bd = 0; bd != this->cells[i]->boundary.size(); ++bd) {
-      this->cells[this->cells[i]->boundary[bd].first->position]->coBoundary.push_back(
-          std::make_pair(this->cells[i], this->cells[i]->boundary[bd].second));
+    for (size_t bd = 0; bd != this->cells[i]->boundary_.size(); ++bd) {
+      this->cells[this->cells[i]->boundary_[bd].first->position_]->coboundary_.push_back(
+          std::make_pair(this->cells[i], this->cells[i]->boundary_[bd].second));
     }
   }
 }
@@ -493,15 +494,15 @@ std::vector<Cell_type*> convert_to_vector_of_Cell_type(Complex_type& cmplx) {
     }
 
     // get the boundary in the Hasse diagram format:
-    this_cell->boundary.reserve(boundary.size());
+    this_cell->boundary_.reserve(boundary.size());
     typename Cell_type::Incidence_type incidence = 1;
     for (size_t bd = 0; bd != boundary.size(); ++bd) {
-      this_cell->boundary.push_back(std::make_pair(cells_of_Hasse_diag[boundary[bd]], incidence));
+      this_cell->boundary_.push_back(std::make_pair(cells_of_Hasse_diag[boundary[bd]], incidence));
       incidence *= -1;
     }
 
     if (dbg) {
-      std::cout << "this_cell->boundary.size() : " << this_cell->boundary.size() << std::endl;
+      std::cout << "this_cell->boundary_.size() : " << this_cell->boundary_.size() << std::endl;
       std::cerr << "Set up for this cell \n";
       getchar();
     }

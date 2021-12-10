@@ -25,7 +25,9 @@
 #include <algorithm>
 #include <string>
 #include <sstream>
-#include <numeric>
+#include <numeric>  // for std::iota
+#include <limits>  // for std::numeric_limits<>
+#include <utility>  // for std::pair<>
 
 #ifdef GUDHI_USE_TBB
 #include <tbb/parallel_sort.h>
@@ -177,9 +179,9 @@ class Hasse_diagram_persistence : public Hasse_diagram<Cell_type> {
     this->cell_associated_to_key[key] = sh;
   }
 
-  //********************************************************************************************
-  //									FILTRATION SIMPLEX ITERATOR
-  //********************************************************************************************
+  // ********************************************************************************************
+  //                                    FILTRATION SIMPLEX ITERATOR
+  // ********************************************************************************************
   class Filtration_simplex_range;
   class Filtration_simplex_iterator : std::iterator<std::input_iterator_tag, Simplex_handle> {
     // Iterator over all simplices of the complex in the order of the indexing scheme.
@@ -250,11 +252,11 @@ class Hasse_diagram_persistence : public Hasse_diagram<Cell_type> {
   };
 
   Filtration_simplex_range filtration_simplex_range() { return Filtration_simplex_range(this); }
-  //********************************************************************************************
+  // ********************************************************************************************
 
-  //********************************************************************************************
-  //									SKELETON SIMPLEX ITERATOR
-  //********************************************************************************************
+  // ********************************************************************************************
+  //                                    SKELETON SIMPLEX ITERATOR
+  // ********************************************************************************************
   class Skeleton_simplex_range;
   class Skeleton_simplex_iterator : std::iterator<std::input_iterator_tag, Simplex_handle> {
    public:
@@ -341,11 +343,11 @@ class Hasse_diagram_persistence : public Hasse_diagram<Cell_type> {
    * Function needed for compatibility with Gudhi. Not useful for other purposes.
    **/
   Skeleton_simplex_range skeleton_simplex_range(unsigned dimension) { return Skeleton_simplex_range(this, dimension); }
-  //********************************************************************************************
+  // ********************************************************************************************
 
-  //********************************************************************************************
-  //									BOUNDARY SIMPLEX ITERATOR
-  //********************************************************************************************
+  // ********************************************************************************************
+  //                                    BOUNDARY SIMPLEX ITERATOR
+  // ********************************************************************************************
   typedef typename std::vector<Simplex_handle>::iterator Boundary_simplex_iterator;
   typedef typename std::vector<Simplex_handle> Boundary_simplex_range;
   Boundary_simplex_range boundary_simplex_range(Simplex_handle sh) {
@@ -367,8 +369,8 @@ class is_before_in_filtration {
     typedef typename Cell_type::Filtration_type Filtration_value;
     Filtration_value fil1 = hasse_diagram_->cells[first]->get_filtration();
     Filtration_value fil2 = hasse_diagram_->cells[second]->get_filtration();
-    if (*(double*)&fil1 != *(double*)&fil2)  // strange cast to make the compiler shut up about comparing of doubles.
-    {
+    // strange cast to make the compiler shut up about comparing of doubles.
+    if (*(double*)&fil1 != *(double*)&fil2) {
       return fil1 < fil2;
     }
     // in this case they are on the same filtration level, so the dimension decide.
@@ -401,14 +403,6 @@ void Hasse_diagram_persistence<Cell_type>::set_up_the_arrays() {
   for (size_t i = 0; i != this->cell_associated_to_key.size(); ++i) {
     this->key_associated_to_cell[this->cell_associated_to_key[i]] = static_cast<unsigned>(i);
   }
-
-  // Just for debugging purposes, remove later.
-  // std::cout << "cell_associated_to_key, just for degugging. : \n";
-  // for ( size_t i = 0 ; i != this->cell_associated_to_key.size() ; ++i )
-  //{
-  //	std::cout << this->cell_associated_to_key[i] << " ";
-  // }
-  // std::cout << std::endl;
 }  // Cell_type
 
 /**
