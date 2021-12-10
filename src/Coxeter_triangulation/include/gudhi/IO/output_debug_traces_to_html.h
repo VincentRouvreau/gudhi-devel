@@ -383,7 +383,7 @@ void write_cc(std::ofstream& ofs) {
         ofs << "            <p><span style=\"color:red\">The simplex " << simplex_format(cc_info.simplex_, false)
             << " is a face of the simplex " << simplex_format(cc_info.trigger_, false) << "!</span><br>\n";
         ofs << "              <ul>\n";
-        for (const std::string post_face : cc_info.post_faces_)
+        for (const std::string& post_face : cc_info.post_faces_)
           ofs << "                <li id = \"" << id_from_simplex("I" + post_face) << "\">"
               << "Post deleting " << simplex_format(post_face, false) << "</li>\n";
         ofs << "              </ul>\n";
@@ -480,7 +480,7 @@ void write_cc(std::ofstream& ofs) {
           ofs << "            <p><span style=\"color:red\">The simplex " << simplex_format(cc_info.simplex_, true)
               << " is a face of the simplex " << simplex_format(cc_info.trigger_, true) << "!</span><br>\n";
           ofs << "              <ul>\n";
-          for (const std::string post_face : cc_info.post_faces_)
+          for (const std::string& post_face : cc_info.post_faces_)
             ofs << "                <li id=\"" << id_from_simplex("B" + post_face) << "\">Post deleting "
                 << simplex_format(post_face, true) << "</li>\n";
           ofs << "              </ul>\n";
