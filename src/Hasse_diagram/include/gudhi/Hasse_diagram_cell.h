@@ -16,7 +16,7 @@
 #include <ostream>
 #include <string>
 #include <type_traits>  // for std::is_same
-#include <cstdlib>  // for std::size_t
+#include <cstdlib>      // for std::size_t
 
 namespace Gudhi {
 namespace Hasse_diagram {
@@ -32,7 +32,7 @@ class Hasse_diagram;
  *
  * \details
  * The use and interfaces of this Hasse diagram cell is limited to the \ref coxeter_triangulation implementation.
- * 
+ *
  * This is a data structure to store a cell in a general Hasse diagram data structure. 	It stores the following
  * information about the cell: References to boundary and coBoundary elements, dimension of a cell and its filtration.
  * It also allow to store any additional information of a type Additional_information which is a template parameter of
