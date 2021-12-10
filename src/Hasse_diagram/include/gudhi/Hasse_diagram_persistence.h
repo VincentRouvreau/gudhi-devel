@@ -123,7 +123,7 @@ class Hasse_diagram_persistence : public Hasse_diagram<Cell_type> {
 
   Simplex_key key(Simplex_handle sh) {
     if (sh != null_simplex()) {
-      return this->key_associated_to_cell[sh];
+      return this->key_associated_to_cell_[sh];
     }
     return this->null_key();
   }
@@ -132,7 +132,7 @@ class Hasse_diagram_persistence : public Hasse_diagram<Cell_type> {
 
   Simplex_handle simplex(Simplex_key key) {
     if (key != null_key()) {
-      return this->cell_associated_to_key[key];
+      return this->cell_associated_to_key_[key];
     }
     return null_simplex();
   }
@@ -175,8 +175,8 @@ class Hasse_diagram_persistence : public Hasse_diagram<Cell_type> {
 
   void assign_key(Simplex_handle sh, Simplex_key key) {
     if (key == null_key()) return;
-    this->key_associated_to_cell[sh] = key;
-    this->cell_associated_to_key[key] = sh;
+    this->key_associated_to_cell_[sh] = key;
+    this->cell_associated_to_key_[key] = sh;
   }
 
   // ********************************************************************************************
@@ -218,7 +218,7 @@ class Hasse_diagram_persistence : public Hasse_diagram<Cell_type> {
 
     bool operator!=(const Filtration_simplex_iterator& rhs) const { return !(*this == rhs); }
 
-    Simplex_handle operator*() { return this->hasse_diagram_->cell_associated_to_key[this->position_]; }
+    Simplex_handle operator*() { return this->hasse_diagram_->cell_associated_to_key_[this->position_]; }
 
     friend class Filtration_simplex_range;
 
@@ -243,7 +243,7 @@ class Hasse_diagram_persistence : public Hasse_diagram<Cell_type> {
 
     Filtration_simplex_iterator end() {
       Filtration_simplex_iterator it(this->hasse_diagram_);
-      it.position_ = static_cast<unsigned>(this->hasse_diagram_->cell_associated_to_key.size());
+      it.position_ = static_cast<unsigned>(this->hasse_diagram_->cell_associated_to_key_.size());
       return it;
     }
 
@@ -356,8 +356,8 @@ class Hasse_diagram_persistence : public Hasse_diagram<Cell_type> {
   //********************************************************************************************
 
  protected:
-  std::vector<unsigned> key_associated_to_cell;
-  std::vector<unsigned> cell_associated_to_key;
+  std::vector<unsigned> key_associated_to_cell_;
+  std::vector<unsigned> cell_associated_to_key_;
 };  // Hasse_diagram
 
 template <typename Cell_type>
@@ -390,18 +390,18 @@ class is_before_in_filtration {
 
 template <typename Cell_type>
 void Hasse_diagram_persistence<Cell_type>::set_up_the_arrays() {
-  this->cell_associated_to_key = std::vector<unsigned>(this->cells.size());
-  std::iota(std::begin(this->cell_associated_to_key), std::end(this->cell_associated_to_key), 0);
+  this->cell_associated_to_key_ = std::vector<unsigned>(this->cells.size());
+  std::iota(std::begin(this->cell_associated_to_key_), std::end(this->cell_associated_to_key_), 0);
 #ifdef GUDHI_USE_TBB
-  tbb::parallel_sort(this->cell_associated_to_key.begin(), this->cell_associated_to_key.end(),
+  tbb::parallel_sort(this->cell_associated_to_key_.begin(), this->cell_associated_to_key_.end(),
                      is_before_in_filtration<Cell_type>(this));
 #else
-  std::sort(this->cell_associated_to_key.begin(), this->cell_associated_to_key.end(),
+  std::sort(this->cell_associated_to_key_.begin(), this->cell_associated_to_key_.end(),
             is_before_in_filtration<Cell_type>(this));
 #endif
-  this->key_associated_to_cell = std::vector<unsigned>(this->cell_associated_to_key.size());
-  for (size_t i = 0; i != this->cell_associated_to_key.size(); ++i) {
-    this->key_associated_to_cell[this->cell_associated_to_key[i]] = static_cast<unsigned>(i);
+  this->key_associated_to_cell_ = std::vector<unsigned>(this->cell_associated_to_key_.size());
+  for (size_t i = 0; i != this->cell_associated_to_key_.size(); ++i) {
+    this->key_associated_to_cell_[this->cell_associated_to_key_[i]] = static_cast<unsigned>(i);
   }
 }  // Cell_type
 
