@@ -1,24 +1,13 @@
-/*    This file is part of the Gudhi Library. The Gudhi library
- *    (Geometric Understanding in Higher Dimensions) is a generic C++
- *    library for computational topology.
- *
+/*    This file is part of the Gudhi Library - https://gudhi.inria.fr/ - which is released under MIT.
+ *    See file LICENSE or go to https://gudhi.inria.fr/licensing/ for full license details.
  *    Author(s):       Pawel Dlotko
  *
  *    Copyright (C) 2017 Swansea University UK
  *
- *    This program is free software: you can redistribute it and/or modify
- *    it under the terms of the GNU General Public License as published by
- *    the Free Software Foundation, either version 3 of the License, or
- *    (at your option) any later version.
- *
- *    This program is distributed in the hope that it will be useful,
- *    but WITHOUT ANY WARRANTY; without even the implied warranty of
- *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *    GNU General Public License for more details.
- *
- *    You should have received a copy of the GNU General Public License
- *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *    Modification(s):
+ *      - YYYY/MM Author: Description of the modification
  */
+
 
 #include <iostream>
 #include <vector>
@@ -99,10 +88,11 @@ class Hasse_diagram {
    * predefined constant.
    **/
   void clean_up_the_structure() {
-    bool dbg = false;
     if (this->number_of_deleted_cells == 0) return;
 
-    if (dbg) std::cout << "Calling clean_up_the_structure() procedure. \n";
+#ifdef DEBUG_TRACES
+    std::clog << "Calling clean_up_the_structure() procedure. \n";
+#endif
     // count the number of not deleted cells:
     size_t number_of_non_deleted_cells = this->cells.size() - this->number_of_deleted_cells;
 
@@ -125,7 +115,9 @@ class Hasse_diagram {
     }
     this->cells.swap(new_cells);
     this->number_of_deleted_cells = 0;
-    if (dbg) std::cout << "Done with the clean_up_the_structure() procedure. \n";
+#ifdef DEBUG_TRACES
+    std::clog << "Done with the clean_up_the_structure() procedure. \n";
+#endif
   }
 
   /**
@@ -271,7 +263,6 @@ Hasse_diagram<Cell_type>::Hasse_diagram(const char* filename) {
   // cell dimension
   // ids of cell boundary elements followed by the incidence coefficient.
   // Note that coboundary vector will be computed based on boundary vector.
-  bool dbg = false;
   std::string line;
 
   this->number_of_deleted_cells = 0;
@@ -299,9 +290,9 @@ Hasse_diagram<Cell_type>::Hasse_diagram(const char* filename) {
 
   std::getline(in, line);
 
-  if (dbg) {
-    std::cout << "Number of cells : " << number_of_cells << std::endl;
-  }
+#ifdef DEBUG_TRACES
+  std::clog << "Number of cells : " << number_of_cells << std::endl;
+#endif
 
   size_t size_of_last_boundary = 10;  // to initially reserve a vector for bounary elements.
   for (size_t i = 0; i != number_of_cells; ++i) {
@@ -315,9 +306,10 @@ Hasse_diagram<Cell_type>::Hasse_diagram(const char* filename) {
     iss << line;
     iss >> new_cell->position_ >> new_cell->dimension_;
 
-    if (dbg)
-      std::cout << "Position and dimension of the cell : " << new_cell->position_ << " , " << new_cell->dimension_
-                << std::endl;
+#ifdef DEBUG_TRACES
+    std::clog << "Position and dimension of the cell : " << new_cell->position_ << " , " << new_cell->dimension_
+              << std::endl;
+#endif
 
     if (new_cell->position_ != i) {
       std::cerr << "Wrong numeration of cells in the file. Cell number : " << i
@@ -328,7 +320,9 @@ Hasse_diagram<Cell_type>::Hasse_diagram(const char* filename) {
       // in this case we still have a filtration value to be read
       // from the file.
       iss >> new_cell->filtration_;
-      if (dbg) std::cout << "Filtration of the cell : " << new_cell->filtration_ << std::endl;
+#ifdef DEBUG_TRACES
+      std::clog << "Filtration of the cell : " << new_cell->filtration_ << std::endl;
+#endif
     } else {
       new_cell->filtration_ = 0;
     }
@@ -345,7 +339,9 @@ Hasse_diagram<Cell_type>::Hasse_diagram(const char* filename) {
     typename Cell_type::Incidence_type incidence_coef;
     std::vector<std::pair<unsigned, typename Cell_type::Incidence_type> > bdry;
     bdry.reserve(size_of_last_boundary);
-    if (dbg) std::cout << "Here are the boundary elements of the cell.\n";
+#ifdef DEBUG_TRACES
+    std::clog << "Here are the boundary elements of the cell.\n";
+#endif
     while (iss.good()) {
       iss >> cell_id;
       if (!iss.good()) continue;
@@ -355,7 +351,9 @@ Hasse_diagram<Cell_type>::Hasse_diagram(const char* filename) {
                   << " contain in a boundary a cell that has not been introduced yet.\n";
       }
       iss >> incidence_coef;
-      if (dbg) std::cout << "( " << cell_id << " , " << incidence_coef << " ), ";
+#ifdef DEBUG_TRACES
+      std::clog << "( " << cell_id << " , " << incidence_coef << " ), ";
+#endif
       bdry.push_back(std::pair<unsigned, typename Cell_type::Incidence_type>(cell_id, incidence_coef));
     }
 
@@ -364,11 +362,10 @@ Hasse_diagram<Cell_type>::Hasse_diagram(const char* filename) {
     for (size_t bd = 0; bd != size_of_last_boundary; ++bd) {
       new_cell->boundary_.push_back(std::make_pair(this->cells[bdry[bd].first], bdry[bd].second));
     }
-    if (dbg) {
-      std::cout << "new_cell->boundary_.size() : " << new_cell->boundary_.size() << std::endl;
-      std::cout << "Done with this cell. \n";
-      getchar();
-    }
+#ifdef DEBUG_TRACES
+    std::clog << "new_cell->boundary_.size() : " << new_cell->boundary_.size() << std::endl;
+    std::clog << "Done with this cell. \n";
+#endif
 
     std::getline(in, line);
     while (line[0] == '#') {
@@ -438,11 +435,9 @@ void Hasse_diagram<Cell_type>::write_to_file(const char* filename) {
 
 template <typename Complex_type, typename Cell_type>
 std::vector<Cell_type*> convert_to_vector_of_Cell_type(Complex_type& cmplx) {
-  bool dbg = false;
-
-  if (dbg) {
-    std::cout << "cmplx.num_simplices() : " << cmplx.num_simplices() << std::endl;
-  }
+#ifdef DEBUG_TRACES
+  std::clog << "cmplx.num_simplices() : " << cmplx.num_simplices() << std::endl;
+#endif
 
   // create vector of cells of suitable length:
   std::vector<Cell_type*> cells_of_Hasse_diag(cmplx.num_simplices());
@@ -462,18 +457,18 @@ std::vector<Cell_type*> convert_to_vector_of_Cell_type(Complex_type& cmplx) {
 
   size_t counter = 0;
   for (typename Complex_type::Filtration_simplex_iterator it = range.begin(); it != range.end(); ++it) {
-    if (dbg) {
-      std::cout << "This is cell number : " << counter << std::endl;
-    }
+#ifdef DEBUG_TRACES
+    std::clog << "This is cell number : " << counter << std::endl;
+#endif
     Cell_type* this_cell = cells_of_Hasse_diag[counter];
 
     this_cell->get_dimension() = static_cast<int>(cmplx.dimension(*it));
     this_cell->get_filtration() = static_cast<typename Cell_type::Filtration_type>(cmplx.filtration(*it));
 
-    if (dbg) {
-      std::cout << "this_cell->get_dimension() : " << this_cell->get_dimension() << std::endl;
-      std::cout << "this_cell->get_filtration() : " << this_cell->get_filtration() << std::endl;
-    }
+#ifdef DEBUG_TRACES
+    std::clog << "this_cell->get_dimension() : " << this_cell->get_dimension() << std::endl;
+    std::clog << "this_cell->get_filtration() : " << this_cell->get_filtration() << std::endl;
+#endif
 
     // get the boundary:
     boundary.clear();
@@ -484,14 +479,14 @@ std::vector<Cell_type*> convert_to_vector_of_Cell_type(Complex_type& cmplx) {
       boundary.push_back(cmplx.key(*bd));
     }
 
-    if (dbg) {
-      std::cerr << "boundary.size() : " << boundary.size() << std::endl
-                << "And here are the boundary elements : " << std::endl;
-      for (size_t bd = 0; bd != boundary.size(); ++bd) {
-        std::cout << boundary[bd] << " ";
-      }
-      std::cout << std::endl;
+#ifdef DEBUG_TRACES
+    std::clog << "boundary.size() : " << boundary.size() << std::endl
+              << "And here are the boundary elements : " << std::endl;
+    for (size_t bd = 0; bd != boundary.size(); ++bd) {
+      std::clog << boundary[bd] << " ";
     }
+    std::clog << std::endl;
+#endif
 
     // get the boundary in the Hasse diagram format:
     this_cell->boundary_.reserve(boundary.size());
@@ -501,11 +496,10 @@ std::vector<Cell_type*> convert_to_vector_of_Cell_type(Complex_type& cmplx) {
       incidence *= -1;
     }
 
-    if (dbg) {
-      std::cout << "this_cell->boundary_.size() : " << this_cell->boundary_.size() << std::endl;
-      std::cerr << "Set up for this cell \n";
-      getchar();
-    }
+#ifdef DEBUG_TRACES
+    std::clog << "this_cell->boundary_.size() : " << this_cell->boundary_.size() << std::endl;
+    std::clog << "Set up for this cell \n";
+#endif
     ++counter;
   }
   return cells_of_Hasse_diag;
