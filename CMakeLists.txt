@@ -30,6 +30,7 @@ add_gudhi_module(Contraction)
 add_gudhi_module(Coxeter_triangulation)
 add_gudhi_module(Cech_complex)
 add_gudhi_module(Hasse_complex)
+add_gudhi_module(Hasse_diagram)
 add_gudhi_module(Persistence_representations)
 add_gudhi_module(Persistent_cohomology)
 add_gudhi_module(Rips_complex)
@@ -40,7 +41,7 @@ add_gudhi_module(Subsampling)
 add_gudhi_module(Tangential_complex)
 add_gudhi_module(Toplex_map)
 add_gudhi_module(Witness_complex)
-add_gudhi_module(Hasse_diagram)
+add_gudhi_module(Nerve_GIC)
 
 # Include module CMake subdirectories
 # GUDHI_SUB_DIRECTORIES is managed in CMAKE_MODULE_PATH/GUDHI_modules.cmake
