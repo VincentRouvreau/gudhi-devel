@@ -369,8 +369,8 @@ class is_before_in_filtration {
     typedef typename Cell_type::Filtration_type Filtration_value;
     Filtration_value fil1 = hasse_diagram_->cells[first]->get_filtration();
     Filtration_value fil2 = hasse_diagram_->cells[second]->get_filtration();
-    // strange cast to make the compiler shut up about comparing of doubles.
-    if (*(double*)&fil1 != *(double*)&fil2) {
+    // Compare what can be floating point values
+    if (std::fabs(fil1 - fil2) > std::numeric_limits<Filtration_value>::epsilon()) {
       return fil1 < fil2;
     }
     // in this case they are on the same filtration level, so the dimension decide.
