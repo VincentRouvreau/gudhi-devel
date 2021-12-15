@@ -23,16 +23,16 @@
 #include <sstream>
 
 #define BOOST_TEST_DYN_LINK
-#define BOOST_TEST_MODULE "Hasse_diagram"
+#define BOOST_TEST_MODULE "Hasse_diagram_test"
 #include <boost/test/unit_test.hpp>
 
-typedef Gudhi::Hasse_diagram::Hasse_diagram_cell<int, double, double> Cell;
-typedef Gudhi::Hasse_diagram::Hasse_diagram<Cell> Hasse_diag;
-typedef Gudhi::Hasse_diagram::Hasse_diagram_persistence<Cell> Hasse_diag_persistence;
-typedef Gudhi::persistent_cohomology::Field_Zp Field_Zp;
-typedef Gudhi::persistent_cohomology::Persistent_cohomology<Hasse_diag_persistence, Field_Zp> Persistent_cohomology;
+using Hasse_diagram = Gudhi::Hasse_diagram::Hasse_diagram<>;
+using Hasse_diagram_persistence = Gudhi::Hasse_diagram::Hasse_diagram_persistence<>;
+using Field_Zp = Gudhi::persistent_cohomology::Field_Zp;
+using Persistent_cohomology = Gudhi::persistent_cohomology::Persistent_cohomology<Hasse_diagram_persistence, Field_Zp>;
 
 BOOST_AUTO_TEST_CASE(check_construction) {
+  using Cell = Hasse_diagram::Cell_type;
   // test of a Hasse diagram from one of the examples:
   Cell* A = new Cell(0, 0.0);
   Cell* B = new Cell(1, 1.0);
@@ -56,86 +56,84 @@ BOOST_AUTO_TEST_CASE(check_construction) {
   // Nothing needs to be done, coboundaries will be set up automatically.
 
   // for cell B:
-  std::vector<std::pair<Cell*, int> >& boundary_of_B = B->get_boundary();
-  boundary_of_B.push_back(std::pair<Cell*, int>(A, 1));
-  boundary_of_B.push_back(std::pair<Cell*, int>(C, 1));
+  auto& boundary_of_B = B->boundaries();
+  boundary_of_B.emplace_back(A, 1);
+  boundary_of_B.emplace_back(C, 1);
 
   // for cell C:
   // Nothing needs to be done, coboundaries will be set up automatically.
 
   // for cell D
-  std::vector<std::pair<Cell*, int> >& boundary_of_D = D->get_boundary();
-  boundary_of_D.push_back(std::pair<Cell*, int>(A, 1));
-  boundary_of_D.push_back(std::pair<Cell*, int>(C, 1));
+  auto& boundary_of_D = D->boundaries();
+  boundary_of_D.emplace_back(A, 1);
+  boundary_of_D.emplace_back(C, 1);
 
   // for cell E
-  std::vector<std::pair<Cell*, int> >& boundary_of_E = E->get_boundary();
-  boundary_of_E.push_back(std::pair<Cell*, int>(A, 1));
-  boundary_of_E.push_back(std::pair<Cell*, int>(I, 1));
+  auto& boundary_of_E = E->boundaries();
+  boundary_of_E.emplace_back(A, 1);
+  boundary_of_E.emplace_back(I, 1);
 
   // for cell F
-  std::vector<std::pair<Cell*, int> >& boundary_of_F = F->get_boundary();
-  boundary_of_F.push_back(std::pair<Cell*, int>(B, 1));
-  boundary_of_F.push_back(std::pair<Cell*, int>(E, 1));
-  boundary_of_F.push_back(std::pair<Cell*, int>(G, 1));
-  boundary_of_F.push_back(std::pair<Cell*, int>(J, 1));
+  auto& boundary_of_F = F->boundaries();
+  boundary_of_F.emplace_back(B, 1);
+  boundary_of_F.emplace_back(E, 1);
+  boundary_of_F.emplace_back(G, 1);
+  boundary_of_F.emplace_back(J, 1);
 
   // for cell G
-  std::vector<std::pair<Cell*, int> >& boundary_of_G = G->get_boundary();
-  boundary_of_G.push_back(std::pair<Cell*, int>(K, 1));
-  boundary_of_G.push_back(std::pair<Cell*, int>(C, 1));
+  auto& boundary_of_G = G->boundaries();
+  boundary_of_G.emplace_back(K, 1);
+  boundary_of_G.emplace_back(C, 1);
 
   // for cell H
-  std::vector<std::pair<Cell*, int> >& boundary_of_H = H->get_boundary();
-  boundary_of_H.push_back(std::pair<Cell*, int>(D, 1));
-  boundary_of_H.push_back(std::pair<Cell*, int>(E, 1));
-  boundary_of_H.push_back(std::pair<Cell*, int>(L, 1));
-  boundary_of_H.push_back(std::pair<Cell*, int>(G, 1));
+  auto& boundary_of_H = H->boundaries();
+  boundary_of_H.emplace_back(D, 1);
+  boundary_of_H.emplace_back(E, 1);
+  boundary_of_H.emplace_back(L, 1);
+  boundary_of_H.emplace_back(G, 1);
 
   // for cell I:
   // Nothing needs to be done, coboundaries will be set up automatically.
 
   // for cell J
-  std::vector<std::pair<Cell*, int> >& boundary_of_J = J->get_boundary();
-  boundary_of_J.push_back(std::pair<Cell*, int>(I, 1));
-  boundary_of_J.push_back(std::pair<Cell*, int>(K, 1));
+  auto& boundary_of_J = J->boundaries();
+  boundary_of_J.emplace_back(I, 1);
+  boundary_of_J.emplace_back(K, 1);
 
   // for cell K:
   // Nothing needs to be done, coboundaries will be set up automatically.
 
   // for cell L
-  std::vector<std::pair<Cell*, int> >& boundary_of_L = L->get_boundary();
-  boundary_of_L.push_back(std::pair<Cell*, int>(K, 1));
-  boundary_of_L.push_back(std::pair<Cell*, int>(I, 1));
+  auto& boundary_of_L = L->boundaries();
+  boundary_of_L.emplace_back(K, 1);
+  boundary_of_L.emplace_back(I, 1);
 
   // for cell M
-  std::vector<std::pair<Cell*, int> >& boundary_of_M = M->get_boundary();
-  boundary_of_M.push_back(std::pair<Cell*, int>(A, 1));
-  boundary_of_M.push_back(std::pair<Cell*, int>(I, 1));
+  auto& boundary_of_M = M->boundaries();
+  boundary_of_M.emplace_back(A, 1);
+  boundary_of_M.emplace_back(I, 1);
 
   // for cell N
-  std::vector<std::pair<Cell*, int> >& boundary_of_N = N->get_boundary();
-  boundary_of_N.push_back(std::pair<Cell*, int>(J, 1));
-  boundary_of_N.push_back(std::pair<Cell*, int>(M, 1));
-  boundary_of_N.push_back(std::pair<Cell*, int>(O, 1));
-  boundary_of_N.push_back(std::pair<Cell*, int>(B, 1));
+  auto& boundary_of_N = N->boundaries();
+  boundary_of_N.emplace_back(J, 1);
+  boundary_of_N.emplace_back(M, 1);
+  boundary_of_N.emplace_back(O, 1);
+  boundary_of_N.emplace_back(B, 1);
 
   // for cell O
-  std::vector<std::pair<Cell*, int> >& boundary_of_O = O->get_boundary();
-  boundary_of_O.push_back(std::pair<Cell*, int>(K, 1));
-  boundary_of_O.push_back(std::pair<Cell*, int>(C, 1));
+  auto& boundary_of_O = O->boundaries();
+  boundary_of_O.emplace_back(K, 1);
+  boundary_of_O.emplace_back(C, 1);
 
   // for cell P
-  std::vector<std::pair<Cell*, int> >& boundary_of_P = P->get_boundary();
-  boundary_of_P.push_back(std::pair<Cell*, int>(L, 1));
-  boundary_of_P.push_back(std::pair<Cell*, int>(O, 1));
-  boundary_of_P.push_back(std::pair<Cell*, int>(M, 1));
-  boundary_of_P.push_back(std::pair<Cell*, int>(D, 1));
+  auto& boundary_of_P = P->boundaries();
+  boundary_of_P.emplace_back(L, 1);
+  boundary_of_P.emplace_back(O, 1);
+  boundary_of_P.emplace_back(M, 1);
+  boundary_of_P.emplace_back(D, 1);
 
   // Here is a construction of a standard Hasse diagram:
-  Hasse_diag hd({A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P});
-
-  // std::cout << hd.full_signature_of_the_structure();
+  Hasse_diagram hd({A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P});
 
   std::string reference_output =
       "dimension: 0 filtration: 0.000000 position: 0 deleted_: 0 boundary  coBoundary \
@@ -159,6 +157,7 @@ dimension: 1 filtration: 1.000000 position: 12 deleted_: 0 boundary ( 0 1) ( 8 1
 boundary ( 10 1) ( 2 1)  coBoundary ( 13 1) ( 15 1) dimension: 2 filtration: 2.000000 position: \
 15 deleted_: 0 boundary ( 11 1) ( 14 1) ( 12 1) ( 3 1)  coBoundary ";
 
+  std::cout << hd.full_signature_of_the_structure() << std::endl;
   BOOST_CHECK(reference_output.compare(hd.full_signature_of_the_structure()) == 0);
 
   delete A;
@@ -180,9 +179,7 @@ boundary ( 10 1) ( 2 1)  coBoundary ( 13 1) ( 15 1) dimension: 2 filtration: 2.0
 }
 
 BOOST_AUTO_TEST_CASE(Hasse_diagram_from_file_test) {
-  Hasse_diag hd("cw_decomposition_of_torus.hasse");
-
-  // std::cout << hd.full_signature_of_the_structure();
+  Hasse_diagram hd("cw_decomposition_of_torus.hasse");
 
   std::string reference_output =
       "dimension: 0 filtration: 0.000000 position: 0 deleted_: 0 boundary  coBoundary ( 4 1) \
@@ -203,10 +200,12 @@ deleted_: 0 boundary  coBoundary ( 6 1) ( 7 1) ( 10 1) ( 11 1) dimension: 1 filt
 14 deleted_: 0 boundary ( 5 1) ( 7 1) ( 8 1) ( 10 1)  coBoundary dimension: 2 filtration: 0.000000 position: \
 15 deleted_: 0 boundary ( 5 1) ( 7 1) ( 9 1) ( 11 1)  coBoundary ";
 
+  std::cout << hd.full_signature_of_the_structure() << std::endl;
   BOOST_CHECK(reference_output.compare(hd.full_signature_of_the_structure()) == 0);
 }
 
 BOOST_AUTO_TEST_CASE(Hasse_diagram_insertion_and_removal_test) {
+  using Cell = Hasse_diagram::Cell_type;
   // in this test we will start from one Hasse diagram, we will add a few elements to
   // it, and then remove them. At the end we will check if we have obtained the same
   // Hasse diagram that we started from.
@@ -225,27 +224,27 @@ BOOST_AUTO_TEST_CASE(Hasse_diagram_insertion_and_removal_test) {
   Cell* D = new Cell(0, 0.0);
 
   Cell* E = new Cell(1, 0.0);
-  std::vector<std::pair<Cell*, int> >& boundary_of_E = E->get_boundary();
-  boundary_of_E.push_back(std::pair<Cell*, int>(A, 1));
-  boundary_of_E.push_back(std::pair<Cell*, int>(B, 1));
+  auto& boundary_of_E = E->boundaries();
+  boundary_of_E.emplace_back(A, 1);
+  boundary_of_E.emplace_back(B, 1);
 
   Cell* F = new Cell(1, 0.0);
-  std::vector<std::pair<Cell*, int> >& boundary_of_F = F->get_boundary();
-  boundary_of_F.push_back(std::pair<Cell*, int>(B, 1));
-  boundary_of_F.push_back(std::pair<Cell*, int>(D, 1));
+  auto& boundary_of_F = F->boundaries();
+  boundary_of_F.emplace_back(B, 1);
+  boundary_of_F.emplace_back(D, 1);
 
   Cell* G = new Cell(1, 0.0);
-  std::vector<std::pair<Cell*, int> >& boundary_of_G = G->get_boundary();
-  boundary_of_G.push_back(std::pair<Cell*, int>(C, 1));
-  boundary_of_G.push_back(std::pair<Cell*, int>(D, 1));
+  auto& boundary_of_G = G->boundaries();
+  boundary_of_G.emplace_back(C, 1);
+  boundary_of_G.emplace_back(D, 1);
 
   Cell* H = new Cell(1, 0.0);
-  std::vector<std::pair<Cell*, int> >& boundary_of_H = H->get_boundary();
-  boundary_of_H.push_back(std::pair<Cell*, int>(A, 1));
-  boundary_of_H.push_back(std::pair<Cell*, int>(C, 1));
+  auto& boundary_of_H = H->boundaries();
+  boundary_of_H.emplace_back(A, 1);
+  boundary_of_H.emplace_back(C, 1);
 
   std::vector<Cell*> cells = {A, B, C, D, E, F, G, H};
-  Hasse_diag hd(cells);
+  Hasse_diagram hd(cells);
 
   std::string initial_structure = hd.full_signature_of_the_structure();
 
@@ -260,11 +259,11 @@ BOOST_AUTO_TEST_CASE(Hasse_diagram_insertion_and_removal_test) {
   //
 
   Cell* I = new Cell(2, 0.0);
-  std::vector<std::pair<Cell*, int> >& boundary_of_I = I->get_boundary();
-  boundary_of_I.push_back(std::pair<Cell*, int>(E, 1));
-  boundary_of_I.push_back(std::pair<Cell*, int>(H, 1));
-  boundary_of_I.push_back(std::pair<Cell*, int>(F, 1));
-  boundary_of_I.push_back(std::pair<Cell*, int>(G, 1));
+  auto& boundary_of_I = I->boundaries();
+  boundary_of_I.emplace_back(E, 1);
+  boundary_of_I.emplace_back(H, 1);
+  boundary_of_I.emplace_back(F, 1);
+  boundary_of_I.emplace_back(G, 1);
   hd.add_cell(I);
 
   Cell* J = new Cell(0, 0.0);
@@ -274,29 +273,29 @@ BOOST_AUTO_TEST_CASE(Hasse_diagram_insertion_and_removal_test) {
   hd.add_cell(K);
 
   Cell* L = new Cell(1, 0.0);
-  std::vector<std::pair<Cell*, int> >& boundary_of_L = L->get_boundary();
-  boundary_of_L.push_back(std::pair<Cell*, int>(B, 1));
-  boundary_of_L.push_back(std::pair<Cell*, int>(J, 1));
+  auto& boundary_of_L = L->boundaries();
+  boundary_of_L.emplace_back(B, 1);
+  boundary_of_L.emplace_back(J, 1);
   hd.add_cell(L);
 
   Cell* M = new Cell(1, 0.0);
-  std::vector<std::pair<Cell*, int> >& boundary_of_M = M->get_boundary();
-  boundary_of_M.push_back(std::pair<Cell*, int>(J, 1));
-  boundary_of_M.push_back(std::pair<Cell*, int>(K, 1));
+  auto& boundary_of_M = M->boundaries();
+  boundary_of_M.emplace_back(J, 1);
+  boundary_of_M.emplace_back(K, 1);
   hd.add_cell(M);
 
   Cell* N = new Cell(1, 0.0);
-  std::vector<std::pair<Cell*, int> >& boundary_of_N = N->get_boundary();
-  boundary_of_N.push_back(std::pair<Cell*, int>(D, 1));
-  boundary_of_N.push_back(std::pair<Cell*, int>(K, 1));
+  auto& boundary_of_N = N->boundaries();
+  boundary_of_N.emplace_back(D, 1);
+  boundary_of_N.emplace_back(K, 1);
   hd.add_cell(N);
 
   Cell* O = new Cell(2, 0.0);
-  std::vector<std::pair<Cell*, int> >& boundary_of_O = O->get_boundary();
-  boundary_of_O.push_back(std::pair<Cell*, int>(L, 1));
-  boundary_of_O.push_back(std::pair<Cell*, int>(F, 1));
-  boundary_of_O.push_back(std::pair<Cell*, int>(M, 1));
-  boundary_of_O.push_back(std::pair<Cell*, int>(N, 1));
+  auto& boundary_of_O = O->boundaries();
+  boundary_of_O.emplace_back(L, 1);
+  boundary_of_O.emplace_back(F, 1);
+  boundary_of_O.emplace_back(M, 1);
+  boundary_of_O.emplace_back(N, 1);
   hd.add_cell(O);
 
   // and now we will remove the cells I, J, K, L, M, N, O
@@ -327,6 +326,7 @@ BOOST_AUTO_TEST_CASE(Hasse_diagram_insertion_and_removal_test) {
 }
 
 BOOST_AUTO_TEST_CASE(write_to_file_test) {
+  using Cell = Hasse_diagram::Cell_type;
   // test of a Hasse diagram from one of the examples:
   Cell* A = new Cell(0, 0.0);
   Cell* B = new Cell(1, 1.0);
@@ -350,88 +350,89 @@ BOOST_AUTO_TEST_CASE(write_to_file_test) {
   // Nothing needs to be done, coboundaries will be set up automatically.
 
   // for cell B:
-  std::vector<std::pair<Cell*, int> >& boundary_of_B = B->get_boundary();
-  boundary_of_B.push_back(std::pair<Cell*, int>(A, 1));
-  boundary_of_B.push_back(std::pair<Cell*, int>(C, 1));
+  auto& boundary_of_B = B->boundaries();
+  boundary_of_B.emplace_back(A, 1);
+  boundary_of_B.emplace_back(C, 1);
 
   // for cell C:
   // Nothing needs to be done, coboundaries will be set up automatically.
 
   // for cell D
-  std::vector<std::pair<Cell*, int> >& boundary_of_D = D->get_boundary();
-  boundary_of_D.push_back(std::pair<Cell*, int>(A, 1));
-  boundary_of_D.push_back(std::pair<Cell*, int>(C, 1));
+  auto& boundary_of_D = D->boundaries();
+  boundary_of_D.emplace_back(A, 1);
+  boundary_of_D.emplace_back(C, 1);
 
   // for cell E
-  std::vector<std::pair<Cell*, int> >& boundary_of_E = E->get_boundary();
-  boundary_of_E.push_back(std::pair<Cell*, int>(A, 1));
-  boundary_of_E.push_back(std::pair<Cell*, int>(I, 1));
+  auto& boundary_of_E = E->boundaries();
+  boundary_of_E.emplace_back(A, 1);
+  boundary_of_E.emplace_back(I, 1);
 
   // for cell F
-  std::vector<std::pair<Cell*, int> >& boundary_of_F = F->get_boundary();
-  boundary_of_F.push_back(std::pair<Cell*, int>(B, 1));
-  boundary_of_F.push_back(std::pair<Cell*, int>(E, 1));
-  boundary_of_F.push_back(std::pair<Cell*, int>(G, 1));
-  boundary_of_F.push_back(std::pair<Cell*, int>(J, 1));
+  auto& boundary_of_F = F->boundaries();
+  boundary_of_F.emplace_back(B, 1);
+  boundary_of_F.emplace_back(E, 1);
+  boundary_of_F.emplace_back(G, 1);
+  boundary_of_F.emplace_back(J, 1);
 
   // for cell G
-  std::vector<std::pair<Cell*, int> >& boundary_of_G = G->get_boundary();
-  boundary_of_G.push_back(std::pair<Cell*, int>(K, 1));
-  boundary_of_G.push_back(std::pair<Cell*, int>(C, 1));
+  auto& boundary_of_G = G->boundaries();
+  boundary_of_G.emplace_back(K, 1);
+  boundary_of_G.emplace_back(C, 1);
 
   // for cell H
-  std::vector<std::pair<Cell*, int> >& boundary_of_H = H->get_boundary();
-  boundary_of_H.push_back(std::pair<Cell*, int>(D, 1));
-  boundary_of_H.push_back(std::pair<Cell*, int>(E, 1));
-  boundary_of_H.push_back(std::pair<Cell*, int>(L, 1));
-  boundary_of_H.push_back(std::pair<Cell*, int>(G, 1));
+  auto& boundary_of_H = H->boundaries();
+  boundary_of_H.emplace_back(D, 1);
+  boundary_of_H.emplace_back(E, 1);
+  boundary_of_H.emplace_back(L, 1);
+  boundary_of_H.emplace_back(G, 1);
 
   // for cell I:
   // Nothing needs to be done, coboundaries will be set up automatically.
 
   // for cell J
-  std::vector<std::pair<Cell*, int> >& boundary_of_J = J->get_boundary();
-  boundary_of_J.push_back(std::pair<Cell*, int>(I, 1));
-  boundary_of_J.push_back(std::pair<Cell*, int>(K, 1));
+  auto& boundary_of_J = J->boundaries();
+  boundary_of_J.emplace_back(I, 1);
+  boundary_of_J.emplace_back(K, 1);
 
   // for cell K:
   // Nothing needs to be done, coboundaries will be set up automatically.
 
   // for cell L
-  std::vector<std::pair<Cell*, int> >& boundary_of_L = L->get_boundary();
-  boundary_of_L.push_back(std::pair<Cell*, int>(K, 1));
-  boundary_of_L.push_back(std::pair<Cell*, int>(I, 1));
+  auto& boundary_of_L = L->boundaries();
+  boundary_of_L.emplace_back(K, 1);
+  boundary_of_L.emplace_back(I, 1);
 
   // for cell M
-  std::vector<std::pair<Cell*, int> >& boundary_of_M = M->get_boundary();
-  boundary_of_M.push_back(std::pair<Cell*, int>(A, 1));
-  boundary_of_M.push_back(std::pair<Cell*, int>(I, 1));
+  auto& boundary_of_M = M->boundaries();
+  boundary_of_M.emplace_back(A, 1);
+  boundary_of_M.emplace_back(I, 1);
 
   // for cell N
-  std::vector<std::pair<Cell*, int> >& boundary_of_N = N->get_boundary();
-  boundary_of_N.push_back(std::pair<Cell*, int>(J, 1));
-  boundary_of_N.push_back(std::pair<Cell*, int>(M, 1));
-  boundary_of_N.push_back(std::pair<Cell*, int>(O, 1));
-  boundary_of_N.push_back(std::pair<Cell*, int>(B, 1));
+  auto& boundary_of_N = N->boundaries();
+  boundary_of_N.emplace_back(J, 1);
+  boundary_of_N.emplace_back(M, 1);
+  boundary_of_N.emplace_back(O, 1);
+  boundary_of_N.emplace_back(B, 1);
 
   // for cell O
-  std::vector<std::pair<Cell*, int> >& boundary_of_O = O->get_boundary();
-  boundary_of_O.push_back(std::pair<Cell*, int>(K, 1));
-  boundary_of_O.push_back(std::pair<Cell*, int>(C, 1));
+  auto& boundary_of_O = O->boundaries();
+  boundary_of_O.emplace_back(K, 1);
+  boundary_of_O.emplace_back(C, 1);
 
   // for cell P
-  std::vector<std::pair<Cell*, int> >& boundary_of_P = P->get_boundary();
-  boundary_of_P.push_back(std::pair<Cell*, int>(L, 1));
-  boundary_of_P.push_back(std::pair<Cell*, int>(O, 1));
-  boundary_of_P.push_back(std::pair<Cell*, int>(M, 1));
-  boundary_of_P.push_back(std::pair<Cell*, int>(D, 1));
-
-  std::vector<Cell*> vect_of_cells = {A, C, I, K, B, D, E, G, J, L, M, O, F, H, N, P};
+  auto& boundary_of_P = P->boundaries();
+  boundary_of_P.emplace_back(L, 1);
+  boundary_of_P.emplace_back(O, 1);
+  boundary_of_P.emplace_back(M, 1);
+  boundary_of_P.emplace_back(D, 1);
 
   // Here is a construction of a standard Hasse diagram:
-  Hasse_diag hd(vect_of_cells);
+  Hasse_diagram hd({A, C, I, K, B, D, E, G, J, L, M, O, F, H, N, P});
   hd.write_to_file("test_intermediate_output");
-  Hasse_diag hd1("test_intermediate_output");
+  std::cout << "File test_intermediate_output is written" << std::endl;
+
+  Hasse_diagram hd1("test_intermediate_output");
+  std::cout << "File test_intermediate_output is read" << std::endl;
 
   std::string first_structure = hd.full_signature_of_the_structure();
   std::string second_structure = hd1.full_signature_of_the_structure();
@@ -457,6 +458,7 @@ BOOST_AUTO_TEST_CASE(write_to_file_test) {
 }
 
 BOOST_AUTO_TEST_CASE(computations_of_persistence_test) {
+  using Cell = Hasse_diagram_persistence::Cell_type;
   // test of a Hasse diagram from one of the examples:
   Cell* A = new Cell(0, 0.0);
   Cell* B = new Cell(1, 1.0);
@@ -480,87 +482,84 @@ BOOST_AUTO_TEST_CASE(computations_of_persistence_test) {
   // Nothing needs to be done, coboundaries will be set up automatically.
 
   // for cell B:
-  std::vector<std::pair<Cell*, int> >& boundary_of_B = B->get_boundary();
-  boundary_of_B.push_back(std::pair<Cell*, int>(A, 1));
-  boundary_of_B.push_back(std::pair<Cell*, int>(C, 1));
+  auto& boundary_of_B = B->boundaries();
+  boundary_of_B.emplace_back(A, 1);
+  boundary_of_B.emplace_back(C, 1);
 
   // for cell C:
   // Nothing needs to be done, coboundaries will be set up automatically.
 
   // for cell D
-  std::vector<std::pair<Cell*, int> >& boundary_of_D = D->get_boundary();
-  boundary_of_D.push_back(std::pair<Cell*, int>(A, 1));
-  boundary_of_D.push_back(std::pair<Cell*, int>(C, 1));
+  auto& boundary_of_D = D->boundaries();
+  boundary_of_D.emplace_back(A, 1);
+  boundary_of_D.emplace_back(C, 1);
 
   // for cell E
-  std::vector<std::pair<Cell*, int> >& boundary_of_E = E->get_boundary();
-  boundary_of_E.push_back(std::pair<Cell*, int>(A, 1));
-  boundary_of_E.push_back(std::pair<Cell*, int>(I, 1));
+  auto& boundary_of_E = E->boundaries();
+  boundary_of_E.emplace_back(A, 1);
+  boundary_of_E.emplace_back(I, 1);
 
   // for cell F
-  std::vector<std::pair<Cell*, int> >& boundary_of_F = F->get_boundary();
-  boundary_of_F.push_back(std::pair<Cell*, int>(B, 1));
-  boundary_of_F.push_back(std::pair<Cell*, int>(E, 1));
-  boundary_of_F.push_back(std::pair<Cell*, int>(G, 1));
-  boundary_of_F.push_back(std::pair<Cell*, int>(J, 1));
+  auto& boundary_of_F = F->boundaries();
+  boundary_of_F.emplace_back(B, 1);
+  boundary_of_F.emplace_back(E, 1);
+  boundary_of_F.emplace_back(G, 1);
+  boundary_of_F.emplace_back(J, 1);
 
   // for cell G
-  std::vector<std::pair<Cell*, int> >& boundary_of_G = G->get_boundary();
-  boundary_of_G.push_back(std::pair<Cell*, int>(K, 1));
-  boundary_of_G.push_back(std::pair<Cell*, int>(C, 1));
+  auto& boundary_of_G = G->boundaries();
+  boundary_of_G.emplace_back(K, 1);
+  boundary_of_G.emplace_back(C, 1);
 
   // for cell H
-  std::vector<std::pair<Cell*, int> >& boundary_of_H = H->get_boundary();
-  boundary_of_H.push_back(std::pair<Cell*, int>(D, 1));
-  boundary_of_H.push_back(std::pair<Cell*, int>(E, 1));
-  boundary_of_H.push_back(std::pair<Cell*, int>(L, 1));
-  boundary_of_H.push_back(std::pair<Cell*, int>(G, 1));
+  auto& boundary_of_H = H->boundaries();
+  boundary_of_H.emplace_back(D, 1);
+  boundary_of_H.emplace_back(E, 1);
+  boundary_of_H.emplace_back(L, 1);
+  boundary_of_H.emplace_back(G, 1);
 
   // for cell I:
   // Nothing needs to be done, coboundaries will be set up automatically.
 
   // for cell J
-  std::vector<std::pair<Cell*, int> >& boundary_of_J = J->get_boundary();
-  boundary_of_J.push_back(std::pair<Cell*, int>(I, 1));
-  boundary_of_J.push_back(std::pair<Cell*, int>(K, 1));
+  auto& boundary_of_J = J->boundaries();
+  boundary_of_J.emplace_back(I, 1);
+  boundary_of_J.emplace_back(K, 1);
 
   // for cell K:
   // Nothing needs to be done, coboundaries will be set up automatically.
 
   // for cell L
-  std::vector<std::pair<Cell*, int> >& boundary_of_L = L->get_boundary();
-  boundary_of_L.push_back(std::pair<Cell*, int>(K, 1));
-  boundary_of_L.push_back(std::pair<Cell*, int>(I, 1));
+  auto& boundary_of_L = L->boundaries();
+  boundary_of_L.emplace_back(K, 1);
+  boundary_of_L.emplace_back(I, 1);
 
   // for cell M
-  std::vector<std::pair<Cell*, int> >& boundary_of_M = M->get_boundary();
-  boundary_of_M.push_back(std::pair<Cell*, int>(A, 1));
-  boundary_of_M.push_back(std::pair<Cell*, int>(I, 1));
+  auto& boundary_of_M = M->boundaries();
+  boundary_of_M.emplace_back(A, 1);
+  boundary_of_M.emplace_back(I, 1);
 
   // for cell N
-  std::vector<std::pair<Cell*, int> >& boundary_of_N = N->get_boundary();
-  boundary_of_N.push_back(std::pair<Cell*, int>(J, 1));
-  boundary_of_N.push_back(std::pair<Cell*, int>(M, 1));
-  boundary_of_N.push_back(std::pair<Cell*, int>(O, 1));
-  boundary_of_N.push_back(std::pair<Cell*, int>(B, 1));
+  auto& boundary_of_N = N->boundaries();
+  boundary_of_N.emplace_back(J, 1);
+  boundary_of_N.emplace_back(M, 1);
+  boundary_of_N.emplace_back(O, 1);
+  boundary_of_N.emplace_back(B, 1);
 
   // for cell O
-  std::vector<std::pair<Cell*, int> >& boundary_of_O = O->get_boundary();
-  boundary_of_O.push_back(std::pair<Cell*, int>(K, 1));
-  boundary_of_O.push_back(std::pair<Cell*, int>(C, 1));
+  auto& boundary_of_O = O->boundaries();
+  boundary_of_O.emplace_back(K, 1);
+  boundary_of_O.emplace_back(C, 1);
 
   // for cell P
-  std::vector<std::pair<Cell*, int> >& boundary_of_P = P->get_boundary();
-  boundary_of_P.push_back(std::pair<Cell*, int>(L, 1));
-  boundary_of_P.push_back(std::pair<Cell*, int>(O, 1));
-  boundary_of_P.push_back(std::pair<Cell*, int>(M, 1));
-  boundary_of_P.push_back(std::pair<Cell*, int>(D, 1));
-
-  // std::vector< Cell* > vect_of_cells = {A,C,I,K,B,D,E,G,J,L,M,O,F,H,N,P};
-  std::vector<Cell*> vect_of_cells = {A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P};
+  auto& boundary_of_P = P->boundaries();
+  boundary_of_P.emplace_back(L, 1);
+  boundary_of_P.emplace_back(O, 1);
+  boundary_of_P.emplace_back(M, 1);
+  boundary_of_P.emplace_back(D, 1);
 
   // Here is a construction of a standard Hasse diagram:
-  Hasse_diag_persistence hd(vect_of_cells);
+  Hasse_diagram_persistence hd({A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P});
 
   Persistent_cohomology pcoh_hd(hd, true);
   pcoh_hd.init_coefficients(2);
@@ -621,10 +620,8 @@ BOOST_AUTO_TEST_CASE(computations_of_persistence_test_cubical_complex_conversion
 
   Bitmap_cubical_complex b(sizes, data);
 
-  Hasse_diag_persistence* hd =
-      Gudhi::Hasse_diagram::convert_to_Hasse_diagram_persistence<Bitmap_cubical_complex, Cell>(b);
-  typedef Gudhi::persistent_cohomology::Field_Zp Field_Zp;
-  typedef Gudhi::persistent_cohomology::Persistent_cohomology<Hasse_diag_persistence, Field_Zp> Persistent_cohomology;
+  Hasse_diagram_persistence* hd =
+      Gudhi::Hasse_diagram::convert_to_hasse_diagram_persistence<Bitmap_cubical_complex, Hasse_diagram_persistence>(b);
 
   Persistent_cohomology pcoh(*hd, true);
   unsigned field_characteristic = 11;
@@ -722,11 +719,6 @@ BOOST_AUTO_TEST_CASE(computations_of_persistence_test_simplex_tree_conversion) {
   rips_complex_from_file.create_complex(simplex_tree, dim_max);
   simplex_tree.initialize_filtration();
 
-  // using Persistent_cohomology_simplex_tree = Gudhi::persistent_cohomology::Persistent_cohomology<Simplex_tree,
-  // Field_Zp >; Persistent_cohomology_simplex_tree pcoh_st(simplex_tree); pcoh_st.init_coefficients(coef_field);
-  // pcoh_st.compute_persistent_cohomology(min_persistence);
-  // pcoh_st.output_diagram();
-
   std::string reference_output =
       "11  1 0.297153 inf \n11  1 0.294646 inf \n11  1 0.294634 inf \n11  1 0.263833 inf \n11  1 0.253499 inf \n11  1 "
       "0.25342 inf \n11  1 0.236033 inf \n11  1 0.217658 inf \n11  0 0 inf \n11  0 0 inf \n11  0 0 0.271628 \n11  0 0 "
@@ -746,16 +738,14 @@ BOOST_AUTO_TEST_CASE(computations_of_persistence_test_simplex_tree_conversion) {
       "\n11  0 0 0.122605 \n11  0 0 0.119933 \n11  0 0 0.109991 \n11  0 0 0.107953 \n11  0 0 0.105193 \n11  0 0 "
       "0.104098 \n";
 
-  Hasse_diag_persistence* hd =
-      Gudhi::Hasse_diagram::convert_to_Hasse_diagram_persistence<Simplex_tree, Cell>(simplex_tree);
+  Hasse_diagram_persistence* hd =
+      Gudhi::Hasse_diagram::convert_to_hasse_diagram_persistence<Simplex_tree, Hasse_diagram_persistence>(simplex_tree);
   Persistent_cohomology pcoh_hd(*hd);
   pcoh_hd.init_coefficients(coef_field);
   pcoh_hd.compute_persistent_cohomology(min_persistence);
   std::stringstream ss;
   pcoh_hd.output_diagram(ss);
   std::string current_output = ss.str();
-
-  // std::cout << current_output << "\n\n\n" << reference_output << "\n\n\n";
 
   BOOST_CHECK(current_output.compare(reference_output) == 0);
 }

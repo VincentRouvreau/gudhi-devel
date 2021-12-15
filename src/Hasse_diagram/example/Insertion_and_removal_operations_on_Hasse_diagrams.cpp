@@ -8,16 +8,13 @@
  *      - YYYY/MM Author: Description of the modification
  */
 
-#include <gudhi/reader_utils.h>
 #include <gudhi/Hasse_diagram.h>
 #include <gudhi/Hasse_diagram_persistence.h>
 #include <gudhi/Persistent_cohomology.h>
 
 // standard stuff
 #include <iostream>
-#include <string>
 #include <vector>
-#include <cstddef>
 
 int main() {
   // In this example we will show how to insert and remove elements from
@@ -48,9 +45,8 @@ int main() {
   //  At evey step we will display the data structure and compute
   //  its homology.
 
-  typedef Gudhi::Hasse_diagram::Hasse_diagram_cell<int, double, double> Cell;
-  typedef Gudhi::Hasse_diagram::Hasse_diagram_persistence<Cell> Hasse_diag;
-  typedef Gudhi::persistent_cohomology::Field_Zp Field_Zp;
+  using Hasse_diagram = Gudhi::Hasse_diagram::Hasse_diagram_persistence<>;
+  using Cell = Hasse_diagram::Cell_type;
 
   Cell* a = new Cell(0, 0.);
   Cell* b = new Cell(0, 0.);
@@ -62,56 +58,54 @@ int main() {
   Cell* h = new Cell(0, 0.);
 
   Cell* i = new Cell(1, 0.);
-  std::vector<std::pair<Cell*, int> >& boundary_of_i = i->get_boundary();
-  boundary_of_i.push_back(std::pair<Cell*, int>(a, 1));
-  boundary_of_i.push_back(std::pair<Cell*, int>(b, 1));
+  auto& boundary_of_i = i->boundaries();
+  boundary_of_i.emplace_back(a, 1);
+  boundary_of_i.emplace_back(b, 1);
 
   Cell* j = new Cell(1, 0.);
-  std::vector<std::pair<Cell*, int> >& boundary_of_j = j->get_boundary();
-  boundary_of_j.push_back(std::pair<Cell*, int>(c, 1));
-  boundary_of_j.push_back(std::pair<Cell*, int>(b, 1));
+  auto& boundary_of_j = j->boundaries();
+  boundary_of_j.emplace_back(c, 1);
+  boundary_of_j.emplace_back(b, 1);
 
   Cell* k = new Cell(1, 0.);
-  std::vector<std::pair<Cell*, int> >& boundary_of_k = k->get_boundary();
-  boundary_of_k.push_back(std::pair<Cell*, int>(a, 1));
-  boundary_of_k.push_back(std::pair<Cell*, int>(d, 1));
+  auto& boundary_of_k = k->boundaries();
+  boundary_of_k.emplace_back(a, 1);
+  boundary_of_k.emplace_back(d, 1);
 
   Cell* l = new Cell(1, 0.);
-  std::vector<std::pair<Cell*, int> >& boundary_of_l = l->get_boundary();
-  boundary_of_l.push_back(std::pair<Cell*, int>(c, 1));
-  boundary_of_l.push_back(std::pair<Cell*, int>(e, 1));
+  auto& boundary_of_l = l->boundaries();
+  boundary_of_l.emplace_back(c, 1);
+  boundary_of_l.emplace_back(e, 1);
 
   Cell* m = new Cell(1, 0.);
-  std::vector<std::pair<Cell*, int> >& boundary_of_m = m->get_boundary();
-  boundary_of_m.push_back(std::pair<Cell*, int>(d, 1));
-  boundary_of_m.push_back(std::pair<Cell*, int>(f, 1));
+  auto& boundary_of_m = m->boundaries();
+  boundary_of_m.emplace_back(d, 1);
+  boundary_of_m.emplace_back(f, 1);
 
   Cell* n = new Cell(1, 0.);
-  std::vector<std::pair<Cell*, int> >& boundary_of_n = n->get_boundary();
-  boundary_of_n.push_back(std::pair<Cell*, int>(e, 1));
-  boundary_of_n.push_back(std::pair<Cell*, int>(h, 1));
+  auto& boundary_of_n = n->boundaries();
+  boundary_of_n.emplace_back(e, 1);
+  boundary_of_n.emplace_back(h, 1);
 
   Cell* o = new Cell(1, 0.);
-  std::vector<std::pair<Cell*, int> >& boundary_of_o = o->get_boundary();
-  boundary_of_o.push_back(std::pair<Cell*, int>(f, 1));
-  boundary_of_o.push_back(std::pair<Cell*, int>(g, 1));
+  auto& boundary_of_o = o->boundaries();
+  boundary_of_o.emplace_back(f, 1);
+  boundary_of_o.emplace_back(g, 1);
 
   Cell* p = new Cell(1, 0.);
-  std::vector<std::pair<Cell*, int> >& boundary_of_p = p->get_boundary();
-  boundary_of_p.push_back(std::pair<Cell*, int>(g, 1));
-  boundary_of_p.push_back(std::pair<Cell*, int>(h, 1));
+  auto& boundary_of_p = p->boundaries();
+  boundary_of_p.emplace_back(g, 1);
+  boundary_of_p.emplace_back(h, 1);
 
   std::vector<Cell*> vector_of_initial_cells = {a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p};
 
   // And now we create the Hasse diagram:
-  Hasse_diag hd(vector_of_initial_cells);
+  Hasse_diagram hd(vector_of_initial_cells);
   std::cout << "Here is the initial Hasse diagam : " << std::endl << hd << std::endl;
 
   // Let us now compute homology of this diagram:
-  typedef Gudhi::persistent_cohomology::Field_Zp Field_Zp;
-  typedef Gudhi::persistent_cohomology::Persistent_cohomology<Gudhi::Hasse_diagram::Hasse_diagram_persistence<Cell>,
-                                                              Field_Zp>
-      Persistent_cohomology;
+  using Field_Zp = Gudhi::persistent_cohomology::Field_Zp;
+  using Persistent_cohomology = Gudhi::persistent_cohomology::Persistent_cohomology<Hasse_diagram, Field_Zp>;
 
   Persistent_cohomology pcoh(hd);
   int field_characteristic = 11;
@@ -160,21 +154,21 @@ int main() {
   Cell* s = new Cell(0, 0.);
 
   Cell* t = new Cell(1, 0.);
-  std::vector<std::pair<Cell*, int> >& boundary_of_t = t->get_boundary();
-  boundary_of_t.push_back(std::pair<Cell*, int>(a, 1));
-  boundary_of_t.push_back(std::pair<Cell*, int>(r, 1));
+  auto& boundary_of_t = t->boundaries();
+  boundary_of_t.emplace_back(a, 1);
+  boundary_of_t.emplace_back(r, 1);
 
   Cell* u = new Cell(1, 0.);
-  std::vector<std::pair<Cell*, int> >& boundary_of_u = u->get_boundary();
-  boundary_of_u.push_back(std::pair<Cell*, int>(r, 1));
-  boundary_of_u.push_back(std::pair<Cell*, int>(s, 1));
+  auto& boundary_of_u = u->boundaries();
+  boundary_of_u.emplace_back(r, 1);
+  boundary_of_u.emplace_back(s, 1);
 
   Cell* w = new Cell(1, 0.);
-  std::vector<std::pair<Cell*, int> >& boundary_of_w = w->get_boundary();
-  boundary_of_w.push_back(std::pair<Cell*, int>(s, 1));
-  boundary_of_w.push_back(std::pair<Cell*, int>(c, 1));
+  auto& boundary_of_w = w->boundaries();
+  boundary_of_w.emplace_back(s, 1);
+  boundary_of_w.emplace_back(c, 1);
 
-  // And then add them to the sturcture:
+  // And then add them to the structure:
   hd.add_cell(r);
   hd.add_cell(s);
   hd.add_cell(t);

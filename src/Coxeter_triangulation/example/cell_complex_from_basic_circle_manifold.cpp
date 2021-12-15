@@ -48,7 +48,7 @@ int main(int argc, char** argv) {
   std::clog << "Edges:" << std::endl;
   for (const auto& sc_pair : cell_complex.interior_simplex_cell_map(1)) {
     Cell_complex<Out_simplex_map>::Hasse_cell* edge_cell = sc_pair.second;
-    for (const auto& vi_pair : edge_cell->get_boundary()) std::clog << vi_map[vi_pair.first] << " ";
+    for (const auto& vi_pair : edge_cell->boundaries()) std::clog << vi_map[vi_pair.first] << " ";
     std::clog << std::endl;
   }
   return 0;

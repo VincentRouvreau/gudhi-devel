@@ -73,7 +73,7 @@ namespace Hasse_diagram {
  * 
  * All the data structures to store filtered complexes currently available in 
  * Gudhi can be converted to a Hasse_diagrams by using convert_to_Hasse_diagram() 
- * and convert_to_Hasse_diagram_persistence(). In the example folder the conversions
+ * and convert_to_hasse_diagram_persistence(). In the example folder the conversions
  * from Simplex tree and Cubical complex are presented. 
  *
  * 

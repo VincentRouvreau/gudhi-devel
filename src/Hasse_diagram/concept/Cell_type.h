@@ -22,7 +22,7 @@ public:
 	/**
 	 * Must provide an oder, and implement << operator.
 	**/ 
-	typedef unspecified Filtration_type;
+	typedef unspecified Filtration_value;
 	
     /**
      * Default constructor.
@@ -34,23 +34,27 @@ public:
      * vector of pairs of pointers to boundary elements and incidence
      * coefficients.
     **/
-	inline std::vector< std::pair<Cell_type*,Incidence_type> >& get_boundary();
+	inline std::vector< std::pair<Cell_type*,Incidence_type> >& boundaries();
+	inline std::vector< std::pair<Cell_type*,Incidence_type> > boundaries() const;
 
 	/**
-     * Return the dimension of a cell.
+     * Cell dimension accessors.
     **/
-	inline unsigned& get_dimension();
+	inline int& dimension();
+	inline int dimension() const;
 
 	/**
-	 * Return position of a cell in a structure. Class Cell_type is required
+	 * Position of a cell in a structure accessors. Class Cell_type is required
 	 * to be able to store a its position in a Hasse diagram. 
 	**/
-	inline size_t& get_position();
+	inline unsigned& position();
+	inline unsigned position() const;
 	
 	/**
-	 * Return the filtration of the cell.
+	 * Cell filtration accessors.
 	**/
-	inline Filtration_type& get_filtration();
+	inline void set_filtration(const Filtration_value& filt);
+	inline Filtration_value get_filtration() const;
 
 	/**
 	 * Implementation of Hasse diagram assume that the Cell_type allows removal
@@ -97,7 +101,7 @@ public:
 	/**
 	 * Procedure that return vector of positios of boundary elements of a given cell.
 	**/  	
-	inline std::vector< unsigned > get_list_of_positions_of_boundary_elements();
+	inline std::vector< unsigned > get_list_of_positions_of_boundary_elements() const;
 
 	
 	/**

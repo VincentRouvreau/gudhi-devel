@@ -9,17 +9,19 @@
  */
 
 
+#ifndef HASSE_DIAGRAM_H
+#define HASSE_DIAGRAM_H
+
 #include <iostream>
 #include <vector>
 #include <algorithm>
 #include <string>
 #include <sstream>
 #include <utility>  // for std::make_pair
+#include <fstream>  // for std::ifstream
 
 #include <gudhi/Hasse_diagram_cell.h>
-
-#ifndef HASSE_DIAGRAM_H
-#define HASSE_DIAGRAM_H
+#include <gudhi/Debug_utils.h>
 
 namespace Gudhi {
 
@@ -27,6 +29,21 @@ namespace Hasse_diagram {
 
 template <typename Cell_type>
 class is_before_in_dimension;
+
+/** Model of HasseDiagramOptions.
+ * 
+ * Maximum number of simplices to compute persistence is <CODE>std::numeric_limits<std::uint32_t>::max()</CODE>
+ * (about 4 billions of simplices). */
+struct Hasse_diagram_options_full_featured {
+  using Filtration_value = double;
+  using Simplex_key = std::uint32_t;
+  // With Incidence_type = std::uint8_t, the method full_signature_of_the_structure behaves strangely as std::string(std::uint8_t)
+  using Incidence_type = std::uint16_t;
+  using Additional_information = bool;
+  static const bool store_key = true;
+  static const bool store_filtration = true;
+  static const bool store_additional_information = true;
+};
 
 /**
  * \class Hasse_diagram
@@ -49,9 +66,78 @@ class is_before_in_dimension;
  * Cell_type - a parameter describing a cell of Hasse diagram. Please refer to Hasse_diagram_cell.h for further details.
  *
  */
-template <typename Cell_type>
+template <typename HasseDiagramOptions = Hasse_diagram_options_full_featured>
 class Hasse_diagram {
  public:
+  // + Manage what is stored or not in a cell [
+  using Options = HasseDiagramOptions;
+  using Incidence_type = typename Options::Incidence_type;
+  /** \brief Type for the value of the filtration function.
+   *
+   * Must be comparable with <. */
+  using Filtration_value = typename Options::Filtration_value;
+  /** \brief Key associated to each simplex.
+   *
+   * Must be an integer type. */
+  using Simplex_key = typename Options::Simplex_key;
+  /** \brief Type for some additionnal data.
+   */
+  using Additional_information = typename Options::Additional_information;
+
+  struct Key_simplex_base_real {
+    Key_simplex_base_real() : key_(-1) {}
+    void assign_key(Simplex_key k) { key_ = k; }
+    Simplex_key key() const { return key_; }
+   private:
+    Simplex_key key_;
+  };
+  struct Key_simplex_base_dummy {
+    Key_simplex_base_dummy() {}
+    // Undefined so it will not link
+    void assign_key(Simplex_key);
+    Simplex_key key() const;
+  };
+  typedef typename std::conditional<Options::store_key, Key_simplex_base_real, Key_simplex_base_dummy>::type
+      Key_simplex_base;
+
+  struct Filtration_simplex_base_real {
+    Filtration_simplex_base_real() : filt_(0) {}
+    void assign_filtration(Filtration_value f) { filt_ = f;}
+    Filtration_value filtration() const { return filt_;  std::cout << filt_ << std::endl;}
+   private:
+    Filtration_value filt_;
+  };
+  struct Filtration_simplex_base_dummy {
+    Filtration_simplex_base_dummy() {}
+    void assign_filtration(Filtration_value GUDHI_CHECK_code(f)) {
+      GUDHI_CHECK(f == 0, "Filtration value specified for a complex that does not store them");
+    }
+    Filtration_value filtration() const { return 0; }
+  };
+  typedef typename std::conditional<Options::store_filtration, Filtration_simplex_base_real,
+    Filtration_simplex_base_dummy>::type Filtration_simplex_base;
+
+  struct Additional_information_simplex_base_real {
+    Additional_information_simplex_base_real() : ai_(0) {}
+    void assign_additional_information(Additional_information f) { ai_ = f; }
+    Additional_information additional_information() const { return ai_; }
+   private:
+    Additional_information ai_;
+  };
+  struct Additional_information_simplex_base_dummy {
+    Additional_information_simplex_base_dummy() {}
+    void assign_additional_information(Filtration_value GUDHI_CHECK_code(f)) {
+      GUDHI_CHECK(f == 0, "Additional information value specified for a complex that does not store them");
+    }
+    Additional_information additional_information() const { return 0; }
+  };
+  typedef typename std::conditional<Options::store_additional_information, Additional_information_simplex_base_real,
+    Additional_information_simplex_base_dummy>::type Additional_information_simplex_base;
+
+  /* Type of Cell in the Hasse diagram. */
+  using Cell_type = Hasse_diagram_cell<Hasse_diagram>;
+
+  // - Manage what is stored or not in a cell ]
   using Cell_range = std::vector<Cell_type*>;
 
   /**
@@ -173,7 +259,7 @@ class Hasse_diagram {
   /**
    * Writing to a stream operator.
    **/
-  friend std::ostream& operator<<(std::ostream& out, const Hasse_diagram<Cell_type>& c) {
+  friend std::ostream& operator<<(std::ostream& out, const Hasse_diagram& c) {
     for (size_t i = 0; i != c.cells.size(); ++i) {
       // if the cell is deleted, ignore it.
       if (c.cells[i]->deleted()) continue;
@@ -304,10 +390,10 @@ Hasse_diagram<Cell_type>::Hasse_diagram(const char* filename) {
     iss.str("");
     iss.clear();
     iss << line;
-    iss >> new_cell->position_ >> new_cell->dimension_;
+    iss >> new_cell->position_ >> new_cell->dimension();
 
 #ifdef DEBUG_TRACES
-    std::clog << "Position and dimension of the cell : " << new_cell->position_ << " , " << new_cell->dimension_
+    std::clog << "Position and dimension of the cell : " << new_cell->position_ << " , " << new_cell->dimension()
               << std::endl;
 #endif
 
@@ -319,12 +405,14 @@ Hasse_diagram<Cell_type>::Hasse_diagram(const char* filename) {
     if (iss.good()) {
       // in this case we still have a filtration value to be read
       // from the file.
-      iss >> new_cell->filtration_;
+      Filtration_value filt;
+      iss >> filt;
+      new_cell->set_filtration(filt);
 #ifdef DEBUG_TRACES
-      std::clog << "Filtration of the cell : " << new_cell->filtration_ << std::endl;
+      std::clog << "Filtration of the cell : " << new_cell->get_filtration() << std::endl;
 #endif
     } else {
-      new_cell->filtration_ = 0;
+      new_cell->set_filtration(0.);
     }
 
     std::getline(in, line);
@@ -382,9 +470,9 @@ void Hasse_diagram<Cell_type>::set_up_coboundaries() {
   size_t number_of_cells = this->cells.size();
   std::vector<unsigned> sizes_of_coboundary(number_of_cells, 0);
   for (size_t i = 0; i != number_of_cells; ++i) {
-    std::vector<std::pair<Cell_type*, typename Cell_type::Incidence_type> > bdry = this->cells[i]->get_boundary();
+    std::vector<std::pair<Cell_type*, typename Cell_type::Incidence_type> > bdry = this->cells[i]->boundaries();
     for (size_t bd = 0; bd != bdry.size(); ++bd) {
-      sizes_of_coboundary[bdry[bd].first->get_position()]++;
+      sizes_of_coboundary[bdry[bd].first->position()]++;
     }
   }
 
@@ -404,10 +492,10 @@ void Hasse_diagram<Cell_type>::set_up_coboundaries() {
 
 template <typename Cell_type>
 void Hasse_diagram<Cell_type>::set_up_positions() {
-  for (size_t i = 0; i != this->cells.size(); ++i) {
-    this->cells[i]->get_position() = static_cast<unsigned>(i);
+  for (unsigned pos = 0; pos != this->cells.size(); ++pos) {
+    this->cells[pos]->position() = pos;
   }
-}  // set_up_positions
+}
 
 template <typename Cell_type>
 void Hasse_diagram<Cell_type>::write_to_file(const char* filename) {
@@ -457,17 +545,13 @@ std::vector<Cell_type*> convert_to_vector_of_Cell_type(Complex_type& cmplx) {
 
   size_t counter = 0;
   for (typename Complex_type::Filtration_simplex_iterator it = range.begin(); it != range.end(); ++it) {
-#ifdef DEBUG_TRACES
-    std::clog << "This is cell number : " << counter << std::endl;
-#endif
     Cell_type* this_cell = cells_of_Hasse_diag[counter];
 
-    this_cell->get_dimension() = static_cast<int>(cmplx.dimension(*it));
-    this_cell->get_filtration() = static_cast<typename Cell_type::Filtration_type>(cmplx.filtration(*it));
-
+    this_cell->dimension() = static_cast<int>(cmplx.dimension(*it));
+    this_cell->set_filtration(static_cast<typename Cell_type::Filtration_value>(cmplx.filtration(*it)));
 #ifdef DEBUG_TRACES
-    std::clog << "this_cell->get_dimension() : " << this_cell->get_dimension() << std::endl;
-    std::clog << "this_cell->get_filtration() : " << this_cell->get_filtration() << std::endl;
+    std::clog << "Cell [" << counter << "] of dimension " << this_cell->dimension()
+              << " and filtration " << this_cell->get_filtration();
 #endif
 
     // get the boundary:
@@ -475,16 +559,12 @@ std::vector<Cell_type*> convert_to_vector_of_Cell_type(Complex_type& cmplx) {
     boundary.reserve(10);
     typename Complex_type::Boundary_simplex_range bd_range = cmplx.boundary_simplex_range(*it);
     for (typename Complex_type::Boundary_simplex_iterator bd = bd_range.begin(); bd != bd_range.end(); ++bd) {
-      // std::cerr << "cmplx.key(*bd) : " << cmplx.key(*bd) << std::endl;
       boundary.push_back(cmplx.key(*bd));
     }
 
 #ifdef DEBUG_TRACES
-    std::clog << "boundary.size() : " << boundary.size() << std::endl
-              << "And here are the boundary elements : " << std::endl;
-    for (size_t bd = 0; bd != boundary.size(); ++bd) {
-      std::clog << boundary[bd] << " ";
-    }
+    std::clog << " - boundaries: ";
+    for (const auto& bnd : boundary) std::clog << bnd << " ";
     std::clog << std::endl;
 #endif
 
@@ -495,11 +575,6 @@ std::vector<Cell_type*> convert_to_vector_of_Cell_type(Complex_type& cmplx) {
       this_cell->boundary_.push_back(std::make_pair(cells_of_Hasse_diag[boundary[bd]], incidence));
       incidence *= -1;
     }
-
-#ifdef DEBUG_TRACES
-    std::clog << "this_cell->boundary_.size() : " << this_cell->boundary_.size() << std::endl;
-    std::clog << "Set up for this cell \n";
-#endif
     ++counter;
   }
   return cells_of_Hasse_diag;
@@ -509,9 +584,9 @@ std::vector<Cell_type*> convert_to_vector_of_Cell_type(Complex_type& cmplx) {
  * This is a function to convert any representation that implements Hasse_complex interface
  * into Hasse diagram
  **/
-template <typename Complex_type, typename Cell_type>
-Hasse_diagram<Cell_type>* convert_to_Hasse_diagram(Complex_type& cmplx) {
-  return new Hasse_diagram<Cell_type>(convert_to_vector_of_Cell_type(cmplx));
+template <typename Complex_type, typename HasseDiagramOptions>
+Hasse_diagram<HasseDiagramOptions>* convert_to_Hasse_diagram(Complex_type& cmplx) {
+  return new Hasse_diagram<HasseDiagramOptions>(convert_to_vector_of_Cell_type(cmplx));
 }  // convert_to_Hasse_diagram
 
 }  // namespace Hasse_diagram

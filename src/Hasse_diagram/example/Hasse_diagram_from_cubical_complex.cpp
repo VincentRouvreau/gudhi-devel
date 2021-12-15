@@ -8,7 +8,6 @@
  *      - YYYY/MM Author: Description of the modification
  */
 
-#include <gudhi/reader_utils.h>
 #include <gudhi/Hasse_diagram.h>
 #include <gudhi/Hasse_diagram_persistence.h>
 #include <gudhi/Persistent_cohomology.h>
@@ -16,20 +15,16 @@
 
 // standard stuff
 #include <iostream>
-#include <string>
 #include <vector>
-#include <cstddef>
 
 int main() {
   // This is an example of construction of Hasse diagram from a cubical complex. In the example
   // below we first define 3 by 3 by 3 cubical complex and assign a filtration on it. Later
   // we convert it to a standard Hasse_diagram and display it. At the end, we will convert it
   // to an object of a class Hasse_diagram_persistence and compute persitence of it.
-
-  typedef Gudhi::cubical_complex::Bitmap_cubical_complex_base<double> Bitmap_cubical_complex_base;
-  typedef Gudhi::cubical_complex::Bitmap_cubical_complex<Bitmap_cubical_complex_base> Bitmap_cubical_complex;
-  std::vector<unsigned> sizes(3);
-  sizes[0] = sizes[1] = sizes[2] = 3;
+  using Cubical_complex_base = Gudhi::cubical_complex::Bitmap_cubical_complex_base<double>;
+  using Cubical_complex = Gudhi::cubical_complex::Bitmap_cubical_complex<Cubical_complex_base>;
+  std::vector<unsigned> sizes = {3, 3, 3};
   // this is 3 by 3 by 3 cubical complex representing a cubical sphere embedded on two dimensional torus.
   // The lifespan of a sphere is from 1 to 10.
 
@@ -46,16 +41,15 @@ int main() {
     1, 1, 1,
     1, 1, 1
   };
-  Bitmap_cubical_complex b(sizes, top_dimensional_cells_data);
+  Cubical_complex b(sizes, top_dimensional_cells_data);
 
-  typedef Gudhi::Hasse_diagram::Hasse_diagram_cell<int, double, double> Cell;
-  typedef Gudhi::Hasse_diagram::Hasse_diagram_persistence<Cell> Hasse_diag;
-  Hasse_diag* hd = Gudhi::Hasse_diagram::convert_to_Hasse_diagram_persistence<Bitmap_cubical_complex, Cell>(b);
+  using Hasse_diagram = Gudhi::Hasse_diagram::Hasse_diagram_persistence<>;
+  Hasse_diagram* hd = Gudhi::Hasse_diagram::convert_to_hasse_diagram_persistence<Cubical_complex, Hasse_diagram>(b);
 
-  std::cout << "Here is the Hasse diagram obtained from the cunical complex : " << *hd << std::endl;
+  std::cout << "Here is the Hasse diagram obtained from the cubical complex : " << *hd << std::endl;
 
-  typedef Gudhi::persistent_cohomology::Field_Zp Field_Zp;
-  typedef Gudhi::persistent_cohomology::Persistent_cohomology<Hasse_diag, Field_Zp> Persistent_cohomology;
+  using Field_Zp = Gudhi::persistent_cohomology::Field_Zp;
+  using Persistent_cohomology = Gudhi::persistent_cohomology::Persistent_cohomology<Hasse_diagram, Field_Zp>;
 
   Persistent_cohomology pcoh(*hd, true);
   int field_characteristic = 11;

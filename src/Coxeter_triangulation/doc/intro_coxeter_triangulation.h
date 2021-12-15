@@ -173,7 +173,7 @@ It is also possible to implement your own function as detailed in this \ref exam
 The output of the manifold tracing algorithm can be transformed into the Hasse diagram of a cell complex that
 approximates the input manifold using the class \ref Gudhi::coxeter_triangulation::Cell_complex "Cell_complex".
 The type of the cells in the Hasse diagram is
-\ref Gudhi::Hasse_diagram::Hasse_diagram_cell "Hasse_cell<int, double, bool>" provided by the module Hasse diagram.
+\ref Gudhi::Hasse_diagram::Hasse_diagram_cell provided by the module Hasse diagram.
 The cells in the cell complex given by an object of the class
 \ref Gudhi::coxeter_triangulation::Cell_complex "Cell_complex" are accessed through several maps that are accessed
 through the following methods.

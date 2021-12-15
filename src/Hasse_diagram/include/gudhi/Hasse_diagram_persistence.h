@@ -8,6 +8,9 @@
  *      - YYYY/MM Author: Description of the modification
  */
 
+#ifndef HASSE_DIAGRAM_PERSISTENCE_H
+#define HASSE_DIAGRAM_PERSISTENCE_H
+
 #include <iostream>
 #include <vector>
 #include <algorithm>
@@ -16,6 +19,7 @@
 #include <numeric>  // for std::iota
 #include <limits>  // for std::numeric_limits<>
 #include <utility>  // for std::pair<>
+#include <cmath>  // for std::fabs
 
 #ifdef GUDHI_USE_TBB
 #include <tbb/parallel_sort.h>
@@ -24,15 +28,27 @@
 #include <gudhi/Hasse_diagram_cell.h>
 #include <gudhi/Hasse_diagram.h>
 
-#ifndef HASSE_DIAGRAM_PERSISTENCE_H
-#define HASSE_DIAGRAM_PERSISTENCE_H
-
 namespace Gudhi {
 
 namespace Hasse_diagram {
 
-template <typename Cell_type>
+template <typename HasseDiagramOptions>
 class is_before_in_filtration;
+
+/** Model of HasseDiagramOptions required to compute persistence.
+ * 
+ * Maximum number of simplices to compute persistence is <CODE>std::numeric_limits<std::uint32_t>::max()</CODE>
+ * (about 4 billions of simplices). */
+struct Hasse_diagram_options_for_persistence : public Hasse_diagram_options_full_featured {
+  using Filtration_value = double;
+  using Simplex_key = std::uint32_t;
+  // Mandatory to compute persistence
+  static const bool store_key = true;
+  static const bool store_filtration = true;
+  // Not required, but can be changed if needed
+  static const bool store_additional_information = false;
+  using Additional_information = bool;
+};
 
 /**
  * \class Hasse_diagram_persistence
@@ -51,13 +67,14 @@ class is_before_in_filtration;
  * Cell_type - a parameter describing a cell of Hasse diagram. Please refer to Hasse_diagram_cell.h for further details.
  *
  */
-template <typename Cell_type>
-class Hasse_diagram_persistence : public Hasse_diagram<Cell_type> {
+template <typename HasseDiagramOptions = Hasse_diagram_options_for_persistence>
+class Hasse_diagram_persistence : public Hasse_diagram<HasseDiagramOptions> {
  public:
+  using Cell_type = typename Hasse_diagram<HasseDiagramOptions>::Cell_type;
   /**
    * Default constructor.
    **/
-  Hasse_diagram_persistence() : Hasse_diagram<Cell_type>() {}
+  Hasse_diagram_persistence() : Hasse_diagram<HasseDiagramOptions>() {}
 
   /**
    * Creating Hasse diagram for persistence computations from a file.
@@ -68,7 +85,7 @@ class Hasse_diagram_persistence : public Hasse_diagram<Cell_type> {
    * the two lines above are repeated for each cell.
    * It is assumed that the id of a cell is its position in the file.
    **/
-  Hasse_diagram_persistence(const char* filename) : Hasse_diagram<Cell_type>(filename) { this->set_up_the_arrays(); }
+  Hasse_diagram_persistence(const char* filename) : Hasse_diagram<HasseDiagramOptions>(filename) { this->set_up_the_arrays(); }
 
   /**
    * Constructor to create a Hasse diagram for persistence computations
@@ -76,11 +93,11 @@ class Hasse_diagram_persistence : public Hasse_diagram<Cell_type> {
    * boundaries set up. Setting up the coboundaries will be done in the
    * constructor based on the information about boundaries.
    **/
-  Hasse_diagram_persistence(const std::vector<Cell_type*>& cells_) : Hasse_diagram<Cell_type>(cells_) {
+  Hasse_diagram_persistence(const std::vector<Cell_type*>& cells_) : Hasse_diagram<HasseDiagramOptions>(cells_) {
     this->set_up_the_arrays();
   }
 
-  friend class is_before_in_filtration<Cell_type>;
+  friend class is_before_in_filtration<HasseDiagramOptions>;
 
   /**
    * A version of clean up structure for the Hasse_diagram_persistence
@@ -90,7 +107,7 @@ class Hasse_diagram_persistence : public Hasse_diagram<Cell_type> {
    * the structure of Hasse diagram.
    **/
   void clean_up_the_structure() {
-    Hasse_diagram<Cell_type>::clean_up_the_structure();
+    Hasse_diagram<HasseDiagramOptions>::clean_up_the_structure();
     this->set_up_the_arrays();
   }
 
@@ -98,12 +115,26 @@ class Hasse_diagram_persistence : public Hasse_diagram<Cell_type> {
    * A procedure that need to be called before computations of persistence after some
    * addition (but not removal) operations has been performed on the structure.
    **/
-  void set_up_the_arrays();
+  void set_up_the_arrays() {
+    this->cell_associated_to_key_ = std::vector<unsigned>(this->cells.size());
+    std::iota(std::begin(this->cell_associated_to_key_), std::end(this->cell_associated_to_key_), 0);
+#ifdef GUDHI_USE_TBB
+    tbb::parallel_sort(this->cell_associated_to_key_.begin(), this->cell_associated_to_key_.end(),
+                       is_before_in_filtration<HasseDiagramOptions>(this));
+#else
+    std::sort(this->cell_associated_to_key_.begin(), this->cell_associated_to_key_.end(),
+              is_before_in_filtration<HasseDiagramOptions>(this));
+#endif
+    this->key_associated_to_cell_ = std::vector<unsigned>(this->cell_associated_to_key_.size());
+    for (size_t i = 0; i != this->cell_associated_to_key_.size(); ++i) {
+      this->key_associated_to_cell_[this->cell_associated_to_key_[i]] = static_cast<unsigned>(i);
+    }
+  }
 
   // From here on we have implementation of methods that are required to use
   // this class with persistent homology engine.
 
-  typedef typename Cell_type::Filtration_type Filtration_value;
+  typedef typename HasseDiagramOptions::Filtration_value Filtration_value;
   typedef unsigned Simplex_key;
   typedef Simplex_key Simplex_handle;
 
@@ -138,13 +169,13 @@ class Hasse_diagram_persistence : public Hasse_diagram<Cell_type> {
     if (sh == null_simplex()) {
       return -1;
     }
-    return this->cells[sh]->get_dimension();
+    return this->cells[sh]->dimension();
   }
 
   int dimension() {
     int top_dimension = 0;
     for (size_t i = 0; i != this->cells.size(); ++i) {
-      int dim_of_cell = this->cells[i]->get_dimension();
+      int dim_of_cell = this->cells[i]->dimension();
       if (top_dimension < dim_of_cell) {
         top_dimension = dim_of_cell;
       }
@@ -156,9 +187,9 @@ class Hasse_diagram_persistence : public Hasse_diagram<Cell_type> {
     if (sh == null_simplex()) {
       return std::pair<Simplex_handle, Simplex_handle>(null_simplex(), null_simplex());
     }
-    std::vector<std::pair<Cell_type*, typename Cell_type::Incidence_type> > boundary = this->cells[sh]->get_boundary();
-    return std::pair<Simplex_handle, Simplex_handle>(boundary[0].first->get_position(),
-                                                     boundary[1].first->get_position());
+    std::vector<std::pair<Cell_type*, typename HasseDiagramOptions::Incidence_type> > boundary = this->cells[sh]->boundaries();
+    return std::pair<Simplex_handle, Simplex_handle>(boundary[0].first->position(),
+                                                     boundary[1].first->position());
   }
 
   void assign_key(Simplex_handle sh, Simplex_key key) {
@@ -175,7 +206,7 @@ class Hasse_diagram_persistence : public Hasse_diagram<Cell_type> {
     // Iterator over all simplices of the complex in the order of the indexing scheme.
     // 'value_type' must be 'Simplex_handle'.
    public:
-    Filtration_simplex_iterator(Hasse_diagram_persistence<Cell_type>* hd) : hasse_diagram_(hd), position_(0) {}
+    Filtration_simplex_iterator(Hasse_diagram_persistence<HasseDiagramOptions>* hd) : hasse_diagram_(hd), position_(0) {}
     Filtration_simplex_iterator() : hasse_diagram_(NULL), position_(0) {}
 
     Filtration_simplex_iterator operator++() {
@@ -211,7 +242,7 @@ class Hasse_diagram_persistence : public Hasse_diagram<Cell_type> {
     friend class Filtration_simplex_range;
 
    private:
-    Hasse_diagram_persistence<Cell_type>* hasse_diagram_;
+    Hasse_diagram_persistence<HasseDiagramOptions>* hasse_diagram_;
     unsigned position_;
   };
 
@@ -225,7 +256,7 @@ class Hasse_diagram_persistence : public Hasse_diagram<Cell_type> {
     typedef Filtration_simplex_iterator const_iterator;
     typedef Filtration_simplex_iterator iterator;
 
-    Filtration_simplex_range(Hasse_diagram_persistence<Cell_type>* hd) : hasse_diagram_(hd) {}
+    Filtration_simplex_range(Hasse_diagram_persistence<HasseDiagramOptions>* hd) : hasse_diagram_(hd) {}
 
     Filtration_simplex_iterator begin() { return Filtration_simplex_iterator(this->hasse_diagram_); }
 
@@ -236,7 +267,7 @@ class Hasse_diagram_persistence : public Hasse_diagram<Cell_type> {
     }
 
    private:
-    Hasse_diagram_persistence<Cell_type>* hasse_diagram_;
+    Hasse_diagram_persistence<HasseDiagramOptions>* hasse_diagram_;
   };
 
   Filtration_simplex_range filtration_simplex_range() { return Filtration_simplex_range(this); }
@@ -248,11 +279,11 @@ class Hasse_diagram_persistence : public Hasse_diagram<Cell_type> {
   class Skeleton_simplex_range;
   class Skeleton_simplex_iterator : std::iterator<std::input_iterator_tag, Simplex_handle> {
    public:
-    Skeleton_simplex_iterator(Hasse_diagram_persistence<Cell_type>* hd, int d) : hasse_diagram_(hd), dimension_(d) {
+    Skeleton_simplex_iterator(Hasse_diagram_persistence<HasseDiagramOptions>* hd, int d) : hasse_diagram_(hd), dimension_(d) {
       // find the position of the first cell of a dimension d
       this->position_ = 0;
       while ((this->position_ != this->hasse_diagram_->cells.size()) &&
-             (this->hasse_diagram_->cells[this->position_]->get_dimension() != this->dimension_)) {
+             (this->hasse_diagram_->cells[this->position_]->dimension() != this->dimension_)) {
         ++this->position_;
       }
     }
@@ -268,7 +299,7 @@ class Hasse_diagram_persistence : public Hasse_diagram<Cell_type> {
     Skeleton_simplex_iterator operator++() {
       ++this->position_;
       while ((this->position_ != this->hasse_diagram_->cells.size()) &&
-             (this->hasse_diagram_->cells[this->position_]->get_dimension() != this->dimension_)) {
+             (this->hasse_diagram_->cells[this->position_]->dimension() != this->dimension_)) {
         ++this->position_;
       }
       return (*this);
@@ -296,7 +327,7 @@ class Hasse_diagram_persistence : public Hasse_diagram<Cell_type> {
     friend class Skeleton_simplex_range;
 
    private:
-    Hasse_diagram_persistence<Cell_type>* hasse_diagram_;
+    Hasse_diagram_persistence<HasseDiagramOptions>* hasse_diagram_;
     unsigned position_;
     int dimension_;
   };
@@ -311,7 +342,7 @@ class Hasse_diagram_persistence : public Hasse_diagram<Cell_type> {
     typedef Skeleton_simplex_iterator const_iterator;
     typedef Skeleton_simplex_iterator iterator;
 
-    Skeleton_simplex_range(Hasse_diagram_persistence<Cell_type>* hd, unsigned dimension)
+    Skeleton_simplex_range(Hasse_diagram_persistence<HasseDiagramOptions>* hd, unsigned dimension)
         : hasse_diagram_(hd), dimension_(dimension) {}
 
     Skeleton_simplex_iterator begin() { return Skeleton_simplex_iterator(this->hasse_diagram_, this->dimension_); }
@@ -323,7 +354,7 @@ class Hasse_diagram_persistence : public Hasse_diagram<Cell_type> {
     }
 
    private:
-    Hasse_diagram_persistence<Cell_type>* hasse_diagram_;
+    Hasse_diagram_persistence<HasseDiagramOptions>* hasse_diagram_;
     unsigned dimension_;
   };
 
@@ -348,22 +379,22 @@ class Hasse_diagram_persistence : public Hasse_diagram<Cell_type> {
   std::vector<unsigned> cell_associated_to_key_;
 };  // Hasse_diagram
 
-template <typename Cell_type>
+template <typename HasseDiagramOptions>
 class is_before_in_filtration {
  public:
-  explicit is_before_in_filtration(Hasse_diagram_persistence<Cell_type>* hd) : hasse_diagram_(hd) {}
+  explicit is_before_in_filtration(Hasse_diagram_persistence<HasseDiagramOptions>* hd) : hasse_diagram_(hd) {}
 
   bool operator()(size_t first, size_t second) const {
-    typedef typename Cell_type::Filtration_type Filtration_value;
+    typedef typename HasseDiagramOptions::Filtration_value Filtration_value;
     Filtration_value fil1 = hasse_diagram_->cells[first]->get_filtration();
     Filtration_value fil2 = hasse_diagram_->cells[second]->get_filtration();
     // Compare what can be floating point values
     if (std::fabs(fil1 - fil2) > std::numeric_limits<Filtration_value>::epsilon()) {
       return fil1 < fil2;
     }
-    // in this case they are on the same filtration level, so the dimension decide.
-    unsigned dim1 = hasse_diagram_->cells[first]->get_dimension();
-    unsigned dim2 = hasse_diagram_->cells[second]->get_dimension();
+    // in this case they are on the same filtration level, so the dimension decides.
+    int dim1 = hasse_diagram_->cells[first]->dimension();
+    int dim2 = hasse_diagram_->cells[second]->dimension();
     if (dim1 != dim2) {
       return dim1 < dim2;
     }
@@ -373,33 +404,17 @@ class is_before_in_filtration {
   }
 
  protected:
-  Hasse_diagram_persistence<Cell_type>* hasse_diagram_;
+  Hasse_diagram_persistence<HasseDiagramOptions>* hasse_diagram_;
 };
-
-template <typename Cell_type>
-void Hasse_diagram_persistence<Cell_type>::set_up_the_arrays() {
-  this->cell_associated_to_key_ = std::vector<unsigned>(this->cells.size());
-  std::iota(std::begin(this->cell_associated_to_key_), std::end(this->cell_associated_to_key_), 0);
-#ifdef GUDHI_USE_TBB
-  tbb::parallel_sort(this->cell_associated_to_key_.begin(), this->cell_associated_to_key_.end(),
-                     is_before_in_filtration<Cell_type>(this));
-#else
-  std::sort(this->cell_associated_to_key_.begin(), this->cell_associated_to_key_.end(),
-            is_before_in_filtration<Cell_type>(this));
-#endif
-  this->key_associated_to_cell_ = std::vector<unsigned>(this->cell_associated_to_key_.size());
-  for (size_t i = 0; i != this->cell_associated_to_key_.size(); ++i) {
-    this->key_associated_to_cell_[this->cell_associated_to_key_[i]] = static_cast<unsigned>(i);
-  }
-}  // Cell_type
 
 /**
  * This is a function to convert any representation that implements Hasse_complex interface
  * into Hasse_diagram_persistence
  **/
-template <typename Complex_type, typename Cell_type>
-Hasse_diagram_persistence<Cell_type>* convert_to_Hasse_diagram_persistence(Complex_type& cmplx) {
-  return new Hasse_diagram_persistence<Cell_type>(convert_to_vector_of_Cell_type<Complex_type, Cell_type>(cmplx));
+template <typename Complex_type, typename HasseDiagram>
+HasseDiagram* convert_to_hasse_diagram_persistence(Complex_type& cmplx) {
+  using Cell_type = typename HasseDiagram::Cell_type;
+  return new HasseDiagram(convert_to_vector_of_Cell_type<Complex_type, Cell_type>(cmplx));
 }  // convert_to_Hasse_diagram
 
 }  // namespace Hasse_diagram

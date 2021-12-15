@@ -54,8 +54,8 @@ void populate_mesh(Mesh_medit& output, Simplex_cell_map& sc_map, Configuration c
       Eigen::VectorXd barycenter = Eigen::VectorXd::Zero(amb_d);
       std::set<std::size_t> vertex_indices;
       Hasse_cell* cell = sc_pair.second;
-      for (const auto& ei_pair : cell->get_boundary())
-        for (const auto& vi_pair : ei_pair.first->get_boundary()) vertex_indices.emplace(vi_map[vi_pair.first]);
+      for (const auto& ei_pair : cell->boundaries())
+        for (const auto& vi_pair : ei_pair.first->boundaries()) vertex_indices.emplace(vi_map[vi_pair.first]);
       for (const std::size_t& v : vertex_indices) barycenter += output.vertex_points[v - 1];
       ci_map.emplace(cell, index++);
       output.vertex_points.emplace_back((1. / vertex_indices.size()) * barycenter);
@@ -70,7 +70,7 @@ void populate_mesh(Mesh_medit& output, Simplex_cell_map& sc_map, Configuration c
     for (const auto& sc_pair : sc_map[1]) {
       Hasse_cell* edge_cell = sc_pair.second;
       Mesh_element_vertices edge;
-      for (const auto& vi_pair : edge_cell->get_boundary()) edge.push_back(vi_map[vi_pair.first]);
+      for (const auto& vi_pair : edge_cell->boundaries()) edge.push_back(vi_map[vi_pair.first]);
       output.edges.emplace_back(edge, configuration.ref_edges);
 #ifdef DEBUG_TRACES
       std::string vlist;
@@ -81,9 +81,9 @@ void populate_mesh(Mesh_medit& output, Simplex_cell_map& sc_map, Configuration c
 
   if (configuration.toggle_triangles && sc_map.size() >= 3)
     for (const auto& sc_pair : sc_map[2]) {
-      for (const auto& ei_pair : sc_pair.second->get_boundary()) {
+      for (const auto& ei_pair : sc_pair.second->boundaries()) {
         Mesh_element_vertices triangle(1, ci_map[sc_pair.second]);
-        for (const auto& vi_pair : ei_pair.first->get_boundary()) triangle.push_back(vi_map[vi_pair.first]);
+        for (const auto& vi_pair : ei_pair.first->boundaries()) triangle.push_back(vi_map[vi_pair.first]);
         output.triangles.emplace_back(triangle, configuration.ref_triangles);
       }
     }
@@ -93,9 +93,9 @@ void populate_mesh(Mesh_medit& output, Simplex_cell_map& sc_map, Configuration c
       Eigen::VectorXd barycenter = Eigen::VectorXd::Zero(amb_d);
       std::set<std::size_t> vertex_indices;
       Hasse_cell* cell = sc_pair.second;
-      for (const auto& ci_pair : cell->get_boundary())
-        for (const auto& ei_pair : ci_pair.first->get_boundary())
-          for (const auto& vi_pair : ei_pair.first->get_boundary()) vertex_indices.emplace(vi_map[vi_pair.first]);
+      for (const auto& ci_pair : cell->boundaries())
+        for (const auto& ei_pair : ci_pair.first->boundaries())
+          for (const auto& vi_pair : ei_pair.first->boundaries()) vertex_indices.emplace(vi_map[vi_pair.first]);
       for (const std::size_t& v : vertex_indices) barycenter += output.vertex_points[v - 1];
       output.vertex_points.emplace_back((1. / vertex_indices.size()) * barycenter);
 #ifdef DEBUG_TRACES
@@ -104,10 +104,10 @@ void populate_mesh(Mesh_medit& output, Simplex_cell_map& sc_map, Configuration c
       cell_vlist_map.emplace(to_string(cell), vlist);
 #endif
 
-      for (const auto& ci_pair : cell->get_boundary())
-        for (const auto& ei_pair : ci_pair.first->get_boundary()) {
+      for (const auto& ci_pair : cell->boundaries())
+        for (const auto& ei_pair : ci_pair.first->boundaries()) {
           Mesh_element_vertices tetrahedron = {index, ci_map[sc_pair.second]};
-          for (const auto& vi_pair : ei_pair.first->get_boundary()) tetrahedron.push_back(vi_map[vi_pair.first]);
+          for (const auto& vi_pair : ei_pair.first->boundaries()) tetrahedron.push_back(vi_map[vi_pair.first]);
           output.tetrahedra.emplace_back(tetrahedron, configuration.ref_tetrahedra);
         }
       index++;

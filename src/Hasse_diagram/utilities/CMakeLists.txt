@@ -6,6 +6,6 @@ if (TBB_FOUND)
 endif()
 
 add_test(NAME Hasse_diagram_from_torus_file COMMAND $<TARGET_FILE:Hasse_diagram_from_file>
-  "${CMAKE_SOURCE_DIR}/data/hasse_diagram/cw_decomposition_of_torus.hasse" "7")
+  "${CMAKE_SOURCE_DIR}/data/hasse_diagram/cw_decomposition_of_torus.hasse")
 
 install(TARGETS Hasse_diagram_from_file DESTINATION bin)

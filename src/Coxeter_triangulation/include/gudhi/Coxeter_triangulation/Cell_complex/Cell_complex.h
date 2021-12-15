@@ -20,10 +20,20 @@
 #include <gudhi/IO/output_debug_traces_to_html.h>  // for DEBUG_TRACES
 #include <gudhi/Permutahedral_representation/Simplex_comparator.h>
 #include <gudhi/Hasse_diagram_cell.h>  // for Hasse_cell
+#include <gudhi/Hasse_diagram.h>  // for Hasse_cell
 
 namespace Gudhi {
 
 namespace coxeter_triangulation {
+
+struct Hasse_diagram_options_for_coxeter : public Gudhi::Hasse_diagram::Hasse_diagram_options_full_featured {
+  using Filtration_value = double;
+  using Simplex_key = std::uint32_t;
+  using Additional_information = bool;
+  static const bool store_key = true;
+  static const bool store_filtration = true;
+  static const bool store_additional_information = true;
+};
 
 /** \class Cell_complex
  *  \brief A class that constructs the cell complex from the output provided by the class
@@ -46,7 +56,8 @@ class Cell_complex {
    *  The additional information is the boolean that is true if and only if the cell lies
    *  on the boundary.
    */
-  using Hasse_cell = Gudhi::Hasse_diagram::Hasse_diagram_cell<int, double, bool>;
+  using Hasse_diagram = Gudhi::Hasse_diagram::Hasse_diagram<Hasse_diagram_options_for_coxeter>;
+  using Hasse_cell = Gudhi::Hasse_diagram::Hasse_diagram_cell<Hasse_diagram>;
   /** \brief Type of a map from permutahedral representations of simplices in the
    *  ambient triangulation to the corresponding cells in the cell complex of some
    *  specific dimension.
@@ -102,7 +113,7 @@ class Cell_complex {
       Hasse_cell* cell = sc_pair.second;
       for (Simplex_handle coface : simplex.coface_range(cod_d_ + cell_d)) {
         Hasse_cell* new_cell = insert_cell(coface, cell_d, false);
-        new_cell->get_boundary().emplace_back(cell, 1);
+        new_cell->boundaries().emplace_back(cell, 1);
       }
     }
 
@@ -113,14 +124,14 @@ class Cell_complex {
         if (cell_d != intr_d_)
           for (Simplex_handle coface : simplex.coface_range(cod_d_ + cell_d + 1)) {
             Hasse_cell* new_cell = insert_cell(coface, cell_d, true);
-            new_cell->get_boundary().emplace_back(cell, 1);
+            new_cell->boundaries().emplace_back(cell, 1);
           }
         auto map_it = interior_simplex_cell_maps_[cell_d].find(simplex);
         if (map_it == interior_simplex_cell_maps_[cell_d].end())
           std::cerr << "Cell_complex::expand_level error: A boundary cell does not have an interior counterpart.\n";
         else {
           Hasse_cell* i_cell = map_it->second;
-          i_cell->get_boundary().emplace_back(cell, 1);
+          i_cell->boundaries().emplace_back(cell, 1);
         }
       }
     }

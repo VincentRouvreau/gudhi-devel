@@ -8,8 +8,6 @@
  *      - YYYY/MM Author: Description of the modification
  */
 
-#include <gudhi/reader_utils.h>
-#include <gudhi/Hasse_diagram.h>
 #include <gudhi/Hasse_diagram_persistence.h>
 #include <gudhi/Persistent_cohomology.h>
 
@@ -20,7 +18,8 @@
 #include <cstddef>
 
 int main(int argc, char** argv) {
-  typedef Gudhi::Hasse_diagram::Hasse_diagram_cell<int, double, double> Cell;
+  using Hasse_diagram = Gudhi::Hasse_diagram::Hasse_diagram_persistence<>;
+  using Cell = Hasse_diagram::Cell_type;
   // In this example we will construct a CW decomposition of two dimensional torus:
   //  _______________________
   //  |A|___B___|C|___D___|A|
@@ -67,85 +66,87 @@ int main(int argc, char** argv) {
   // for cell A:
   // Nothing needs to be done, coboundaries will be set up automatically.
 
-  // for cell B:
-  std::vector<std::pair<Cell*, int> >& boundary_of_B = B->get_boundary();
-  boundary_of_B.push_back(std::pair<Cell*, int>(A, 1));
-  boundary_of_B.push_back(std::pair<Cell*, int>(C, 1));
+   // for cell B:
+  auto& boundary_of_B = B->boundaries();
+  boundary_of_B.emplace_back(A, 1);
+  boundary_of_B.emplace_back(C, 1);
 
   // for cell C:
   // Nothing needs to be done, coboundaries will be set up automatically.
 
   // for cell D
-  std::vector<std::pair<Cell*, int> >& boundary_of_D = D->get_boundary();
-  boundary_of_D.push_back(std::pair<Cell*, int>(A, 1));
-  boundary_of_D.push_back(std::pair<Cell*, int>(C, 1));
+  auto& boundary_of_D = D->boundaries();
+  boundary_of_D.emplace_back(A, 1);
+  boundary_of_D.emplace_back(C, 1);
 
   // for cell E
-  std::vector<std::pair<Cell*, int> >& boundary_of_E = E->get_boundary();
-  boundary_of_E.push_back(std::pair<Cell*, int>(A, 1));
-  boundary_of_E.push_back(std::pair<Cell*, int>(I, 1));
+  auto& boundary_of_E = E->boundaries();
+  boundary_of_E.emplace_back(A, 1);
+  boundary_of_E.emplace_back(I, 1);
 
   // for cell F
-  std::vector<std::pair<Cell*, int> >& boundary_of_F = F->get_boundary();
-  boundary_of_F.push_back(std::pair<Cell*, int>(B, 1));
-  boundary_of_F.push_back(std::pair<Cell*, int>(E, 1));
-  boundary_of_F.push_back(std::pair<Cell*, int>(G, 1));
-  boundary_of_F.push_back(std::pair<Cell*, int>(J, 1));
+  auto& boundary_of_F = F->boundaries();
+  boundary_of_F.emplace_back(B, 1);
+  boundary_of_F.emplace_back(E, 1);
+  boundary_of_F.emplace_back(G, 1);
+  boundary_of_F.emplace_back(J, 1);
 
   // for cell G
-  std::vector<std::pair<Cell*, int> >& boundary_of_G = G->get_boundary();
-  boundary_of_G.push_back(std::pair<Cell*, int>(K, 1));
-  boundary_of_G.push_back(std::pair<Cell*, int>(C, 1));
+  auto& boundary_of_G = G->boundaries();
+  boundary_of_G.emplace_back(K, 1);
+  boundary_of_G.emplace_back(C, 1);
 
   // for cell H
-  std::vector<std::pair<Cell*, int> >& boundary_of_H = H->get_boundary();
-  boundary_of_H.push_back(std::pair<Cell*, int>(D, 1));
-  boundary_of_H.push_back(std::pair<Cell*, int>(E, 1));
-  boundary_of_H.push_back(std::pair<Cell*, int>(L, 1));
-  boundary_of_H.push_back(std::pair<Cell*, int>(G, 1));
+  auto& boundary_of_H = H->boundaries();
+  boundary_of_H.emplace_back(D, 1);
+  boundary_of_H.emplace_back(E, 1);
+  boundary_of_H.emplace_back(L, 1);
+  boundary_of_H.emplace_back(G, 1);
 
   // for cell I:
   // Nothing needs to be done, coboundaries will be set up automatically.
 
   // for cell J
-  std::vector<std::pair<Cell*, int> >& boundary_of_J = J->get_boundary();
-  boundary_of_J.push_back(std::pair<Cell*, int>(I, 1));
-  boundary_of_J.push_back(std::pair<Cell*, int>(K, 1));
+  auto& boundary_of_J = J->boundaries();
+  boundary_of_J.emplace_back(I, 1);
+  boundary_of_J.emplace_back(K, 1);
 
   // for cell K:
   // Nothing needs to be done, coboundaries will be set up automatically.
 
   // for cell L
-  std::vector<std::pair<Cell*, int> >& boundary_of_L = L->get_boundary();
-  boundary_of_L.push_back(std::pair<Cell*, int>(K, 1));
-  boundary_of_L.push_back(std::pair<Cell*, int>(I, 1));
+  auto& boundary_of_L = L->boundaries();
+  boundary_of_L.emplace_back(K, 1);
+  boundary_of_L.emplace_back(I, 1);
 
   // for cell M
-  std::vector<std::pair<Cell*, int> >& boundary_of_M = M->get_boundary();
-  boundary_of_M.push_back(std::pair<Cell*, int>(A, 1));
-  boundary_of_M.push_back(std::pair<Cell*, int>(I, 1));
+  auto& boundary_of_M = M->boundaries();
+  boundary_of_M.emplace_back(A, 1);
+  boundary_of_M.emplace_back(I, 1);
 
   // for cell N
-  std::vector<std::pair<Cell*, int> >& boundary_of_N = N->get_boundary();
-  boundary_of_N.push_back(std::pair<Cell*, int>(J, 1));
-  boundary_of_N.push_back(std::pair<Cell*, int>(M, 1));
-  boundary_of_N.push_back(std::pair<Cell*, int>(O, 1));
-  boundary_of_N.push_back(std::pair<Cell*, int>(B, 1));
+  auto& boundary_of_N = N->boundaries();
+  boundary_of_N.emplace_back(J, 1);
+  boundary_of_N.emplace_back(M, 1);
+  boundary_of_N.emplace_back(O, 1);
+  boundary_of_N.emplace_back(B, 1);
 
   // for cell O
-  std::vector<std::pair<Cell*, int> >& boundary_of_O = O->get_boundary();
-  boundary_of_O.push_back(std::pair<Cell*, int>(K, 1));
-  boundary_of_O.push_back(std::pair<Cell*, int>(C, 1));
+  auto& boundary_of_O = O->boundaries();
+  boundary_of_O.emplace_back(K, 1);
+  boundary_of_O.emplace_back(C, 1);
 
   // for cell P
-  std::vector<std::pair<Cell*, int> >& boundary_of_P = P->get_boundary();
-  boundary_of_P.push_back(std::pair<Cell*, int>(L, 1));
-  boundary_of_P.push_back(std::pair<Cell*, int>(O, 1));
-  boundary_of_P.push_back(std::pair<Cell*, int>(M, 1));
-  boundary_of_P.push_back(std::pair<Cell*, int>(D, 1));
+  auto& boundary_of_P = P->boundaries();
+  boundary_of_P.emplace_back(L, 1);
+  boundary_of_P.emplace_back(O, 1);
+  boundary_of_P.emplace_back(M, 1);
+  boundary_of_P.emplace_back(D, 1);
 
   // we can input the cells in any order into the vector of cells:
   std::vector<Cell*> vect_of_cells = {A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P};
+
+  Hasse_diagram hd(vect_of_cells);
 
   // Here is a construction of a standard Hasse diagram:
   // Gudhi::Hasse_diagram::Hasse_diagram<Cell> hd( vect_of_cells );
@@ -155,11 +156,8 @@ int main(int argc, char** argv) {
   // persistent homology of the complex above. You should see both the fundamental
   // classes of torus and the generators of the three squares.
 
-  typedef Gudhi::Hasse_diagram::Hasse_diagram_persistence<Cell> Hasse_diag_persistence;
   typedef Gudhi::persistent_cohomology::Field_Zp Field_Zp;
-  typedef Gudhi::persistent_cohomology::Persistent_cohomology<Hasse_diag_persistence, Field_Zp> Persistent_cohomology;
-
-  Hasse_diag_persistence hd(vect_of_cells);
+  typedef Gudhi::persistent_cohomology::Persistent_cohomology<Hasse_diagram, Field_Zp> Persistent_cohomology;
 
   Persistent_cohomology pcoh_hd(hd, true);
   pcoh_hd.init_coefficients(2);
@@ -169,24 +167,12 @@ int main(int argc, char** argv) {
   pcoh_hd.output_diagram(output_pers);
   std::string obtained_output = output_pers.str();
 
-  std::cout << "Here is the obtained persistence diagram : " << obtained_output << std::endl;
+  std::cout << "Here is the obtained persistence diagram:\n" << obtained_output << std::endl;
 
-  delete A;
-  delete B;
-  delete C;
-  delete D;
-  delete E;
-  delete F;
-  delete G;
-  delete H;
-  delete I;
-  delete J;
-  delete K;
-  delete L;
-  delete M;
-  delete N;
-  delete O;
-  delete P;
+  // Needs to delete all cells - it is convenient as they are all in a container
+  for (auto cell_ptr : vect_of_cells) {
+    delete cell_ptr;
+  }
 
   return 0;
 }

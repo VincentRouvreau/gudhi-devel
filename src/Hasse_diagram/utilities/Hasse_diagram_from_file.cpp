@@ -8,9 +8,7 @@
  *      - YYYY/MM Author: Description of the modification
  */
 
-#include <gudhi/reader_utils.h>
 #include <gudhi/Hasse_diagram_persistence.h>
-#include <gudhi/Hasse_diagram_cell.h>
 #include <gudhi/Persistent_cohomology.h>
 
 // standard stuff
@@ -20,24 +18,23 @@
 #include <cstddef>
 
 int main(int argc, char** argv) {
-  std::cout << "This program computes (persistent) homology of a chain complex given in a file. The format of the file "
-               "is the following:"
-            << std::endl;
-  std::cout << "In the first line, the number of all cells is given." << std::endl;
-  std::cout << "The cells are assumed to be enumerated from 0 to the number of cells." << std::endl;
-  std::cout << "Each cell is given in the following format:" << std::endl;
-  std::cout << "Id of a cell followed by its dimension and optionally a filtration (in the first line)" << std::endl;
-  std::cout << "Sequence of ids of boundary elements followed by the incidence coeficient between given cell and the "
-               "boundary element (all of them in the second line)"
-            << std::endl
-            << std::endl;
-  std::cout << "The input parameters of the program are: " << std::endl;
-  std::cout << "(1) Name of the file with complex, " << std::endl;
-  std::cout << "(2) Optional -- name of the output file, " << std::endl;
-  std::cout << "(3) Optional -- prime number p such that (persistent) homology over Zp will be computed. " << std::endl;
-
   if (argc < 2) {
-    std::cerr << "Wrong number of parameters. The program will now terminate.\n";
+    std::cout << "This program computes (persistent) homology of a chain complex given in a file. The format of the file "
+                 "is the following:"
+              << std::endl;
+    std::cout << "In the first line, the number of all cells is given." << std::endl;
+    std::cout << "The cells are assumed to be enumerated from 0 to the number of cells." << std::endl;
+    std::cout << "Each cell is given in the following format:" << std::endl;
+    std::cout << "Id of a cell followed by its dimension and optionally a filtration (in the first line)" << std::endl;
+    std::cout << "Sequence of ids of boundary elements followed by the incidence coeficient between given cell and the "
+                 "boundary element (all of them in the second line)"
+              << std::endl
+              << std::endl;
+    std::cout << "The input parameters of the program are: " << std::endl;
+    std::cout << "(1) Name of the file with complex, " << std::endl;
+    std::cout << "(2) Optional -- name of the output file, " << std::endl;
+    std::cout << "(3) Optional -- prime number p such that (persistent) homology over Zp will be computed. " << std::endl;
+
     return 1;
   }
 
@@ -51,15 +48,14 @@ int main(int argc, char** argv) {
     field_characteristic = (unsigned)(atoi(argv[3]));
   }
 
-  typedef Gudhi::Hasse_diagram::Hasse_diagram_cell<int, double, double> Cell;
-  typedef Gudhi::Hasse_diagram::Hasse_diagram_persistence<Cell> Hasse_diag;
+  using Hasse_diagram = Gudhi::Hasse_diagram::Hasse_diagram_persistence<>;
 
-  Hasse_diag hd(filename);
-  typedef Gudhi::persistent_cohomology::Field_Zp Field_Zp;
-  typedef Gudhi::persistent_cohomology::Persistent_cohomology<Hasse_diag, Field_Zp> Persistent_cohomology;
+  Hasse_diagram hd(filename);
+  using Field_Zp = Gudhi::persistent_cohomology::Field_Zp;
+  using Persistent_cohomology = Gudhi::persistent_cohomology::Persistent_cohomology<Hasse_diagram, Field_Zp>;
 
   Persistent_cohomology pcoh(hd, true);
-  double min_persistence = 0;
+  double min_persistence = 0.;
 
   pcoh.init_coefficients(field_characteristic);
   pcoh.compute_persistent_cohomology(min_persistence);

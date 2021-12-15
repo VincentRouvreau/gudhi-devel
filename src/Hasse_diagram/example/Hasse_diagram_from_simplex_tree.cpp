@@ -8,8 +8,6 @@
  *      - YYYY/MM Author: Description of the modification
  */
 
-#include <gudhi/reader_utils.h>
-#include <gudhi/Hasse_diagram.h>
 #include <gudhi/Hasse_diagram_persistence.h>
 #include <gudhi/Persistent_cohomology.h>
 #include <gudhi/Rips_complex.h>
@@ -18,9 +16,7 @@
 
 // standard stuff
 #include <iostream>
-#include <string>
 #include <vector>
-#include <cstddef>
 
 int main() {
   // In this example we will first construct a Rips complex of points sampled
@@ -35,11 +31,9 @@ int main() {
   using Persistent_cohomology_simplex_tree =
       Gudhi::persistent_cohomology::Persistent_cohomology<Simplex_tree, Field_Zp>;
   // for Hasse diagrams:
-  typedef Gudhi::Hasse_diagram::Hasse_diagram_cell<int, double, double> Cell;
-  typedef Gudhi::Hasse_diagram::Hasse_diagram_persistence<Cell> Hasse_diag;
+  using Hasse_diagram = Gudhi::Hasse_diagram::Hasse_diagram_persistence<>;
   using Persistent_cohomology_Hasse_diagram =
-      Gudhi::persistent_cohomology::Persistent_cohomology<Gudhi::Hasse_diagram::Hasse_diagram_persistence<Cell>,
-                                                          Field_Zp>;
+      Gudhi::persistent_cohomology::Persistent_cohomology<Hasse_diagram, Field_Zp>;
 
   // Here is the point cloud of the circle:
   std::vector<std::vector<double> > circle_pt_cloud = {{0, 1},
@@ -136,7 +130,7 @@ int main() {
 
   // Now let us convert the simplex tree into the Hasse diagram and compute
   // persistence of the Hasse diagram:
-  Hasse_diag* hd = Gudhi::Hasse_diagram::convert_to_Hasse_diagram_persistence<Simplex_tree, Cell>(simplex_tree);
+  Hasse_diagram* hd = Gudhi::Hasse_diagram::convert_to_hasse_diagram_persistence<Simplex_tree, Hasse_diagram>(simplex_tree);
 
   // And compute persistence of Hasse diagram with the same parametes as
   // for the simplex tree above:
@@ -145,6 +139,7 @@ int main() {
   pcoh_hd.compute_persistent_cohomology(min_persistence);
   std::cout << "Here is the persistence of the Hasse diagram: " << std::endl;
   pcoh_hd.output_diagram();
+  // The output should be the same
 
   return 0;
 }

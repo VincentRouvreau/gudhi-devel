@@ -1,4 +1,4 @@
-project(Hasse_diagrram_tests)
+project(Hasse_diagram_tests)
 
 include(GUDHI_boost_test)
 
