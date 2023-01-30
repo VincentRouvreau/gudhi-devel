@@ -17,12 +17,20 @@ add_executable ( Rips_complex_example_sparse example_sparse_rips.cpp )
 add_executable (  Rips_complex_example_one_skeleton_rips_from_correlation_matrix example_one_skeleton_rips_from_correlation_matrix.cpp )
 
 if (TBB_FOUND)
+  
   target_link_libraries(Rips_complex_example_from_off ${TBB_LIBRARIES})
   target_link_libraries(Rips_complex_example_one_skeleton_from_points ${TBB_LIBRARIES})
   target_link_libraries(Rips_complex_example_one_skeleton_from_distance_matrix ${TBB_LIBRARIES})
   target_link_libraries(Rips_complex_example_from_csv_distance_matrix ${TBB_LIBRARIES})
   target_link_libraries(Rips_complex_example_sparse ${TBB_LIBRARIES})
   target_link_libraries(Rips_complex_example_one_skeleton_rips_from_correlation_matrix ${TBB_LIBRARIES})
+endif()
+
+if(TARGET Boost::serialization)
+if(TARGET Boost::system)
+add_executable ( serial example_rips_complex_from_off_file_serialization.cpp )
+target_link_libraries(serial Boost::serialization Boost::system ${TBB_LIBRARIES})
+endif()
 endif()
 
 add_test(NAME Rips_complex_example_one_skeleton_from_points

@@ -15,6 +15,10 @@
 #include <gudhi/graph_simplicial_complex.h>
 
 #include <boost/graph/adjacency_list.hpp>
+#include <boost/graph/adj_list_serialize.hpp>
+#include <boost/serialization/serialization.hpp>
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
 
 #include <iostream>
 #include <vector>
@@ -160,6 +164,16 @@ class Rips_complex {
          vi != vi_end; ++vi) {
       boost::put(vertex_prop, *vi, 0.);
     }
+  }
+
+  // Rips complex (adjacency_list) serialization
+  friend class boost::serialization::access;
+  // When the class Archive corresponds to an output archive, the
+  // & operator is defined similar to <<.  Likewise, when the class Archive
+  // is a type of input archive the & operator is defined similar to >>.
+  template<class Archive>
+  void serialize(Archive & ar, const unsigned int version) {
+    ar & rips_skeleton_graph_;
   }
 
  private:
