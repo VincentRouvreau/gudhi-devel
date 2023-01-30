@@ -4,8 +4,8 @@
 #include <gudhi/distance_functions.h>
 
 // include headers that implement a archive in simple text format
-#include <boost/archive/text_oarchive.hpp>
-#include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
 
 #include <iostream>
 #include <string>
@@ -36,16 +36,20 @@ int main(int argc, char **argv) {
   Gudhi::Points_off_reader<Point> off_reader(off_file_name);
   Rips_complex rips_complex_from_file(off_reader.get_point_cloud(), threshold, Gudhi::Euclidean_distance());
 
-  std::ofstream ofs(archive_file_name);
-  boost::archive::text_oarchive oarchive(ofs);
-  oarchive << rips_complex_from_file;
+  {
+    std::ofstream ofs(archive_file_name);
+    boost::archive::binary_oarchive oarchive(ofs);
+    oarchive << rips_complex_from_file;
+  }
 
   std::vector<std::vector<double>> empty{};
   Rips_complex rips_complex_from_archive(empty, 0.);
 
-  std::ifstream ifs(archive_file_name);
-  boost::archive::text_iarchive iarchive(ifs);
-  iarchive >> rips_complex_from_archive;
+  {
+    std::ifstream ifs(archive_file_name);
+    boost::archive::binary_iarchive iarchive(ifs);
+    iarchive >> rips_complex_from_archive;
+  }
 
   return 0;
 }
