@@ -2,6 +2,7 @@
 // to construct Rips_complex from a OFF file of points
 #include <gudhi/Points_off_io.h>
 #include <gudhi/distance_functions.h>
+#include <gudhi/Clock.h>
 
 // include headers that implement a archive in simple text format
 #include <boost/archive/binary_oarchive.hpp>
@@ -34,22 +35,37 @@ int main(int argc, char **argv) {
   // Init of a Rips complex from an OFF file
   // ----------------------------------------------------------------------------
   Gudhi::Points_off_reader<Point> off_reader(off_file_name);
+  Gudhi::Clock rips_clock("Rips ctor");
+  rips_clock.begin();
   Rips_complex rips_complex_from_file(off_reader.get_point_cloud(), threshold, Gudhi::Euclidean_distance());
+  rips_clock.end();
+  std::clog << rips_clock;
 
+  Gudhi::Clock serial_clock("serialize Rips");
+  serial_clock.begin();
   {
     std::ofstream ofs(archive_file_name);
     boost::archive::binary_oarchive oarchive(ofs);
     oarchive << rips_complex_from_file;
   }
+  serial_clock.end();
+  std::clog << serial_clock;
 
   std::vector<std::vector<double>> empty{};
   Rips_complex rips_complex_from_archive(empty, 0.);
 
+  Gudhi::Clock deserial_clock("deserialize Rips");
+  deserial_clock.begin();
   {
     std::ifstream ifs(archive_file_name);
     boost::archive::binary_iarchive iarchive(ifs);
     iarchive >> rips_complex_from_archive;
   }
+  deserial_clock.end();
+  std::clog << deserial_clock;
 
   return 0;
 }
+
+// 4000 vertices on 3-torus - Rips ctor: 0.262s - serialize Rips: 0.801s - deserialize Rips: 0.673s - 123 Mo
+// 8000 vertices on 3-torus - Rips ctor: 1.032s - serialize Rips: 3.649s - deserialize Rips: 2.442s - 489 Mo
