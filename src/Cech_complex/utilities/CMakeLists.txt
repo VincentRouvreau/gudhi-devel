@@ -29,5 +29,33 @@ if (NOT CGAL_WITH_EIGEN3_VERSION VERSION_LESS 5.0.1)
     endif()
 
     install(TARGETS cech_persistence DESTINATION bin)
+
+    add_executable(delaunay_cech_persistence delaunay_cech_persistence.cpp)
+    target_link_libraries(delaunay_cech_persistence Boost::program_options)
+
+    if(TARGET TBB::tbb)
+      target_link_libraries(delaunay_cech_persistence TBB::tbb)
+    endif()
+    
+    add_test(NAME Cech_complex_utilities_safe_delaunay_complex_persistence COMMAND $<TARGET_FILE:delaunay_cech_persistence>
+        "${CMAKE_SOURCE_DIR}/data/points/spiral_3d_10k.off" "-p" "2" "-m" "0." "-o" "delaunay_safe.pers")
+    add_test(NAME Cech_complex_utilities_fast_delaunay_complex_persistence COMMAND $<TARGET_FILE:delaunay_cech_persistence>
+        "${CMAKE_SOURCE_DIR}/data/points/spiral_3d_10k.off" "-p" "2" "-m" "0." "-o" "delaunay_fast.pers" "-f")
+    add_test(NAME Cech_complex_utilities_exact_delaunay_complex_persistence COMMAND $<TARGET_FILE:delaunay_cech_persistence>
+        "${CMAKE_SOURCE_DIR}/data/points/spiral_3d_10k.off" "-p" "2" "-m" "0." "-o" "delaunay_exact.pers" "-e")
+    if (DIFF_PATH)
+      add_test(Cech_complex_utilities_diff_exact_delaunay_complex ${DIFF_PATH}
+               "delaunay_exact.pers" "delaunay_safe.pers")
+      set_tests_properties(Cech_complex_utilities_diff_exact_delaunay_complex PROPERTIES DEPENDS
+               "Cech_complex_utilities_exact_delaunay_complex_persistence;Cech_complex_utilities_safe_delaunay_complex_persistence")
+
+      add_test(Cech_complex_utilities_diff_fast_delaunay_complex ${DIFF_PATH}
+               "delaunay_fast.pers" "delaunay_safe.pers")
+      set_tests_properties(Cech_complex_utilities_diff_fast_delaunay_complex PROPERTIES DEPENDS
+               "Cech_complex_utilities_fast_delaunay_complex_persistence;Cech_complex_utilities_safe_delaunay_complex_persistence")
+    endif()
+
+    install(TARGETS delaunay_cech_persistence DESTINATION bin)
+
   endif()
 endif()
