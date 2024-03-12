@@ -38,15 +38,21 @@ class Persistence_matrix {
     auto filtration_end = cpx_->filtration_simplex_range().end();
     for (auto f_simplex : cpx_->filtration_simplex_range()) {
       std::vector<int> boundary_indexes = {};
+#ifdef DEBUG_TRACES
       std::clog << "   { ";
+#endif  // DEBUG_TRACES
       for (auto b_simplex : cpx_->boundary_simplex_range(f_simplex)) {
         auto it = std::find(filtration_begin, filtration_end, b_simplex);
         // A boundary must be found in filtrations list
         assert(it != filtration_end);
         boundary_indexes.push_back(std::distance(filtration_begin, it));
+#ifdef DEBUG_TRACES
         std::clog << std::distance(filtration_begin, it) << ", ";
+#endif  // DEBUG_TRACES
       }
+#ifdef DEBUG_TRACES
       std::clog << "}\n";
+#endif  // DEBUG_TRACES
       std::sort(boundary_indexes.begin(), boundary_indexes.end());
       matrix_.insert_boundary(boundary_indexes);
     }
@@ -73,7 +79,7 @@ class Persistence_matrix {
   };
 
   void output_diagram(std::ostream& ostream = std::cout) {
-    auto filtration_begin = cpx_->filtration_simplex_range().begin();
+    /*auto filtration_begin = cpx_->filtration_simplex_range().begin();
     auto filtration_size = std::distance(filtration_begin, cpx_->filtration_simplex_range().end());
 
     auto barcodes = matrix_.get_current_barcode();
@@ -88,7 +94,7 @@ class Persistence_matrix {
         } else {
           ostream << cpx_->filtration(*(filtration_begin + barcode.death)) << std::endl;
         } 
-    }
+    }*/
   }
 
 
