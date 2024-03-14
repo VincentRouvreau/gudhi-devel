@@ -89,9 +89,22 @@ void bench_persistence(Complex& cpx, const std::string& msg) {
 }
 
 int main() {
+  Simplex_tree oneRips;
+  // Insert 100% of the possible edges, with 2000 vertices -> 1-Rips
+  simplex_tree_random_flag_complex(oneRips, 2000, 1.);
+
+  Gudhi::Clock clock_if("initialize_filtration");
+  oneRips.initialize_filtration();
+  std::clog << clock_if;
+  bench_persistence<Persistent_cohomology_stree>(oneRips,       "Persistent_cohomology_oneRips");
+  bench_persistence<Persistence_base_matrix_stree>(oneRips,     "Persistence_base_matrix_oneRips");
+  //bench_persistence<Persistence_RU_matrix_stree>(oneRips,       "Persistence_RU_matrix_oneRips");
+  bench_persistence<Persistence_boundary_matrix_stree>(oneRips, "Persistence_boundary_matrix_oneRips");
+  bench_persistence<Persistence_chain_matrix_stree>(oneRips,    "Persistence_chain_matrix_oneRips");
+
   for (int max_dim = 1; max_dim < 5; max_dim++) {
     Simplex_tree stree;
-    // Insert 15% of the possible edges, with 1000 vertices
+    // Insert 15% of the possible edges, with 600 vertices
     simplex_tree_random_flag_complex(stree, 600);
 
     Gudhi::Clock clock_expansion(std::string("Expansion dim=") + std::to_string(max_dim));
