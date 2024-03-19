@@ -114,14 +114,14 @@ int main() {
     stree.initialize_filtration();
     std::clog << clock_if;
     bench_persistence<Persistent_cohomology_stree>(stree, "Persistent_cohomology_stree");
-    bench_persistence<Persistence_base_matrix_stree>(stree,     "Persistence_base_matrix_stree_stree");
-    //bench_persistence<Persistence_RU_matrix_stree>(stree,       "Persistence_RU_matrix_stree_stree");
-    bench_persistence<Persistence_boundary_matrix_stree>(stree, "Persistence_boundary_matrix_stree_stree");
-    if (max_dim <2)
-      bench_persistence<Persistence_chain_matrix_stree>(stree,    "Persistence_chain_matrix_stree_stree");
+    bench_persistence<Persistence_base_matrix_stree>(stree,     "Persistence_base_matrix_stree");
+    //bench_persistence<Persistence_RU_matrix_stree>(stree,       "Persistence_RU_matrix_stree");
+    bench_persistence<Persistence_boundary_matrix_stree>(stree, "Persistence_boundary_matrix_stree");
+    if (max_dim < 2)
+      bench_persistence<Persistence_chain_matrix_stree>(stree,    "Persistence_chain_matrix_stree");
   }
 
-  for (int max_dim = 1; max_dim < 4; max_dim++) {
+  for (int max_dim = 1; max_dim < 5; max_dim++) {
     std::vector<unsigned> sizes;
     std::size_t multipliers = 1;
     const std::size_t SIZE_IN_THIS_DIM = 40;
@@ -134,10 +134,11 @@ int main() {
 
     Bitmap_cubical_complex cub(sizes, data);
     bench_persistence<Persistent_cohomology_cub>(cub,       std::string("Persistent_cohomology_cub_")             + std::to_string(max_dim));
-    bench_persistence<Persistence_base_matrix_cub>(cub,     std::string("Persistence_base_matrix_stree_cub_")     + std::to_string(max_dim));
-    //bench_persistence<Persistence_RU_matrix_cub>(cub,     std::string("Persistence_RU_matrix_stree_cub_")       + std::to_string(max_dim));
-    bench_persistence<Persistence_boundary_matrix_cub>(cub, std::string("Persistence_boundary_matrix_stree_cub_") + std::to_string(max_dim));
-
+    bench_persistence<Persistence_base_matrix_cub>(cub,     std::string("Persistence_base_matrix_cub_")     + std::to_string(max_dim));
+    //bench_persistence<Persistence_RU_matrix_cub>(cub,     std::string("Persistence_RU_matrix_cub_")       + std::to_string(max_dim));
+    bench_persistence<Persistence_boundary_matrix_cub>(cub, std::string("Persistence_boundary_matrix_cub_") + std::to_string(max_dim));
+    if (max_dim < 4)
+      bench_persistence<Persistence_chain_matrix_cub>(cub,    std::string("Persistence_chain_matrix_cub_") + std::to_string(max_dim));
   }
 
   return 0;

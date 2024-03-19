@@ -34,20 +34,18 @@ class Persistence_matrix {
 
   using Filtration_value = typename FilteredComplex::Filtration_value;
   void compute_persistent_cohomology([[maybe_unused]] Filtration_value min_interval_length = 0) {
-    auto filtration_begin = cpx_->filtration_simplex_range().begin();
-    auto filtration_end = cpx_->filtration_simplex_range().end();
+    typename FilteredComplex::Simplex_key idx {};
     for (auto f_simplex : cpx_->filtration_simplex_range()) {
+      cpx_->assign_key(f_simplex, idx++);
       std::vector<int> boundary_indexes = {};
 #ifdef DEBUG_TRACES
       std::clog << "   { ";
 #endif  // DEBUG_TRACES
       for (auto b_simplex : cpx_->boundary_simplex_range(f_simplex)) {
-        auto it = std::find(filtration_begin, filtration_end, b_simplex);
-        // A boundary must be found in filtrations list
-        assert(it != filtration_end);
-        boundary_indexes.push_back(std::distance(filtration_begin, it));
+        // As the filtration is sorted, the boundary simplex key is set
+        boundary_indexes.push_back(cpx_->key(b_simplex));
 #ifdef DEBUG_TRACES
-        std::clog << std::distance(filtration_begin, it) << ", ";
+        std::clog << cpx_->key(b_simplex) << ", ";
 #endif  // DEBUG_TRACES
       }
 #ifdef DEBUG_TRACES
