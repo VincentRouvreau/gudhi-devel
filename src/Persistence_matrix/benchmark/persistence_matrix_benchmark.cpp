@@ -78,17 +78,17 @@ struct Chain_matrix_options_vine : Gudhi::persistence_matrix::Default_options<Co
   static const bool is_of_boundary_type = false;
 };
 
-using Persistence_RU_matrix_vine_stree  = Gudhi::persistence_matrix::Persistence_matrix<Gudhi::Simplex_tree<>, RU_matrix_options_vine>;
-using Persistence_RU_matrix_repr_stree  = Gudhi::persistence_matrix::Persistence_matrix<Gudhi::Simplex_tree<>, RU_matrix_options_repr>;
-using Persistence_boundary_matrix_stree = Gudhi::persistence_matrix::Persistence_matrix<Gudhi::Simplex_tree<>, Boundary_matrix_options>;
-using Persistence_chain_matrix_stree    = Gudhi::persistence_matrix::Persistence_matrix<Gudhi::Simplex_tree<>, Chain_matrix_options>;
-using Persistence_chain_matrix_vine_stree    = Gudhi::persistence_matrix::Persistence_matrix<Gudhi::Simplex_tree<>, Chain_matrix_options_vine>;
+using Persistence_RU_matrix_vine_stree    = Gudhi::persistence_matrix::Persistence_matrix<Gudhi::Simplex_tree<>, RU_matrix_options_vine>;
+using Persistence_RU_matrix_repr_stree    = Gudhi::persistence_matrix::Persistence_matrix<Gudhi::Simplex_tree<>, RU_matrix_options_repr>;
+using Persistence_boundary_matrix_stree   = Gudhi::persistence_matrix::Persistence_matrix<Gudhi::Simplex_tree<>, Boundary_matrix_options>;
+using Persistence_chain_matrix_stree      = Gudhi::persistence_matrix::Persistence_matrix<Gudhi::Simplex_tree<>, Chain_matrix_options>;
+using Persistence_chain_matrix_vine_stree = Gudhi::persistence_matrix::Persistence_matrix<Gudhi::Simplex_tree<>, Chain_matrix_options_vine>;
 
-using Persistence_RU_matrix_vine_cub  = Gudhi::persistence_matrix::Persistence_matrix<Bitmap_cubical_complex, RU_matrix_options_vine>;
-using Persistence_RU_matrix_repr_cub  = Gudhi::persistence_matrix::Persistence_matrix<Bitmap_cubical_complex, RU_matrix_options_repr>;
-using Persistence_boundary_matrix_cub = Gudhi::persistence_matrix::Persistence_matrix<Bitmap_cubical_complex, Boundary_matrix_options>;
-using Persistence_chain_matrix_cub    = Gudhi::persistence_matrix::Persistence_matrix<Bitmap_cubical_complex, Chain_matrix_options>;
-using Persistence_chain_matrix_vine_cub    = Gudhi::persistence_matrix::Persistence_matrix<Bitmap_cubical_complex, Chain_matrix_options_vine>;
+using Persistence_RU_matrix_vine_cub    = Gudhi::persistence_matrix::Persistence_matrix<Bitmap_cubical_complex, RU_matrix_options_vine>;
+using Persistence_RU_matrix_repr_cub    = Gudhi::persistence_matrix::Persistence_matrix<Bitmap_cubical_complex, RU_matrix_options_repr>;
+using Persistence_boundary_matrix_cub   = Gudhi::persistence_matrix::Persistence_matrix<Bitmap_cubical_complex, Boundary_matrix_options>;
+using Persistence_chain_matrix_cub      = Gudhi::persistence_matrix::Persistence_matrix<Bitmap_cubical_complex, Chain_matrix_options>;
+using Persistence_chain_matrix_vine_cub = Gudhi::persistence_matrix::Persistence_matrix<Bitmap_cubical_complex, Chain_matrix_options_vine>;
 
 template <class Persistence, class Complex>
 void bench_persistence(Complex& cpx, const std::string& msg) {
@@ -99,12 +99,12 @@ void bench_persistence(Complex& cpx, const std::string& msg) {
   clock_pers.end();
   std::clog << cpx.num_simplices() << " simplices - " << clock_pers;
 
-  std::string sep("_");
+  /*std::string sep("_");
   std::string ext(".pers");
   std::string pers_file_name = msg + sep + std::to_string(cpx.num_simplices())
                                    + sep + std::to_string(cpx.dimension()) + ext;
   std::ofstream pers_file(pers_file_name);
-  pers.output_diagram(pers_file);
+  pers.output_diagram(pers_file);*/
 }
 
 int main() {
@@ -115,12 +115,12 @@ int main() {
   Gudhi::Clock clock_if("initialize_filtration");
   oneRips.initialize_filtration();
   std::clog << clock_if;
-  bench_persistence<Persistent_cohomology_stree>(oneRips,         "Persistent_cohomology_oneRips");
-  //bench_persistence<Persistence_RU_matrix_vine_stree>(oneRips,    "Persistence_RU_matrix_vine_oneRips");
-  //bench_persistence<Persistence_RU_matrix_repr_stree>(oneRips,    "Persistence_RU_matrix_repr_oneRips");
-  bench_persistence<Persistence_boundary_matrix_stree>(oneRips,   "Persistence_boundary_matrix_oneRips");
-  bench_persistence<Persistence_chain_matrix_stree>(oneRips,      "Persistence_chain_matrix_oneRips");
-  bench_persistence<Persistence_chain_matrix_vine_stree>(oneRips, "Persistence_chain_matrix_vine_oneRips");
+  bench_persistence<Persistent_cohomology_stree>(oneRips,         "Persistent_cohomology_one_rips________");
+  bench_persistence<Persistence_RU_matrix_vine_stree>(oneRips,    "Persistence_RU_matrix_vine_one_rips___");
+  bench_persistence<Persistence_RU_matrix_repr_stree>(oneRips,    "Persistence_RU_matrix_repr_one_rips___");
+  bench_persistence<Persistence_boundary_matrix_stree>(oneRips,   "Persistence_boundary_matrix_one_rips__");
+  bench_persistence<Persistence_chain_matrix_stree>(oneRips,      "Persistence_chain_matrix_one_rips_____");
+  bench_persistence<Persistence_chain_matrix_vine_stree>(oneRips, "Persistence_chain_matrix_vine_one_rips");
 
   for (int max_dim = 1; max_dim < 5; max_dim++) {
     Simplex_tree stree;
@@ -133,13 +133,17 @@ int main() {
     Gudhi::Clock clock_if("initialize_filtration");
     stree.initialize_filtration();
     std::clog << clock_if;
-    bench_persistence<Persistent_cohomology_stree>(stree,         "Persistent_cohomology_stree");
-    //bench_persistence<Persistence_RU_matrix_vine_stree>(stree,    "Persistence_RU_matrix_vine_stree");
-    //bench_persistence<Persistence_RU_matrix_repr_stree>(stree,    "Persistence_RU_matrix_repr_stree");
-    bench_persistence<Persistence_boundary_matrix_stree>(stree,   "Persistence_boundary_matrix_stree");
+    bench_persistence<Persistent_cohomology_stree>(stree,           std::string("Persistent_cohomology_random_graph________") + std::to_string(max_dim));
+    if (max_dim < 3) {
+      bench_persistence<Persistence_RU_matrix_vine_stree>(stree,    std::string("Persistence_RU_matrix_vine_random_graph___") + std::to_string(max_dim));
+    }
     if (max_dim < 2) {
-      bench_persistence<Persistence_chain_matrix_stree>(stree,      "Persistence_chain_matrix_stree");
-      bench_persistence<Persistence_chain_matrix_vine_stree>(stree, "Persistence_chain_matrix_vine_stree");
+      bench_persistence<Persistence_RU_matrix_repr_stree>(stree,    std::string("Persistence_RU_matrix_repr_random_graph___") + std::to_string(max_dim));
+    }
+    bench_persistence<Persistence_boundary_matrix_stree>(stree,     std::string("Persistence_boundary_matrix_random_graph__") + std::to_string(max_dim));
+    if (max_dim < 2) {
+      bench_persistence<Persistence_chain_matrix_stree>(stree,      std::string("Persistence_chain_matrix_random_graph_____") + std::to_string(max_dim));
+      bench_persistence<Persistence_chain_matrix_vine_stree>(stree, std::string("Persistence_chain_matrix_vine_random_graph") + std::to_string(max_dim));
     }
   }
 
@@ -155,13 +159,15 @@ int main() {
     std::generate(data.begin(), data.end(), get_random);
 
     Bitmap_cubical_complex cub(sizes, data);
-    bench_persistence<Persistent_cohomology_cub>(cub,       std::string("Persistent_cohomology_cub_")       + std::to_string(max_dim));
-    //bench_persistence<Persistence_RU_matrix_vine_cub>(cub,  std::string("Persistence_RU_vine_matrix_cub_")  + std::to_string(max_dim));
-    //bench_persistence<Persistence_RU_matrix_repr_cub>(cub,  std::string("Persistence_RU_repr_matrix_cub_")  + std::to_string(max_dim));
-    bench_persistence<Persistence_boundary_matrix_cub>(cub, std::string("Persistence_boundary_matrix_cub_") + std::to_string(max_dim));
+    bench_persistence<Persistent_cohomology_cub>(cub,           std::string("Persistent_cohomology_random_cubical_________") + std::to_string(max_dim));
     if (max_dim < 4) {
-      bench_persistence<Persistence_chain_matrix_cub>(cub,  std::string("Persistence_chain_matrix_cub_")  + std::to_string(max_dim));
-      bench_persistence<Persistence_chain_matrix_vine_cub>(cub,  std::string("Persistence_chain_matrix_vine_cub_")  + std::to_string(max_dim));
+      bench_persistence<Persistence_RU_matrix_vine_cub>(cub,    std::string("Persistence_RU_vine_matrix_random_cubical____") + std::to_string(max_dim));
+      bench_persistence<Persistence_RU_matrix_repr_cub>(cub,    std::string("Persistence_RU_repr_matrix_random_cubical____") + std::to_string(max_dim));
+    }
+    bench_persistence<Persistence_boundary_matrix_cub>(cub,     std::string("Persistence_boundary_matrix_random_cubical___") + std::to_string(max_dim));
+    if (max_dim < 4) {
+      bench_persistence<Persistence_chain_matrix_cub>(cub,      std::string("Persistence_chain_matrix_random_cubical______") + std::to_string(max_dim));
+      bench_persistence<Persistence_chain_matrix_vine_cub>(cub, std::string("Persistence_chain_matrix_vine_random_cubical_") + std::to_string(max_dim));
     }
   }
 

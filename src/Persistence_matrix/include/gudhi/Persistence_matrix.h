@@ -26,7 +26,7 @@ template <class FilteredComplex, class Options = Gudhi::persistence_matrix::Defa
 class Persistence_matrix {
  public:
   explicit Persistence_matrix(FilteredComplex& cpx)
-    : cpx_(&cpx), matrix_() {}
+    : cpx_{&cpx}, matrix_{cpx.num_simplices()} {}
 
   void init_coefficients(int charac) {
     charac_ = charac;
@@ -54,6 +54,13 @@ class Persistence_matrix {
       std::sort(boundary_indexes.begin(), boundary_indexes.end());
       matrix_.insert_boundary(boundary_indexes);
     }
+    // Boundary special case, persistence is only computed when calling get_current_barcode
+    if constexpr(Options::has_column_pairings &&
+                 !Options::has_vine_update &&
+                 !Options::can_retrieve_representative_cycles &&
+                 Options::is_of_boundary_type)
+      matrix_.get_current_barcode();
+
   }
 
   using Barcode = typename Matrix<Options>::Bar;
