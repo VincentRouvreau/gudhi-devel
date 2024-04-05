@@ -122,11 +122,11 @@ namespace persistence_matrix {
 template <class PersistenceMatrixOptions = Default_options<> >
 class Matrix {
  public:
-  using Option_list = PersistenceMatrixOptions;	//to make it accessible from the other classes
+  using Option_list = PersistenceMatrixOptions; //to make it accessible from the other classes
   using index = typename PersistenceMatrixOptions::index_type;                 /**< Type of MatIdx index. */
   using id_index = typename PersistenceMatrixOptions::index_type;              /**< Type of IDIdx index. */
   using pos_index = typename PersistenceMatrixOptions::index_type;             /**< Type of PosIdx index. */
-  using dimension_type = typename PersistenceMatrixOptions::dimension_type;    /**< Type for dimension. */
+  using dimension_type = typename PersistenceMatrixOptions::dimension_type;    /**< Type for dimension value. */
 
   struct Dummy_field_operators{
     using element_type = unsigned int;
@@ -142,7 +142,7 @@ class Matrix {
   using Field_operators =
       typename std::conditional<PersistenceMatrixOptions::is_z2, 
                                 Dummy_field_operators, 
-                                typename PersistenceMatrixOptions::field_coeff_operators
+                                typename PersistenceMatrixOptions::Field_coeff_operators
                                >::type;                       /**< Coefficiants field type. */
   using element_type = typename std::conditional<PersistenceMatrixOptions::is_z2, 
                                                  bool, 
@@ -338,7 +338,8 @@ class Matrix {
 
   /**
    * @brief Type of the columns stored in the matrix. The type depends on the value of @ref column_type defined
-   * in the given options. See @ref Column_types for a more detailed description.
+   * in the given options. See @ref Column_types for a more detailed description. All columns follow the
+   * @ref PersistenceMatrixColumn concept.
    */
   using Column_type = typename std::conditional<
         PersistenceMatrixOptions::column_type == Column_types::HEAP, 
@@ -482,7 +483,7 @@ class Matrix {
   /**
    * @brief Type of a representative cycle. Vector of row indices, see [TODO: index paragraph].
    */
-  using cycle_type = std::vector<id_index>;	//TODO: add coefficients
+  using cycle_type = std::vector<id_index>; //TODO: add coefficients
 
   //Return types to factorize the corresponding methods
 
@@ -501,8 +502,10 @@ class Matrix {
   //If the matrix is a chain matrix, the insertion method returns the pivots of its unpaired columns used to reduce
   //the inserted boundary. Otherwise, void.
   using insertion_return_type =
-      typename std::conditional<PersistenceMatrixOptions::is_of_boundary_type || !isNonBasic,
-                                void,
+      typename std::conditional<PersistenceMatrixOptions::is_of_boundary_type || !isNonBasic ||
+                                    PersistenceMatrixOptions::column_indexation_type ==
+                                        Column_indexation_types::POSITION,
+                                void, 
                                 std::vector<cell_rep_type>
                                >::type;
 
@@ -671,7 +674,7 @@ class Matrix {
    * There should not be any other column inserted at that index which was not explicitely removed before.
    * The content of the range is assumed to be sorted by increasing ID value. 
    *
-   * Only available for base matrices without column compression, see [TODO: description and Options].
+   * Only available for base matrices without column compression and without row access, see [TODO: description and Options].
    * 
    * @tparam Container_type Range of @ref cell_rep_type. Assumed to have a begin(), end() and size() method.
    * @param column Column to be inserted.
@@ -687,6 +690,9 @@ class Matrix {
    * It also assumes that the faces in the given boundary are identified by their relative position in the filtration, 
    * starting at 0. If it is not the case, use the other `insert_boundary` instead by indicating the face ID
    * used in the boundaries when the face is inserted.
+   *
+   * Different to the constructor, the boundaries do not have to come from a simplicial complex, but also from
+   * a more general cell complex. This includes cubical complexes or Morse complexes for example.
    *
    * The content of the new column will vary depending on the underlying type of the matrix (see [TODO: description]):
    * - If it is a basic matrix type, the boundary is copied as it is, i.e., the method is equivalent to 
@@ -720,7 +726,7 @@ class Matrix {
    * of the face being inserted.
    * 
    * @tparam Boundary_type Range of @ref cell_rep_type. Assumed to have a begin(), end() and size() method.
-   * @param faceIndex IDIdx index to be used to indentify the new face.
+   * @param faceIndex IDIdx index to use to indentify the new face.
    * @param boundary Boundary generating the new column. The indices of the boundary have to correspond to the 
    * @p faceIndex values of precedent calls of the method for the corresponding faces and should be ordered in 
    * increasing order.
@@ -735,6 +741,7 @@ class Matrix {
   /**
    * @brief Returns the column at the given MatIdx index. 
    * For RU matrices, is equivalent to `get_column(columnIndex, true)`.
+   * The type of the column depends on the choosen options, see @ref PersistenceMatrixOptions::column_type.
    * 
    * @param columnIndex MatIdx index of the column to return.
    * @return Reference to the column. Is `const` if the matrix has column compression.
@@ -742,6 +749,7 @@ class Matrix {
   returned_column_type& get_column(index columnIndex);
   /**
    * @brief Only available for chain matrices. Returns the column at the given MatIdx index.
+   * The type of the column depends on the choosen options, see @ref PersistenceMatrixOptions::column_type.
    * 
    * @param columnIndex MatIdx index of the column to return.
    * @return Const reference to the column.
@@ -752,6 +760,7 @@ class Matrix {
   /**
    * @brief Only available for RU matrices without @ref Column_indexation_types::IDENTIFIER indexing. 
    * Returns the column at the given MatIdx index in R if @p inR is true and in U if @p inR is false.
+   * The type of the column depends on the choosen options, see @ref PersistenceMatrixOptions::column_type.
    * 
    * @param columnIndex MatIdx index of the column to return.
    * @param inR If true, returns the column in R, if false, returns the column in U.
@@ -763,9 +772,7 @@ class Matrix {
   /**
    * @brief Only available if @ref has_row_access is true. Returns the row at the given row index, see [TODO: description].
    * For RU matrices, is equivalent to `get_row(columnIndex, true)`.
-   *
-   * @warning The @ref get_column_index method of the row cells returns the original PosIdx indices (before any swaps)
-   * for boundary matrices and MatIdx indices for chain matrices.
+   * The type of the row depends on the choosen options, see @ref PersistenceMatrixOptions::has_intrusive_rows.
    * 
    * @param rowIndex Row index of the row to return: IDIdx for chain matrices or updated IDIdx for boundary matrices
    * if swaps occured, see [TODO: description].
@@ -775,9 +782,7 @@ class Matrix {
   /**
    * @brief Only available for chain matrices and matrices with column compression.
    * Returns the row at the given row index, see [TODO: description].
-   *
-   * @warning The @ref get_column_index method of the row cells returns the original PosIdx indices (before any swaps)
-   * for boundary matrices and MatIdx indices for chain matrices.
+   * The type of the row depends on the choosen options, see @ref PersistenceMatrixOptions::has_intrusive_rows.
    * 
    * @param rowIndex Row index of the row to return: IDIdx for chain matrices or updated IDIdx for boundary matrices
    * if swaps occured, see [TODO: description].
@@ -789,12 +794,9 @@ class Matrix {
   /**
    * @brief Only available for RU matrices without @ref Column_indexation_types::IDENTIFIER indexing. 
    * Returns the row at the given row index (see [TODO: description]) in R if @p inR is true and in U if @p inR is false.
-   *
-   * @warning The @ref get_column_index method of the row cells returns the original PosIdx indices (before any swaps)
-   * for boundary matrices and MatIdx indices for chain matrices.
+   * The type of the row depends on the choosen options, see @ref PersistenceMatrixOptions::has_intrusive_rows.
    * 
-   * @param rowIndex Row index of the row to return: IDIdx for chain matrices or updated IDIdx for boundary matrices
-   * if swaps occured, see [TODO: description].
+   * @param rowIndex Row index of the row to return: updated IDIdx if swaps occured, see [TODO: description].
    * @param inR If true, returns the row in R, if false, returns the row in U.
    * @return Const reference to the row.
    */
@@ -802,7 +804,7 @@ class Matrix {
 
   /**
    * @brief Only available for base matrices without column compression and if @ref has_map_column_container is true.
-   * Otherwise, see @ref remove_maximal_face.
+   * Otherwise, see @ref remove_last.
    * Erases the given column from the matrix.
    * If @ref has_row_access is also true, the deleted column cells are also automatically removed from their 
    * respective rows.
@@ -814,7 +816,8 @@ class Matrix {
   /**
    * @brief The effect varies depending on the matrices and the options:
    * - Base matrix and boundary matrix:
-   *    - @ref has_map_column_container and has_column_and_row_swaps are true: cleans up maps used for the lazy row swaps.
+   *    - @ref has_map_column_container and @ref has_column_and_row_swaps are true:
+   *      cleans up maps used for the lazy row swaps.
    *    - @ref has_row_access and @ref has_removable_rows are true: assumes that the row is empty and removes it. 
    *    - Otherwise, does nothing.
    * - Boundary matrix with U stored: only R is affected by the above. If properly used, U will never have empty rows.
@@ -825,9 +828,9 @@ class Matrix {
    * removed from their columns. And in the case of intrusive rows, this will generate a segmentation fault when 
    * the column cells are destroyed later. The row access is just meant as a "read only" access to the rows and the
    * `erase_row` method just as a way to specify that a row is empty and can therefore be removed from dictionnaries.
-   * The emptiness of a row is therefore not tested at each column cell removal. 
+   * This allows to avoid testing the emptiness of a row at each column cell removal, what can be quite frequent. 
    * 
-   * @param rowIndex Row index of the row to remove, see [TODO: description].
+   * @param rowIndex Row index of the empty row to remove, see [TODO: description].
    */
   void erase_row(id_index rowIndex);
   //TODO: for chain matrices, replace IDIdx input with MatIdx input to homogenise.
@@ -911,7 +914,7 @@ class Matrix {
   /**
    * @brief Adds column at @p sourceColumnIndex onto the column at @p targetColumnIndex in the matrix. Is available
    * for every matrix type, but should be used with care with non basic matrices, as they will be no verification
-   * to ensure that the additions makes sense for the meaning of the underlying object. For example, a right-to-left 
+   * to ensure that the addition makes sense for the meaning of the underlying object. For example, a right-to-left 
    * addition could corrupt the computation of the barcode or the representative cycles if done blindly.
    *
    * For basic matrices with column compression, the representatives are summed together, which means that
@@ -942,7 +945,7 @@ class Matrix {
    * @brief Multiplies the target column with the coefficiant and then adds the source column to it.
    * That is: targetColumn = (targetColumn * coefficient) + sourceColumn.
    * Is available for every matrix type, but should be used with care with non basic matrices, as they will be no
-   * verification to ensure that the additions makes sense for the meaning of the underlying object.
+   * verification to ensure that the addition makes sense for the meaning of the underlying object.
    * For example, a right-to-left addition could corrupt the computation of the barcode or the representative cycles
    * if done blindly.
    *
@@ -980,7 +983,7 @@ class Matrix {
    * @brief Multiplies the source column with the coefficiant before adding it to the target column.
    * That is: targetColumn += (coefficient * sourceColumn). The source column will **not** be modified.
    * Is available for every matrix type, but should be used with care with non basic matrices, as they will be no
-   * verification to ensure that the additions makes sense for the meaning of the underlying object.
+   * verification to ensure that the addition makes sense for the meaning of the underlying object.
    * For example, a right-to-left addition could corrupt the computation of the barcode or the representative cycles
    * if done blindly.
    *
@@ -993,9 +996,9 @@ class Matrix {
    * @param targetColumnIndex MatIdx index of the target column.
    */
   template <typename Index_type>
-  std::enable_if_t<std::is_integral_v<Index_type>> multiply_source_and_add_to(int coefficient,
-                                                                              Index_type sourceColumnIndex,
-                                                                              Index_type targetColumnIndex);
+  std::enable_if_t<std::is_integral_v<Index_type> > multiply_source_and_add_to(int coefficient,
+                                                                               Index_type sourceColumnIndex,
+                                                                               Index_type targetColumnIndex);
   /**
    * @brief Multiplies the source column with the coefficiant before adding it to the target column.
    * That is: targetColumn += (coefficient * sourceColumn). The source column will **not** be modified.
@@ -1011,9 +1014,9 @@ class Matrix {
    * @param targetColumnIndex MatIdx index of the target column.
    */
   template <class Cell_range>
-  std::enable_if_t<!std::is_integral_v<Cell_range>> multiply_source_and_add_to(int coefficient,
-                                                                               const Cell_range& sourceColumn,
-                                                                               index targetColumnIndex);
+  std::enable_if_t<!std::is_integral_v<Cell_range> > multiply_source_and_add_to(int coefficient,
+                                                                                const Cell_range& sourceColumn,
+                                                                                index targetColumnIndex);
 
   /**
    * @brief Zeroes the cell at the given coordinates. Not available for chain matrices and for base matrices with 
@@ -1218,11 +1221,11 @@ class Matrix {
   /**
    * @brief Only available if @ref has_vine_update is true and if it is either a bounary matrix or
    * @ref column_indexation_type is set to @ref Column_indexation_types::POSITION.
-   * Does a vine swap between two faces which are consecutives in the filtration. Roughly, if F is the current
+   * Does a vine swap between two faces which are consecutives in the filtration. Roughly, if \f$ F \f$ is the current
    * filtration represented by the matrix, the method modifies the matrix such that the new state corresponds to 
-   * a valid state for the filtration F' equal to F but with the two faces at position @p index and @p index + 1
-   * swapped. Of course, the two faces should not have a face/coface relation which each other ; F' has to be a
-   * valid filtration.
+   * a valid state for the filtration \f$ F' \f$ equal to \f$ F \f$ but with the two faces at position @p index
+   * and @p index + 1 swapped. Of course, the two faces should not have a face/coface relation which each other ;
+   * \f$ F' \f$ has to be a valid filtration.
    * See @cite [TODO: vineyard paper] for more information about vine and vineyards.
    * 
    * @param index PosIdx index of the first face to swap. The second one has to be at (@p index + 1). Recall that
@@ -1234,11 +1237,11 @@ class Matrix {
   /**
    * @brief Only available if @ref has_vine_update is true and if it is either a chain matrix or
    * @ref column_indexation_type is set to @ref Column_indexation_types::IDENTIFIER.
-   * Does a vine swap between two faces which are consecutives in the filtration. Roughly, if F is the current
-   * filtration represented by the matrix, the method modifies the matrix such that the new state corresponds to 
-   * a valid state for the filtration F' equal to F but with the two given faces at swapped positions.
-   * Of course, the two faces should not have a face/coface relation which each other ; F' has to be a
-   * valid filtration.
+   * Does a vine swap between two faces which are consecutives in the filtration. Roughly, if \f$ F \f$ is
+   * the current filtration represented by the matrix, the method modifies the matrix such that the new state
+   * corresponds to a valid state for the filtration \f$ F' \f$ equal to \f$ F \f$ but with the two given faces
+   * at swapped positions. Of course, the two faces should not have a face/coface relation which each other ;
+   * \f$ F' \f$ has to be a valid filtration.
    * See @cite [TODO: vineyard paper] for more information about vine and vineyards.
    * 
    * @param columnIndex1 MatIdx index of the first face.
@@ -1455,6 +1458,8 @@ inline void Matrix<Options>::insert_column(const Container_type& column, index c
          "Columns cannot be initialized if the coefficient field characteristic is not specified.");
   static_assert(!isNonBasic && !Options::has_column_compression,
                 "'insert_column' with those parameters is not available for the chosen options.");
+  static_assert(!Options::has_row_access,
+                "Columns have to be inserted at the end of the matrix when row access is enabled.");
   matrix_.insert_column(column, columnIndex);
 }
 
@@ -1465,7 +1470,8 @@ inline typename Matrix<Options>::insertion_return_type Matrix<Options>::insert_b
 {
   assert(operators_->get_characteristic() != 0 &&
          "Columns cannot be initialized if the coefficient field characteristic is not specified.");
-  if constexpr (isNonBasic && !Options::is_of_boundary_type)
+  if constexpr (isNonBasic && !Options::is_of_boundary_type &&
+                Options::column_indexation_type == Column_indexation_types::CONTAINER)
     return matrix_.insert_boundary(boundary, dim);
   else
     matrix_.insert_boundary(boundary, dim);
@@ -1480,7 +1486,8 @@ inline typename Matrix<Options>::insertion_return_type Matrix<Options>::insert_b
   assert(operators_->get_characteristic() != 0 &&
          "Columns cannot be initialized if the coefficient field characteristic is not specified.");
   static_assert(isNonBasic, "Only enabled for non-basic matrices.");
-  if constexpr (!Options::is_of_boundary_type)
+  if constexpr (!Options::is_of_boundary_type &&
+                Options::column_indexation_type == Column_indexation_types::CONTAINER)
     return matrix_.insert_boundary(faceIndex, boundary, dim);
   else
     matrix_.insert_boundary(faceIndex, boundary, dim);
@@ -1924,6 +1931,8 @@ inline constexpr void Matrix<Options>::_assert_options()
   static_assert(Options::column_type != Column_types::HEAP || !Options::has_row_access,
                 "Row access is not possible for heap columns.");
   static_assert(!Options::has_vine_update || Options::is_z2, "Vine update currently works only for Z_2 coefficients.");
+  // static_assert(!Options::can_retrieve_representative_cycles || Options::is_z2,
+  //               "Representaive cycles can currently only be computed with Z_2 coefficients.");
   static_assert(Options::column_type != Column_types::HEAP || !Options::has_column_compression,
                 "Column compression not compatible with heap columns.");
 
