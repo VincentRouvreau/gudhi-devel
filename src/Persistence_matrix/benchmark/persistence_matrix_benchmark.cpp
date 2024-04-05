@@ -9,14 +9,19 @@
  */
 
 
+#include <gudhi/Alpha_complex.h>
 #include <gudhi/Simplex_tree.h>
 #include <gudhi/Bitmap_cubical_complex.h>
 #include <gudhi/Persistence_matrix.h>
 #include <gudhi/persistence_matrix_options.h>
 #include <gudhi/Persistent_cohomology.h>
 #include <gudhi/random_graph_generators.h>
-#include <gudhi/Clock.h>
+#include <gudhi/Clock.h>  // for Gudhi::Clock
+#include <gudhi/Points_off_io.h>  // for Gudhi::Points_off_reader
+#include <gudhi/pick_n_random_points.h>
 
+#include <CGAL/Epeck_d.h>
+ 
 #include <boost/mpl/list.hpp>
 #include <boost/mpl/for_each.hpp>
 
@@ -44,12 +49,24 @@ using Bitmap_cubical_complex_base = Gudhi::cubical_complex::Bitmap_cubical_compl
 using Bitmap_cubical_complex = Gudhi::cubical_complex::Bitmap_cubical_complex<Bitmap_cubical_complex_base>;
 using Persistent_cohomology_cub = Gudhi::persistent_cohomology::Persistent_cohomology<Bitmap_cubical_complex, Field_Zp>;
 
+template<typename Point_d>
+std::vector<Point_d> random_activities(std::string off_file, std::size_t points_number) {
+  std::vector<Point_d> results;
+  Gudhi::Points_off_reader<Point_d> off_reader(off_file);
+  if (!off_reader.is_valid()) {
+    std::cerr << "Unable to read file " << off_file << "\n";
+    return results;  // ----- >>
+  }
+  std::vector<Point_d> point_cloud = off_reader.get_point_cloud();
+  Gudhi::subsampling::pick_n_random_points(point_cloud, points_number, std::back_inserter(results));
+  return results;
+}
 
 template <class Persistence, class Complex>
 void bench_persistence(Complex& cpx, const std::string& msg, bool& timeout) {
   if (!timeout) {
     Gudhi::Clock clock_pers(msg);
-    Persistence pers(cpx);
+    Persistence pers(cpx, true);
     pers.init_coefficients(2);
     pers.compute_persistent_cohomology(0.0);
     clock_pers.end();
@@ -126,15 +143,37 @@ struct Bench_persistence {
     using Persistence_boundary_matrix_cub   = Gudhi::persistence_matrix::Persistence_matrix<Bitmap_cubical_complex, Boundary_matrix_options<Default_option>>;
     using Persistence_chain_matrix_cub      = Gudhi::persistence_matrix::Persistence_matrix<Bitmap_cubical_complex, Chain_matrix_options<Default_option>>;
     using Persistence_chain_matrix_vine_cub = Gudhi::persistence_matrix::Persistence_matrix<Bitmap_cubical_complex, Chain_matrix_options_vine<Default_option>>;
-    
-    Simplex_tree oneRips;
-    // Insert 100% of the possible edges, with 2000 vertices -> 1-Rips
-    simplex_tree_random_flag_complex(oneRips, 1000, 1.);
-    
+
     bool cohomology_timeout, RU_matrix_vine_timeout, RU_matrix_repr_timeout, boundary_matrix_timeout, chain_matrix_timeout, chain_matrix_vine_timeout;
+
+    // ************************* ALPHA COMPLEX *************************
+    using Kernel = CGAL::Epeck_d< CGAL::Dimension_tag<3> >;
+    using Point = Kernel::Point_d;
     cohomology_timeout = RU_matrix_vine_timeout = RU_matrix_repr_timeout = boundary_matrix_timeout = chain_matrix_timeout = chain_matrix_vine_timeout = false;
+    for (int points_number = 10000; points_number <= 25000; points_number+=5000) {
+      std::vector<Point> points = random_activities<Point>("/home/gailuron/workspace/gudhi/gudhi-devel/activities.off", points_number);
+
+      Gudhi::alpha_complex::Alpha_complex<Kernel> alpha(points);
+      Gudhi::Simplex_tree<> stree;
+      alpha.create_complex(stree);
+      bench_persistence<Persistent_cohomology_stree>(stree,         std::string("Persistent_cohomology_alpha________") + std::to_string(points_number), cohomology_timeout);
+      bench_persistence<Persistence_boundary_matrix_stree>(stree,   std::string("Persistence_boundary_matrix_alpha__") + std::to_string(points_number), boundary_matrix_timeout);
+      bench_persistence<Persistence_chain_matrix_stree>(stree,      std::string("Persistence_chain_matrix_alpha_____") + std::to_string(points_number), chain_matrix_timeout);
+      bench_persistence<Persistence_chain_matrix_vine_stree>(stree, std::string("Persistence_chain_matrix_vine_alpha") + std::to_string(points_number), chain_matrix_vine_timeout);
+      bench_persistence<Persistence_RU_matrix_vine_stree>(stree,    std::string("Persistence_RU_matrix_vine_alpha___") + std::to_string(points_number), RU_matrix_vine_timeout);
+      bench_persistence<Persistence_RU_matrix_repr_stree>(stree,    std::string("Persistence_RU_matrix_repr_alpha___") + std::to_string(points_number), RU_matrix_repr_timeout);
+    }
+
+    // ************************* ONE RIPS *************************
+    cohomology_timeout = RU_matrix_vine_timeout = RU_matrix_repr_timeout = boundary_matrix_timeout = chain_matrix_timeout = chain_matrix_vine_timeout = false;
+    Simplex_tree oneRips;
+    // Insert 100% of the possible edges, with 150 vertices -> 1-Rips
+    simplex_tree_random_flag_complex(oneRips, 150, 1.);
+    
     
     Gudhi::Clock clock_if("initialize_filtration");
+    // Triangles
+    oneRips.expansion(2);
     oneRips.initialize_filtration();
     std::clog << clock_if;
     bench_persistence<Persistent_cohomology_stree>(oneRips,         "Persistent_cohomology_one_rips________", cohomology_timeout       );
@@ -144,11 +183,12 @@ struct Bench_persistence {
     /*bench_persistence<Persistence_RU_matrix_vine_stree>(oneRips,    "Persistence_RU_matrix_vine_one_rips___", RU_matrix_vine_timeout   );
     bench_persistence<Persistence_RU_matrix_repr_stree>(oneRips,    "Persistence_RU_matrix_repr_one_rips___", RU_matrix_repr_timeout   );*/
 
+    // ************************* RANDOM FLAG COMPLEX *************************
     cohomology_timeout = RU_matrix_vine_timeout = RU_matrix_repr_timeout = boundary_matrix_timeout = chain_matrix_timeout = chain_matrix_vine_timeout = false;
-    for (int max_dim = 1; max_dim < 5; max_dim++) {
+    for (int max_dim = 2; max_dim < 5; max_dim++) {
       Simplex_tree stree;
-      // Insert 15% of the possible edges, with 400 vertices
-      simplex_tree_random_flag_complex(stree, 300);
+      // Insert 15% of the possible edges, with 200 vertices
+      simplex_tree_random_flag_complex(stree, 200);
     
       Gudhi::Clock clock_expansion(std::string("Expansion dim=") + std::to_string(max_dim));
       stree.expansion(max_dim);
@@ -164,11 +204,13 @@ struct Bench_persistence {
       bench_persistence<Persistence_RU_matrix_repr_stree>(stree,    std::string("Persistence_RU_matrix_repr_random_graph___") + std::to_string(max_dim), RU_matrix_repr_timeout);
     }
     
+    // ************************* RANDOM CUBICAL *************************
     cohomology_timeout = RU_matrix_vine_timeout = RU_matrix_repr_timeout = boundary_matrix_timeout = chain_matrix_timeout = chain_matrix_vine_timeout = false;
-    for (int max_dim = 1; max_dim < 5; max_dim++) {
+    for (int max_dim = 1; max_dim < 4; max_dim++) {
       std::vector<unsigned> sizes;
       std::size_t multipliers = 1;
-      const std::size_t SIZE_IN_THIS_DIM = 40;
+      // num_simplices = ((2 * N) + 1) ^ max_dim
+      const std::size_t SIZE_IN_THIS_DIM = 200 / (max_dim * 2);
       for (int dim = 0; dim != max_dim; ++dim) {
         sizes.push_back(SIZE_IN_THIS_DIM);
         multipliers *= SIZE_IN_THIS_DIM;
@@ -181,10 +223,8 @@ struct Bench_persistence {
       bench_persistence<Persistence_boundary_matrix_cub>(cub,   std::string("Persistence_boundary_matrix_random_cubical___") + std::to_string(max_dim), boundary_matrix_timeout);
       bench_persistence<Persistence_chain_matrix_cub>(cub,      std::string("Persistence_chain_matrix_random_cubical______") + std::to_string(max_dim), chain_matrix_timeout);
       bench_persistence<Persistence_chain_matrix_vine_cub>(cub, std::string("Persistence_chain_matrix_vine_random_cubical_") + std::to_string(max_dim), chain_matrix_vine_timeout);
-      if (max_dim < 4)
-        bench_persistence<Persistence_RU_matrix_vine_cub>(cub,    std::string("Persistence_RU_vine_matrix_random_cubical____") + std::to_string(max_dim), RU_matrix_vine_timeout);
-      if (max_dim < 4)
-        bench_persistence<Persistence_RU_matrix_repr_cub>(cub,    std::string("Persistence_RU_repr_matrix_random_cubical____") + std::to_string(max_dim), RU_matrix_repr_timeout);
+      bench_persistence<Persistence_RU_matrix_vine_cub>(cub,    std::string("Persistence_RU_vine_matrix_random_cubical____") + std::to_string(max_dim), RU_matrix_vine_timeout);
+      bench_persistence<Persistence_RU_matrix_repr_cub>(cub,    std::string("Persistence_RU_repr_matrix_random_cubical____") + std::to_string(max_dim), RU_matrix_repr_timeout);
     }
   }
 };
@@ -203,3 +243,39 @@ int main() {
 
   return 0;
 }
+
+/*
+void build_random(Simplex_tree& st, unsigned int numberOfPoints, unsigned int numberOfSimplices, unsigned int maxDimension, int seed){
+	std::random_device dev;
+	std::mt19937 rng(dev());
+	if (seed > -1) rng.seed(seed);
+	std::uniform_int_distribution<int> vertexDist(0,numberOfPoints-1);
+	std::uniform_int_distribution<int> dimDist(maxDimension-2,maxDimension);
+	unsigned int currentFiltrationValue = 1;
+
+	for (int vertex = 0; vertex < static_cast<int>(numberOfPoints); ++vertex) {
+		st.insert_simplex({vertex});
+	}
+
+	unsigned int size = 0;
+	while (size < numberOfSimplices && currentFiltrationValue < numberOfSimplices){
+		unsigned int dim = dimDist(rng);
+		std::set<int> simplex;
+
+		while (simplex.size() < dim + 1){
+			simplex.insert(vertexDist(rng));
+		}
+
+		st.insert_simplex_and_subfaces(simplex, currentFiltrationValue++);
+
+		if (currentFiltrationValue % (numberOfSimplices / 20) == 0)
+			size = st.num_simplices();
+	}
+
+	std::cout << "Number of points: " << numberOfPoints << "\n";
+	std::cout << "Number of simplices: " << st.num_simplices() << "\n";
+	std::cout << "Maximum dimension: " << st.dimension() << "\n";
+	std::cout << "Seed: " << (seed > -1 ? std::to_string(seed) : "none") << "\n";
+}
+
+*/

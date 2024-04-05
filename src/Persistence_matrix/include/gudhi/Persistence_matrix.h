@@ -25,7 +25,7 @@ namespace persistence_matrix {
 template <class FilteredComplex, class Options = Gudhi::persistence_matrix::Default_options<> >
 class Persistence_matrix {
  public:
-  explicit Persistence_matrix(FilteredComplex& cpx)
+  explicit Persistence_matrix(FilteredComplex& cpx, [[maybe_unused]] bool persistence_dim_max=false)
     : cpx_{&cpx}, matrix_{cpx.num_simplices()} {}
 
   void init_coefficients(int charac) {
