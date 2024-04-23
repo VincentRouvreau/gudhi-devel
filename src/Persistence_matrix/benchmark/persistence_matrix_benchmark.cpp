@@ -20,6 +20,8 @@
 #include <gudhi/Points_off_io.h>  // for Gudhi::Points_off_reader
 #include <gudhi/pick_n_random_points.h>
 
+#include "random_filtrations.h"
+
 #include <CGAL/Epeck_d.h>
  
 #include <boost/mpl/list.hpp>
@@ -48,6 +50,8 @@ using Persistent_cohomology_stree = Gudhi::persistent_cohomology::Persistent_coh
 using Bitmap_cubical_complex_base = Gudhi::cubical_complex::Bitmap_cubical_complex_base<double>;
 using Bitmap_cubical_complex = Gudhi::cubical_complex::Bitmap_cubical_complex<Bitmap_cubical_complex_base>;
 using Persistent_cohomology_cub = Gudhi::persistent_cohomology::Persistent_cohomology<Bitmap_cubical_complex, Field_Zp>;
+
+std::vector<std::string> column_type_str = {"INTRUSIVE_LIST", "SET", "HEAP", "VECTOR", "NAIVE_VECTOR", "UNORDERED_SET", "LIST", "INTRUSIVE_SET"};
 
 template<typename Point_d>
 std::vector<Point_d> random_activities(std::string off_file, std::size_t points_number) {
@@ -130,7 +134,7 @@ struct Bench_persistence {
   static inline int n {0};
 
   template<typename Default_option> void operator()(Default_option) {
-    std::clog << " ****************************** " << ++n << " ******************************\n";
+    std::clog << " ****************************** " << column_type_str[n++] << " ******************************\n";
 
     using Persistence_RU_matrix_vine_stree    = Gudhi::persistence_matrix::Persistence_matrix<Gudhi::Simplex_tree<>, RU_matrix_options_vine<Default_option>>;
     using Persistence_RU_matrix_repr_stree    = Gudhi::persistence_matrix::Persistence_matrix<Gudhi::Simplex_tree<>, RU_matrix_options_repr<Default_option>>;
@@ -146,12 +150,26 @@ struct Bench_persistence {
 
     bool cohomology_timeout, RU_matrix_vine_timeout, RU_matrix_repr_timeout, boundary_matrix_timeout, chain_matrix_timeout, chain_matrix_vine_timeout;
 
+    cohomology_timeout = RU_matrix_vine_timeout = RU_matrix_repr_timeout = boundary_matrix_timeout = chain_matrix_timeout = chain_matrix_vine_timeout = false;
+    for (int points_number = 10000; points_number <= 30000; points_number+=20000) {
+      for (int dim = 2; dim <= 4; dim++) {
+        Gudhi::Simplex_tree<> stree;
+        build_random(stree, points_number, points_number * dim * 2, 2);
+        bench_persistence<Persistent_cohomology_stree>(stree,         std::string("Persistent_cohomology_random_filtrations________") + std::to_string(points_number) + std::string("_") + std::to_string(dim), cohomology_timeout);
+        bench_persistence<Persistence_boundary_matrix_stree>(stree,   std::string("Persistence_boundary_matrix_random_filtrations__") + std::to_string(points_number) + std::string("_") + std::to_string(dim), boundary_matrix_timeout);
+        bench_persistence<Persistence_chain_matrix_stree>(stree,      std::string("Persistence_chain_matrix_random_filtrations_____") + std::to_string(points_number) + std::string("_") + std::to_string(dim), chain_matrix_timeout);
+        bench_persistence<Persistence_chain_matrix_vine_stree>(stree, std::string("Persistence_chain_matrix_vine_random_filtrations") + std::to_string(points_number) + std::string("_") + std::to_string(dim), chain_matrix_vine_timeout);
+        bench_persistence<Persistence_RU_matrix_vine_stree>(stree,    std::string("Persistence_RU_matrix_vine_random_filtrations___") + std::to_string(points_number) + std::string("_") + std::to_string(dim), RU_matrix_vine_timeout);
+        bench_persistence<Persistence_RU_matrix_repr_stree>(stree,    std::string("Persistence_RU_matrix_repr_random_filtrations___") + std::to_string(points_number) + std::string("_") + std::to_string(dim), RU_matrix_repr_timeout);
+      }
+    }
+
     // ************************* ALPHA COMPLEX *************************
     using Kernel = CGAL::Epeck_d< CGAL::Dimension_tag<3> >;
     using Point = Kernel::Point_d;
     cohomology_timeout = RU_matrix_vine_timeout = RU_matrix_repr_timeout = boundary_matrix_timeout = chain_matrix_timeout = chain_matrix_vine_timeout = false;
     for (int points_number = 10000; points_number <= 25000; points_number+=5000) {
-      std::vector<Point> points = random_activities<Point>("/home/gailuron/workspace/gudhi/gudhi-devel/activities.off", points_number);
+      std::vector<Point> points = random_activities<Point>("./activities.off", points_number);
 
       Gudhi::alpha_complex::Alpha_complex<Kernel> alpha(points);
       Gudhi::Simplex_tree<> stree;
@@ -232,7 +250,7 @@ struct Bench_persistence {
 int main() {
   typedef boost::mpl::list<Gudhi::persistence_matrix::Default_options<Gudhi::persistence_matrix::Column_types::INTRUSIVE_LIST, true>,
                            Gudhi::persistence_matrix::Default_options<Gudhi::persistence_matrix::Column_types::SET, true>,
-                           /*Gudhi::persistence_matrix::Default_options<Gudhi::persistence_matrix::Column_types::HEAP, true>,*/
+                           Gudhi::persistence_matrix::Default_options<Gudhi::persistence_matrix::Column_types::HEAP, true>,
                            Gudhi::persistence_matrix::Default_options<Gudhi::persistence_matrix::Column_types::VECTOR, true>,
                            Gudhi::persistence_matrix::Default_options<Gudhi::persistence_matrix::Column_types::NAIVE_VECTOR, true>,
                            Gudhi::persistence_matrix::Default_options<Gudhi::persistence_matrix::Column_types::UNORDERED_SET, true>,
@@ -244,38 +262,3 @@ int main() {
   return 0;
 }
 
-/*
-void build_random(Simplex_tree& st, unsigned int numberOfPoints, unsigned int numberOfSimplices, unsigned int maxDimension, int seed){
-	std::random_device dev;
-	std::mt19937 rng(dev());
-	if (seed > -1) rng.seed(seed);
-	std::uniform_int_distribution<int> vertexDist(0,numberOfPoints-1);
-	std::uniform_int_distribution<int> dimDist(maxDimension-2,maxDimension);
-	unsigned int currentFiltrationValue = 1;
-
-	for (int vertex = 0; vertex < static_cast<int>(numberOfPoints); ++vertex) {
-		st.insert_simplex({vertex});
-	}
-
-	unsigned int size = 0;
-	while (size < numberOfSimplices && currentFiltrationValue < numberOfSimplices){
-		unsigned int dim = dimDist(rng);
-		std::set<int> simplex;
-
-		while (simplex.size() < dim + 1){
-			simplex.insert(vertexDist(rng));
-		}
-
-		st.insert_simplex_and_subfaces(simplex, currentFiltrationValue++);
-
-		if (currentFiltrationValue % (numberOfSimplices / 20) == 0)
-			size = st.num_simplices();
-	}
-
-	std::cout << "Number of points: " << numberOfPoints << "\n";
-	std::cout << "Number of simplices: " << st.num_simplices() << "\n";
-	std::cout << "Maximum dimension: " << st.dimension() << "\n";
-	std::cout << "Seed: " << (seed > -1 ? std::to_string(seed) : "none") << "\n";
-}
-
-*/
