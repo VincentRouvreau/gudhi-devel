@@ -23,17 +23,21 @@ namespace Gudhi {
 namespace persistence_matrix {
 
 /**
+ * @ingroup persistence_matrix
+ *
  * @brief Empty structure.
  * Inheritated instead of @ref Matrix_row_access, when the the row access is not enabled.
  */
 struct Dummy_matrix_row_access {
-  // Dummy_matrix_row_access(){};
   Dummy_matrix_row_access([[maybe_unused]] unsigned int numberOfRows = 0){};
 
   friend void swap([[maybe_unused]] Dummy_matrix_row_access& d1, [[maybe_unused]] Dummy_matrix_row_access& d2) {}
 };
 
 /**
+ * @class Matrix_row_access matrix_row_access.h gudhi/Persistence_matrix/matrix_row_access.h
+ * @ingroup persistence_matrix
+ *
  * @brief Class managing the row access for the inheritating matrix.
  * 
  * @tparam Row_type Either boost::intrusive::list<Cell_type,...> if @ref PersistenceMatrixOptions::has_intrusive_rows
@@ -41,7 +45,7 @@ struct Dummy_matrix_row_access {
  * @tparam Row_container_type Either std::map<index,Row_type> if @ref PersistenceMatrixOptions::has_removable_rows is
  *  true, or std::vector<Row_type> otherwise.
  * @tparam has_removable_rows Value of @ref PersistenceMatrixOptions::has_removable_rows.
- * @tparam id_index IDIdx index type.
+ * @tparam id_index @ref IDIdx index type.
  */
 template <typename Row_type, typename Row_container_type, bool has_removable_rows, typename id_index>
 class Matrix_row_access 
@@ -87,14 +91,11 @@ class Matrix_row_access
   ~Matrix_row_access() { delete rows_; }
 
   /**
-   * @brief Returns the row at the given row index, see [TODO: description].
+   * @brief Returns the row at the given @ref rowindex "row index".
    * The type of the row depends on the choosen options, see @ref PersistenceMatrixOptions::has_intrusive_rows.
-   *
-   * @warning The @ref get_column_index method of the row cells returns the original PosIdx indices (before any swaps)
-   * for boundary matrices and MatIdx indices for chain matrices.
    * 
-   * @param rowIndex Row index of the row to return: IDIdx for chain matrices or updated IDIdx for boundary matrices
-   * if swaps occured, see [TODO: description].
+   * @param rowIndex @ref rowindex "Row index" of the row to return: @ref IDIdx for @ref chainmatrix "chain matrices"
+   * or updated @ref IDIdx for @ref boundarymatrix "boundary matrices" if swaps occured.
    * @return Reference to the row.
    */
   Row_type& get_row(id_index rowIndex) {
@@ -105,14 +106,11 @@ class Matrix_row_access
     }
   }
   /**
-   * @brief Returns the row at the given row index, see [TODO: description].
+   * @brief Returns the row at the given @ref rowindex "row index".
    * The type of the row depends on the choosen options, see @ref PersistenceMatrixOptions::has_intrusive_rows.
-   *
-   * @warning The @ref get_column_index method of the row cells returns the original PosIdx indices (before any swaps)
-   * for boundary matrices and MatIdx indices for chain matrices.
    * 
-   * @param rowIndex Row index of the row to return: IDIdx for chain matrices or updated IDIdx for boundary matrices
-   * if swaps occured, see [TODO: description].
+   * @param rowIndex @ref rowindex "Row index" of the row to return: @ref IDIdx for @ref chainmatrix "chain matrices"
+   * or updated @ref IDIdx for @ref boundarymatrix "boundary matrices" if swaps occured.
    * @return Const reference to the row.
    */
   const Row_type& get_row(id_index rowIndex) const {
@@ -126,7 +124,7 @@ class Matrix_row_access
    * @brief Only available if @ref PersistenceMatrixOptions::has_removable_rows is true. Removes the given row
    * from the row container if the row exists and is empty.
    * 
-   * @param rowIndex Row index of the row to remove, see [TODO: description].
+   * @param rowIndex @ref rowindex "Row index" of the row to remove.
    */
   void erase_row(id_index rowIndex) {
     static_assert(has_removable_rows, "'erase_row' is not implemented for the chosen options.");

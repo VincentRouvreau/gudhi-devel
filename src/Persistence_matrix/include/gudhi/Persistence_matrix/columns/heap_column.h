@@ -31,6 +31,9 @@ namespace Gudhi {
 namespace persistence_matrix {
 
 /**
+ * @class Heap_column heap_column.h gudhi/Persistence_matrix/columns/heap_column.h
+ * @ingroup persistence_matrix
+ *
  * @brief Column class following the @ref PersistenceMatrixColumn concept. Not compatible with row access.
  *
  * Column based on a heap structure. The heap is represented as a vector sorted as a heap. The top of the heap is
@@ -575,7 +578,7 @@ Heap_column<Master_matrix, Cell_constructor>::get_pivot_value()
       return 0;
     } else {
       Field_element_type sum(0);
-      if (chain_opt::get_pivot() == -1) return sum;
+      if (chain_opt::get_pivot() == static_cast<id_index>(-1)) return sum;
       for (const Cell* cell : column_) {
         if (cell->get_row_index() == chain_opt::get_pivot()) sum = operators_->add(sum, cell->get_element());
       }
@@ -954,7 +957,10 @@ inline bool Heap_column<Master_matrix, Cell_constructor>::_add(const Cell_range&
 
   if (2 * insertsSinceLastPrune_ > column_.size()) _prune();
 
-  return pivotVal == Field_operators::get_additive_identity();
+  if constexpr (Master_matrix::Option_list::is_z2)
+    return !pivotVal;
+  else 
+    return pivotVal == Field_operators::get_additive_identity();
 }
 
 template <class Master_matrix, class Cell_constructor>
@@ -1002,7 +1008,10 @@ inline bool Heap_column<Master_matrix, Cell_constructor>::_multiply_and_add(cons
 
   if (2 * insertsSinceLastPrune_ > column_.size()) _prune();
 
-  return pivotVal == Field_operators::get_additive_identity();
+  if constexpr (Master_matrix::Option_list::is_z2)
+    return !pivotVal;
+  else 
+    return pivotVal == Field_operators::get_additive_identity();
 }
 
 template <class Master_matrix, class Cell_constructor>
@@ -1049,6 +1058,8 @@ inline bool Heap_column<Master_matrix, Cell_constructor>::_multiply_and_add(cons
 }  // namespace Gudhi
 
 /**
+ * @ingroup persistence_matrix
+ *
  * @brief Hash method for @ref Gudhi::persistence_matrix::Heap_column.
  * 
  * @tparam Master_matrix Template parameter of @ref Gudhi::persistence_matrix::Heap_column.

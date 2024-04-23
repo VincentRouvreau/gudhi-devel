@@ -26,20 +26,20 @@ namespace Gudhi {
 namespace persistence_matrix {
 
 /**
+ * @ingroup persistence_matrix
+ *
  * @brief Empty structure.
  * Inheritated instead of @ref Base_pairing, when the computation of the barcode was not enabled or if the pairing
  * is already managed by the vine update classes.
  */
 struct Dummy_base_pairing {
-  // Dummy_base_pairing& operator=([[maybe_unused]] Dummy_base_pairing other) { return *this; }
   friend void swap([[maybe_unused]] Dummy_base_pairing& d1, [[maybe_unused]] Dummy_base_pairing& d2) {}
-
-  // Dummy_base_pairing() {}
-  // Dummy_base_pairing([[maybe_unused]] const Dummy_base_pairing& matrixToCopy) {}
-  // Dummy_base_pairing([[maybe_unused]] Dummy_base_pairing&& other) noexcept {}
 };
 
 /**
+ * @class Base_pairing base_pairing.h gudhi/Persistence_matrix/base_pairing.h
+ * @ingroup persistence_matrix
+ *
  * @brief Class managing the barcode for @ref Boundary_matrix if the option was enabled.
  * 
  * @tparam Master_matrix An instanciation of @ref Matrix from which all types and options are deduced.

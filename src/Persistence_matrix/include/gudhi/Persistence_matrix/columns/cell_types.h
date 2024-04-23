@@ -26,6 +26,8 @@ namespace Gudhi {
 namespace persistence_matrix {
 
 /**
+ * @ingroup persistence_matrix
+ *
  * @brief Empty structure.
  * Inheritated instead of @ref Cell_column_index, when the row access is disabled.
  */
@@ -34,15 +36,11 @@ struct Dummy_cell_column_index_mixin
   Dummy_cell_column_index_mixin() {}
   template <typename index>
   Dummy_cell_column_index_mixin([[maybe_unused]] index columnIndex) {}
-  // Dummy_cell_column_index_mixin([[maybe_unused]] const Dummy_cell_column_index_mixin& cell){};
-  // Dummy_cell_column_index_mixin([[maybe_unused]] Dummy_cell_column_index_mixin&& cell){};
-
-  // Dummy_cell_column_index_mixin& operator=([[maybe_unused]] const Dummy_cell_column_index_mixin& other) {
-  //   return *this;
-  // };
 };
 
 /**
+ * @ingroup persistence_matrix
+ *
  * @brief Empty structure.
  * Inheritated instead of @ref Cell_field_element, when @ref PersistenceMatrixOptions::is_z2 is true.
  */
@@ -51,18 +49,14 @@ struct Dummy_cell_field_element_mixin
   Dummy_cell_field_element_mixin() {}
   template <class Field_element_type>
   Dummy_cell_field_element_mixin([[maybe_unused]] Field_element_type t) {}
-  // Dummy_cell_field_element_mixin([[maybe_unused]] const Dummy_cell_field_element_mixin& cell){};
-  // Dummy_cell_field_element_mixin([[maybe_unused]] Dummy_cell_field_element_mixin&& cell){};
-
-  // Dummy_cell_field_element_mixin& operator=([[maybe_unused]] const Dummy_cell_field_element_mixin& other) {
-  //   return *this;
-  // };
 };
 
 /**
+ * @ingroup persistence_matrix
+ *
  * @brief Class managing the column index access of a cell.
  * 
- * @tparam index MatIdx index type.
+ * @tparam index @ref MatIdx index type.
  */
 template <typename index>
 class Cell_column_index 
@@ -92,7 +86,7 @@ class Cell_column_index
   Cell_column_index(Cell_column_index&& cell) noexcept : columnIndex_(std::exchange(cell.columnIndex_, 0)){};
 
   /**
-   * @brief Returns the MatIdx column index stored in the cell.
+   * @brief Returns the @ref MatIdx column index stored in the cell.
    * 
    * @return Column index of the cell.
    */
@@ -117,6 +111,8 @@ class Cell_column_index
 };
 
 /**
+ * @ingroup persistence_matrix
+ *
  * @brief Class managing the value access of a cell.
  * 
  * @tparam Field_element_type Type of a cell value.
@@ -180,7 +176,10 @@ class Cell_field_element
 };
 
 /**
- * @brief Matrix cell class. Stores by default only the row index it belongs to, but can also store its
+ * @class Cell cell_types.h gudhi/Persistence_matrix/columns/cell_types.h
+ * @ingroup persistence_matrix
+ *
+ * @brief %Matrix cell class. Stores by default only the row index it belongs to, but can also store its
  * column index when the row access is enabled, as well as its value when they are different from only 0 and 1.
  * Zero-valued cells are never explicited in the matrix.
  * 
@@ -208,14 +207,14 @@ class Cell : public Master_matrix::Cell_column_index_option,
   /**
    * @brief Constructs a cell with given row index. Other possible attributes are set at default values.
    * 
-   * @param rowIndex Row index of the cell.
+   * @param rowIndex @ref rowindex "Row index" of the cell.
    */
   Cell(id_index rowIndex) : col_opt(), field_opt(), rowIndex_(rowIndex){};
   /**
    * @brief Constructs a cell with given row and column index. Other possible attributes are set at default values.
    * 
    * @param columnIndex Column index of the cell.
-   * @param rowIndex Row index of the cell.
+   * @param rowIndex @ref rowindex "Row index" of the cell.
    */
   Cell(index columnIndex, id_index rowIndex) : col_opt(columnIndex), field_opt(), rowIndex_(rowIndex){};
   /**
@@ -240,13 +239,13 @@ class Cell : public Master_matrix::Cell_column_index_option,
   /**
    * @brief Returns the row index stored in the cell.
    * 
-   * @return Row index of the cell.
+   * @return @ref rowindex "Row index" of the cell.
    */
   id_index get_row_index() const { return rowIndex_; };
   /**
    * @brief Sets the row index stored in the cell.
    * 
-   * @param rowIndex Row index of the cell.
+   * @param rowIndex @ref rowindex "Row index" of the cell.
    */
   void set_row_index(id_index rowIndex) { rowIndex_ = rowIndex; };
 
@@ -306,6 +305,8 @@ class Cell : public Master_matrix::Cell_column_index_option,
 }  // namespace Gudhi
 
 /**
+ * @ingroup persistence_matrix
+ *
  * @brief Hash method for @ref Gudhi::persistence_matrix::Cell.
  *
  * The cells are differentiated by their row indices only. For exemple, two cells with the same row index

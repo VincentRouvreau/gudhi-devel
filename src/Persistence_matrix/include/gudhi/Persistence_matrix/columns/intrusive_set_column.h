@@ -32,6 +32,9 @@ namespace Gudhi {
 namespace persistence_matrix {
 
 /**
+ * @class Intrusive_set_column intrusive_set_column.h gudhi/Persistence_matrix/columns/intrusive_set_column.h
+ * @ingroup persistence_matrix
+ *
  * @brief Column class following the @ref PersistenceMatrixColumn concept.
  *
  * Column based on a intrusive set structure. The cells are ordered by row index and only non-zero values
@@ -563,7 +566,7 @@ Intrusive_set_column<Master_matrix, Cell_constructor>::get_pivot_value() const
       if (column_.empty()) return 0;
       return column_.rbegin()->get_element();
     } else {
-      if (chain_opt::get_pivot() == -1) return 0;
+      if (chain_opt::get_pivot() == static_cast<id_index>(-1)) return 0;
       auto it = column_.find(Cell(chain_opt::get_pivot()));
       GUDHI_CHECK(it != column_.end(), "Pivot not found only if the column was misused.");
       return it->get_element();
@@ -1000,6 +1003,8 @@ inline bool Intrusive_set_column<Master_matrix, Cell_constructor>::_multiply_and
 
 
 /**
+ * @ingroup persistence_matrix
+ *
  * @brief Hash method for @ref Gudhi::persistence_matrix::Intrusive_set_column.
  * 
  * @tparam Master_matrix Template parameter of @ref Gudhi::persistence_matrix::Intrusive_set_column.

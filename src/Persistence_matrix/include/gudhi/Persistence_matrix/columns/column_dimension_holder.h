@@ -23,6 +23,8 @@ namespace Gudhi {
 namespace persistence_matrix {
 
 /**
+ * @ingroup persistence_matrix
+ *
  * @brief Empty structure.
  * Inheritated instead of @ref Column_dimension_holder, when the columns are not storing a dimension.
  */
@@ -31,15 +33,14 @@ struct Dummy_dimension_holder
   Dummy_dimension_holder() {}
   template <typename dimension_type>
   Dummy_dimension_holder([[maybe_unused]] dimension_type dim) {}
-  // Dummy_dimension_holder([[maybe_unused]] const Dummy_dimension_holder& col) {}
-  // Dummy_dimension_holder([[maybe_unused]] Dummy_dimension_holder&& col) {}
-
-  // Dummy_dimension_holder& operator=([[maybe_unused]] const Dummy_dimension_holder& other) { return *this; }
 
   friend void swap([[maybe_unused]] Dummy_dimension_holder& col1, [[maybe_unused]] Dummy_dimension_holder& col2) {}
 };
 
 /**
+ * @class Column_dimension_holder column_dimension_holder.h gudhi/Persistence_matrix/columns/column_dimension_holder.h
+ * @ingroup persistence_matrix
+ *
  * @brief Class managing the dimension access of a column.
  * 
  * @tparam Master_matrix An instanciation of @ref Matrix from which all types and options are deduced.
@@ -50,7 +51,7 @@ struct Column_dimension_holder
   using dimension_type = typename Master_matrix::dimension_type;  /**< Dimension value type. */
 
   /**
-   * @brief Default constructor. Sets the dimension to 0 for boundary matrices and to -1 for chain matrices.
+   * @brief Default constructor. Sets the dimension to 0 for @ref boundarymatrix "boundary matrices" and to -1 for @ref chainmatrix "chain matrices".
    */
   Column_dimension_holder() : dim_(Master_matrix::Option_list::is_of_boundary_type ? 0 : -1) {}
   /**

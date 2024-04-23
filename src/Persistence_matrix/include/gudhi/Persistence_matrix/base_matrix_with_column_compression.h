@@ -8,7 +8,7 @@
  *      - YYYY/MM Author: Description of the modification
  */
 
- /**
+/**
  * @file base_matrix_with_column_compression.h
  * @author Hannah Schreiber
  * @brief Contains the @ref Base_matrix_with_column_compression class.
@@ -31,10 +31,14 @@ namespace Gudhi {
 namespace persistence_matrix {
 
 /**
- * @brief A base matrix (see @ref Base_matrix), but with column compression. That is, all identical columns in
- * the matrix are compressed together as the same column. For matrices with a lot of redundant columns, this will
- * save a lot of space. Also, any addition made onto a column will be performed at the same time on all other
- * identical columns, which is an advantage for the cohomology algorithm for example.
+ * @class Base_matrix_with_column_compression base_matrix_with_column_compression.h \
+ * gudhi/Persistence_matrix/base_matrix_with_column_compression.h
+ * @ingroup persistence_matrix
+ *
+ * @brief A @ref basematrix "base matrix" (also see @ref Base_matrix), but with column compression. That is, all
+ * identical columns in the matrix are compressed together as the same column. For matrices with a lot of redundant
+ * columns, this will save a lot of space. Also, any addition made onto a column will be performed at the same time
+ * on all other identical columns, which is an advantage for the cohomology algorithm for example.
  * 
  * @tparam Master_matrix An instanciation of @ref Matrix from which all types and options are deduced.
  */
@@ -63,35 +67,36 @@ class Base_matrix_with_column_compression : protected Master_matrix::Matrix_row_
    public:
     using Base = typename Master_matrix::Column_type;
 
-    // Column_type(Field_operators* operators = nullptr, Cell_constructor* cellConstructor = nullptr)
-    //     : Base(operators, cellConstructor) {}
-    // template <class Container_type>
-    // Column_type(const Container_type& nonZeroRowIndices, Field_operators* operators, 
-    //             Cell_constructor* cellConstructor)
-    //     : Base(nonZeroRowIndices, operators, cellConstructor) {}
-    // template <class Container_type, class Row_container_type>
-    // Column_type(index columnIndex, const Container_type& nonZeroRowIndices, Row_container_type& rowContainer,
-    //             Field_operators* operators, Cell_constructor* cellConstructor)
-    //     : Base(columnIndex, nonZeroRowIndices, rowContainer, operators, cellConstructor) {}
-    // template <class Container_type>
-    // Column_type(const Container_type& nonZeroRowIndices, dimension_type dimension, Field_operators* operators,
-    //             Cell_constructor* cellConstructor)
-    //     : Base(nonZeroRowIndices, dimension, operators, cellConstructor) {}
-    // template <class Container_type, class Row_container_type>
-    // Column_type(index columnIndex, const Container_type& nonZeroRowIndices, dimension_type dimension,
-    //             Row_container_type& rowContainer, Field_operators* operators, Cell_constructor* cellConstructor)
-    //     : Base(columnIndex, nonZeroRowIndices, dimension, rowContainer, operators, cellConstructor) {}
-    // Column_type(const Column_type& column, Field_operators* operators = nullptr,
-    //             Cell_constructor* cellConstructor = nullptr)
-    //     : Base(static_cast<const Base&>(column), operators, cellConstructor) {}
-    // template <class Row_container_type>
-    // Column_type(const Column_type& column, index columnIndex, Row_container_type& rowContainer,
-    //             Field_operators* operators = nullptr, Cell_constructor* cellConstructor = nullptr)
-    //     : Base(static_cast<const Base&>(column), columnIndex, rowContainer, operators, cellConstructor) {}
-    // Column_type(Column_type&& column) noexcept : Base(std::move(static_cast<Base&>(column))) {}
+    Column_type(Field_operators* operators = nullptr, Cell_constructor* cellConstructor = nullptr)
+        : Base(operators, cellConstructor) {}
+    template <class Container_type>
+    Column_type(const Container_type& nonZeroRowIndices, Field_operators* operators, 
+                Cell_constructor* cellConstructor)
+        : Base(nonZeroRowIndices, operators, cellConstructor) {}
+    template <class Container_type, class Row_container_type>
+    Column_type(index columnIndex, const Container_type& nonZeroRowIndices, Row_container_type& rowContainer,
+                Field_operators* operators, Cell_constructor* cellConstructor)
+        : Base(columnIndex, nonZeroRowIndices, rowContainer, operators, cellConstructor) {}
+    template <class Container_type>
+    Column_type(const Container_type& nonZeroRowIndices, dimension_type dimension, Field_operators* operators,
+                Cell_constructor* cellConstructor)
+        : Base(nonZeroRowIndices, dimension, operators, cellConstructor) {}
+    template <class Container_type, class Row_container_type>
+    Column_type(index columnIndex, const Container_type& nonZeroRowIndices, dimension_type dimension,
+                Row_container_type& rowContainer, Field_operators* operators, Cell_constructor* cellConstructor)
+        : Base(columnIndex, nonZeroRowIndices, dimension, rowContainer, operators, cellConstructor) {}
+    Column_type(const Column_type& column, Field_operators* operators = nullptr,
+                Cell_constructor* cellConstructor = nullptr)
+        : Base(static_cast<const Base&>(column), operators, cellConstructor) {}
+    template <class Row_container_type>
+    Column_type(const Column_type& column, index columnIndex, Row_container_type& rowContainer,
+                Field_operators* operators = nullptr, Cell_constructor* cellConstructor = nullptr)
+        : Base(static_cast<const Base&>(column), columnIndex, rowContainer, operators, cellConstructor) {}
+    Column_type(Column_type&& column) noexcept : Base(std::move(static_cast<Base&>(column))) {}
 
-    template <class... U>
-    Column_type(U&&... u) : Base(std::forward<U>(u)...) {}
+    //TODO: is it possible to make this work?
+    // template <class... U>
+    // Column_type(U&&... u) : Base(std::forward<U>(u)...) {}
 
     index get_rep() const { return rep_; }
     void set_rep(const index& rep) { rep_ = rep; }
@@ -162,8 +167,8 @@ class Base_matrix_with_column_compression : protected Master_matrix::Matrix_row_
   ~Base_matrix_with_column_compression();
 
   /**
-   * @brief Inserts a new ordered column at the end of the matrix by copying the given range of @ref cell_rep_type.
-   * The content of the range is assumed to be sorted by increasing ID value. 
+   * @brief Inserts a new ordered column at the end of the matrix by copying the given range of
+   * @ref Matrix::cell_rep_type. The content of the range is assumed to be sorted by increasing ID value. 
    * 
    * @tparam Container_type Range of @ref Matrix::cell_rep_type. Assumed to have a begin(), end() and size() method.
    * @param column Range of @ref Matrix::cell_rep_type from which the column has to be constructed. Assumed to be
@@ -182,23 +187,23 @@ class Base_matrix_with_column_compression : protected Master_matrix::Matrix_row_
   template <class Boundary_type>
   void insert_boundary(const Boundary_type& boundary, dimension_type dim = -1);
   /**
-   * @brief Returns the column at the given MatIdx index.
+   * @brief Returns the column at the given @ref MatIdx index.
    * The type of the column depends on the choosen options, see @ref PersistenceMatrixOptions::column_type.
    *
    * Remark: the method it-self is not const, because of the path compression optimization of the union-find structure,
    * when a column is looked up. 
    * 
-   * @param columnIndex MatIdx index of the column to return.
+   * @param columnIndex @ref MatIdx index of the column to return.
    * @return Const reference to the column.
    */
   const Column_type& get_column(index columnIndex);
   /**
-   * @brief Only available if @ref has_row_access is true.
-   * Returns the row at the given row index (see [TODO: description]) of the compressed matrix.
+   * @brief Only available if @ref PersistenceMatrixOptions::has_row_access is true.
+   * Returns the row at the given @ref rowindex "row index" of the compressed matrix.
    * The type of the row depends on the choosen options, see @ref PersistenceMatrixOptions::has_intrusive_rows.
    * Note that the row will be from the compressed matrix, that is, the one with only unique columns.
    * 
-   * @param rowIndex IDIdx row index of the row to return, see [TODO: description].
+   * @param rowIndex @ref rowindex "Row index" of the row to return.
    * @return Const reference to the row.
    */
   const Row_type& get_row(index rowIndex) const;
@@ -209,10 +214,10 @@ class Base_matrix_with_column_compression : protected Master_matrix::Matrix_row_
    * @warning The removed rows are always assumed to be empty. If it is not the case, the deleted row cells are not
    * removed from their columns. And in the case of intrusive rows, this will generate a segmentation fault when 
    * the column cells are destroyed later. The row access is just meant as a "read only" access to the rows and the
-   * `erase_row` method just as a way to specify that a row is empty and can therefore be removed from dictionnaries.
+   * @ref erase_row method just as a way to specify that a row is empty and can therefore be removed from dictionnaries.
    * This allows to avoid testing the emptiness of a row at each column cell removal, what can be quite frequent. 
    * 
-   * @param rowIndex IDIdx row index of the empty row, see [TODO: description].
+   * @param rowIndex @ref rowindex "Row index" of the empty row.
    */
   void erase_row(index rowIndex);
 
@@ -231,23 +236,23 @@ class Base_matrix_with_column_compression : protected Master_matrix::Matrix_row_
    * 
    * @tparam Cell_range_or_column_index Either a range of @ref Cell with a begin() and end() method,
    * or any integer type.
-   * @param sourceColumn Either a cell range or the MatIdx index of the column to add.
-   * @param targetColumnIndex MatIdx index of the target column.
+   * @param sourceColumn Either a cell range or the @ref MatIdx index of the column to add.
+   * @param targetColumnIndex @ref MatIdx index of the target column.
    */
   template <class Cell_range_or_column_index>
   void add_to(const Cell_range_or_column_index& sourceColumn, index targetColumnIndex);
   /**
    * @brief Multiplies the target column with the coefficiant and then adds the source column to it.
-   * That is: targetColumn = (targetColumn * coefficient) + sourceColumn.
+   * That is: `targetColumn = (targetColumn * coefficient) + sourceColumn`.
    *
    * The representatives of redundant columns are summed together, which means that
    * all column compressed together with the target column are affected by the change, not only the target.
    * 
    * @tparam Cell_range_or_column_index Either a range of @ref Cell with a begin() and end() method,
    * or any integer type.
-   * @param sourceColumn Either a cell range or the MatIdx index of the column to add.
+   * @param sourceColumn Either a @ref Cell range or the @ref MatIdx index of the column to add.
    * @param coefficient Value to multiply.
-   * @param targetColumnIndex MatIdx index of the target column.
+   * @param targetColumnIndex @ref MatIdx index of the target column.
    */
   template <class Cell_range_or_column_index>
   void multiply_target_and_add_to(const Cell_range_or_column_index& sourceColumn, 
@@ -255,7 +260,7 @@ class Base_matrix_with_column_compression : protected Master_matrix::Matrix_row_
                                   index targetColumnIndex);
   /**
    * @brief Multiplies the source column with the coefficiant before adding it to the target column.
-   * That is: targetColumn += (coefficient * sourceColumn). The source column will **not** be modified.
+   * That is: `targetColumn += (coefficient * sourceColumn)`. The source column will **not** be modified.
    *
    * The representatives of redundant columns are summed together, which means that
    * all column compressed together with the target column are affected by the change, not only the target.
@@ -263,8 +268,8 @@ class Base_matrix_with_column_compression : protected Master_matrix::Matrix_row_
    * @tparam Cell_range_or_column_index Either a range of @ref Cell with a begin() and end() method,
    * or any integer type.
    * @param coefficient Value to multiply.
-   * @param sourceColumn Either a cell range or the MatIdx index of the column to add.
-   * @param targetColumnIndex MatIdx index of the target column.
+   * @param sourceColumn Either a @ref Cell range or the @ref MatIdx index of the column to add.
+   * @param targetColumnIndex @ref MatIdx index of the target column.
    */
   template <class Cell_range_or_column_index>
   void multiply_source_and_add_to(const Field_element_type& coefficient, 
@@ -274,8 +279,8 @@ class Base_matrix_with_column_compression : protected Master_matrix::Matrix_row_
   /**
    * @brief Indicates if the cell at given coordinates has value zero.
    * 
-   * @param columnIndex MatIdx index of the column of the cell.
-   * @param rowIndex Row index of the row of the cell.
+   * @param columnIndex @ref MatIdx index of the column of the cell.
+   * @param rowIndex @ref rowindex "Row index" of the row of the cell.
    * @return true If the cell has value zero.
    * @return false Otherwise.
    */
@@ -283,7 +288,7 @@ class Base_matrix_with_column_compression : protected Master_matrix::Matrix_row_
   /**
    * @brief Indicates if the column at given index has value zero.
    * 
-   * @param columnIndex MatIdx index of the column.
+   * @param columnIndex @ref MatIdx index of the column.
    * @return true If the column has value zero.
    * @return false Otherwise.
    */
@@ -320,7 +325,7 @@ class Base_matrix_with_column_compression : protected Master_matrix::Matrix_row_
    */
   friend void swap(Base_matrix_with_column_compression& matrix1, Base_matrix_with_column_compression& matrix2) {
     matrix1.columnToRep_.swap(matrix2.columnToRep_);
-    swap(matrix1.columnClasses_, matrix2.columnClasses_);
+    std::swap(matrix1.columnClasses_, matrix2.columnClasses_);
     matrix1.repToColumn_.swap(matrix2.repToColumn_);  // be careful when columnPool_ becomes not static
     std::swap(matrix1.nextColumnIndex_, matrix2.nextColumnIndex_);
     std::swap(matrix1.operators_, matrix2.operators_);

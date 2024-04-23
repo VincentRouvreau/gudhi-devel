@@ -17,10 +17,15 @@
 namespace Gudhi {
 namespace persistence_matrix {
 
-/** @brief Concept of the field operator classes needed for the class @ref Matrix.
+/** 
+ * @ingroup persistence_matrix
  *
- * Implementations of this concept are @ref Zp_field_operators, @ref Z2_field_operators,
- * @ref Multi_field_operators and @ref Multi_field_small_operators.
+ * @brief Concept of the field operator classes needed for the class @ref Matrix.
+ *
+ * Implementations of this concept are @ref Gudhi::persistence_fields::Zp_field_operators,
+ * @ref Gudhi::persistence_fields::Z2_field_operators,
+ * @ref Gudhi::persistence_fields::Multi_field_operators and
+ * @ref Gudhi::persistence_fields::Multi_field_operators_with_small_characteristics.
  */
 class FieldOperators 
 {
@@ -37,7 +42,8 @@ class FieldOperators
   FieldOperators(characteristic_type characteristic = 0);
 
   /**
-   * @brief Sets the characteristic of the field.
+   * @brief Sets the characteristic of the field. Can eventually be omitted if the characteristic of the class
+   * is fixed.
    * 
    * @param characteristic Prime number corresponding to the desired characteristic of the field.
    */
@@ -65,25 +71,25 @@ class FieldOperators
    * 
    * @param e1 First element.
    * @param e2 Second element.
-   * @return ( @p e1 + @p e2 ) % characteristic, such that the result is positive.
+   * @return `(e1 + e2) % characteristic`, such that the result is positive.
    */
   element_type add(element_type e1, element_type e2) const;
 
-  /**
-   * @brief Returns the substraction in the field of the first element by the second element.
-   * 
-   * @param e1 First element.
-   * @param e2 Second element.
-   * @return ( @p e1 - @p e2 ) % characteristic, such that the result is positive.
-   */
-  element_type substract(element_type e1, element_type e2) const;
+  // /**
+  //  * @brief Returns the substraction in the field of the first element by the second element.
+  //  * 
+  //  * @param e1 First element.
+  //  * @param e2 Second element.
+  //  * @return `(e1 - e2) % characteristic`, such that the result is positive.
+  //  */
+  // element_type substract(element_type e1, element_type e2) const;
 
   /**
    * @brief Returns the multiplication of two elements in the field.
    * 
    * @param e1 First element.
    * @param e2 Second element.
-   * @return ( @p e1 * @p e2 ) % characteristic, such that the result is positive.
+   * @return `(e1 * e2) % characteristic`, such that the result is positive.
    */
   element_type multiply(element_type e1, element_type e2) const;
 
@@ -93,51 +99,52 @@ class FieldOperators
    * @param e First element.
    * @param m Second element.
    * @param a Third element.
-   * @return ( @p e * @p m + @p a ) % characteristic, such that the result is positive.
+   * @return `(e * m + a) % characteristic`, such that the result is positive.
    */
   element_type multiply_and_add(element_type e, element_type m, element_type a) const;
 
-  /**
-   * @brief Adds the first element to the second one and multiplies the third one with it.
-   * Returns the result in the field.
-   * 
-   * @param e First element.
-   * @param m Second element.
-   * @param a Third element.
-   * @return ( ( @p e + @p a ) * @p m ) % characteristic, such that the result is positive.
-   */
-  element_type add_and_multiply(element_type e, element_type a, element_type m) const;
+  // /**
+  //  * @brief Adds the first element to the second one and multiplies the third one with it.
+  //  * Returns the result in the field.
+  //  * 
+  //  * @param e First element.
+  //  * @param a Second element.
+  //  * @param m Third element.
+  //  * @return `((e + a) * m) % characteristic`, such that the result is positive.
+  //  */
+  // element_type add_and_multiply(element_type e, element_type a, element_type m) const;
 
-  /**
-   * @brief Returns true if the two given elements are equal in the field, false otherwise.
-   * 
-   * @param e1 First element to compare.
-   * @param e2 Second element to compare.
-   * @return true If @p e1 % characteristic == @p e2 % characteristic.
-   * @return false Otherwise.
-   */
-  bool are_equal(element_type e1, element_type e2) const;
+  // /**
+  //  * @brief Returns true if the two given elements are equal in the field, false otherwise.
+  //  * 
+  //  * @param e1 First element to compare.
+  //  * @param e2 Second element to compare.
+  //  * @return true If `e1 % characteristic == e2 % characteristic`.
+  //  * @return false Otherwise.
+  //  */
+  // bool are_equal(element_type e1, element_type e2) const;
 
   /**
    * @brief Returns the inverse of the given element in the field.
    * 
    * @param e Element to get the inverse from.
-   * @return Inverse in the current field of @p e % characteristic.
+   * @return Inverse in the current field of `e % characteristic`.
    */
   element_type get_inverse(element_type e) const;
-  /**
-   * @brief In the case the field is a multi-field, returns the inverse of the given element in the fields
-   * corresponding to the given sub-product of the product of all characteristics in the multi-field.
-   * See [TODO: cite multi field paper] for more details.
-   * If the field is a usual field, simply returns the inverse in the field.
-   * 
-   * @param e Element to get the inverse from.
-   * @param productOfCharacteristics Product of the different characteristics to take into account in the multi-field.
-   * @return If a multi-field: pair of the inverse of @p e and the characteristic the inverse is coming from.
-   * If a normal field: pair of the inverse of @p e and @p productOfCharacteristics.
-   */
-  std::pair<element_type, characteristic_type> get_partial_inverse(element_type e,
-                                                                   characteristic_type productOfCharacteristics) const;
+  // /**
+  //  * @brief In the case the field is a multi-field, returns the inverse of the given element in the fields
+  //  * corresponding to the given sub-product of the product of all characteristics in the multi-field.
+  //  * See @cite boissonnat:hal-00922572 for more details.
+  //  * If the field is a usual field, simply returns the inverse in the field.
+  //  * 
+  //  * @param e Element to get the inverse from.
+  //  * @param productOfCharacteristics Product of the different characteristics to take into account in the
+  //  * multi-field.
+  //  * @return If a multi-field: pair of the inverse of @p e and the characteristic the inverse is coming from.
+  //  * If a normal field: pair of the inverse of @p e and @p productOfCharacteristics.
+  //  */
+  // std::pair<element_type, characteristic_type> get_partial_inverse(
+  //   element_type e, characteristic_type productOfCharacteristics) const;
 
   /**
    * @brief Returns the additive identity of the field.
@@ -151,16 +158,16 @@ class FieldOperators
    * @return The multiplicative identity of the field.
    */
   static constexpr element_type get_multiplicative_identity();
-  /**
-   * @brief For multi-fields, returns the partial multiplicative identity of the field from the given product.
-   * See [TODO: cite multi field paper] for more details.
-   * Otherwise, simply returns the multiplicative identity of the field.
-   *  
-   * @param productOfCharacteristics Product of the different characteristics to take into account in the multi-field.
-   * @return The partial multiplicative identity of the field
-   */
-  static constexpr element_type get_partial_multiplicative_identity(
-      [[maybe_unused]] characteristic_type productOfCharacteristics);
+  // /**
+  //  * @brief For multi-fields, returns the partial multiplicative identity of the field from the given product.
+  //  * See @cite boissonnat:hal-00922572 for more details.
+  //  * Otherwise, simply returns the multiplicative identity of the field.
+  //  *  
+  //  * @param productOfCharacteristics Product of the different characteristics to take into account in the multi-field.
+  //  * @return The partial multiplicative identity of the field
+  //  */
+  // static constexpr element_type get_partial_multiplicative_identity(
+  //     [[maybe_unused]] characteristic_type productOfCharacteristics);
 
   /**
    * @brief Assign operator.
