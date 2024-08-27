@@ -125,7 +125,7 @@ def test_ripser_interfaces():
     n = len(point_cloud)
     tree = cKDTree(point_cloud)
     pairs = tree.query_pairs(r=float("inf"), output_type="ndarray")
-    data = np.ravel(np.linalg.norm(np.diff(inp[pairs], axis=1), axis=-1))
+    data = np.ravel(np.linalg.norm(np.diff(point_cloud[pairs], axis=1), axis=-1))
     inp = coo_matrix((data, (pairs[:, 0], pairs[:, 1])), shape=(n,) * 2)
     ## As there is no easy way to force the use of SimplexTree, let's build it
     stree = SimplexTree()
@@ -145,6 +145,5 @@ def test_ripser_interfaces():
         max_edge_length=float("inf"),
         homology_coeff_field=random_prime,
     )
-    # TODO: these tests are failing
-    # np.testing.assert_almost_equal(dgm0, dgm[0])
-    # np.testing.assert_almost_equal(dgm1, dgm[1])
+    np.testing.assert_almost_equal(dgm0, dgm[0])
+    np.testing.assert_almost_equal(dgm1, dgm[1])
