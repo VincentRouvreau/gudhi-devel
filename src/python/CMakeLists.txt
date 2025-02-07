@@ -86,7 +86,7 @@ add_gudhi_debug_info("Pybind11 version ${PYBIND11_VERSION}")
 set(GUDHI_PYTHON_MODULES "${GUDHI_PYTHON_MODULES}'bottleneck', ")
 # set(GUDHI_PYTHON_MODULES_EXTRA "${GUDHI_PYTHON_MODULES_EXTRA}'hera', ")
 set(GUDHI_PYTHON_MODULES_EXTRA "${GUDHI_PYTHON_MODULES_EXTRA}'clustering', ")
-set(GUDHI_PYTHON_MODULES_EXTRA "${GUDHI_PYTHON_MODULES_EXTRA}'datasets', ")
+# set(GUDHI_PYTHON_MODULES_EXTRA "${GUDHI_PYTHON_MODULES_EXTRA}'datasets', ")
 
 # Cython modules
 # set(GUDHI_PYTHON_MODULES "${GUDHI_PYTHON_MODULES}'_cubical_complex', ")
@@ -567,10 +567,6 @@ endif (TARGET CGAL::CGAL AND TARGET Eigen3::Eigen)
 if (TARGET CGAL::CGAL AND TARGET Eigen3::Eigen)
   # Euclidean witness
   add_gudhi_py_test(test_euclidean_witness_complex)
-
-  # Datasets generators
-  add_gudhi_py_test(test_datasets_generators) # TODO separate full python datasets generators in another test file independent from CGAL ?
-
 endif (TARGET CGAL::CGAL AND TARGET Eigen3::Eigen)
 
 # Rips
@@ -703,6 +699,9 @@ endif()
 if(SCIKIT-LEARN_FOUND)
   add_gudhi_py_test(test_cover_complex)
 endif()
+
+# Datasets generators
+add_gudhi_py_test(test_datasets_generators)
 
 # Fetch remote datasets
 if(WITH_GUDHI_REMOTE_TEST)

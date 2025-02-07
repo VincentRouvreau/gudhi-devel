@@ -20,6 +20,13 @@ The module **points** enables the generation of random points on a sphere, rando
 Points on sphere
 ^^^^^^^^^^^^^^^^
 
+.. table::
+   :widths: 50 50
+
+   +---------------------------------------------+------------------------------------------+
+   | :Requires: `CGAL <installation.html#cgal>`_ | :License: MIT (`LGPL v3 </licensing/>`_) |
+   +---------------------------------------------+------------------------------------------+
+
 The function **sphere** enables the generation of random i.i.d. points uniformly on a (d-1)-sphere in :math:`R^d`.
 The user should provide the number of points to be generated on the sphere :code:`n_samples` and the ambient dimension :code:`ambient_dim`.
 The :code:`radius` of sphere is optional and is equal to **1** by default.
@@ -40,7 +47,7 @@ Example
 
    # Create an alpha complex from the generated points
    alpha_complex = AlphaComplex(points = gen_points)
-   
+
 .. autofunction:: gudhi.datasets.generators.points.sphere
 
 Points on a flat torus
@@ -54,6 +61,13 @@ On another hand, two sample types are provided: you can either generate i.i.d. p
 
 First function: **ctorus**
 """""""""""""""""""""""""""
+
+.. table::
+   :widths: 50 50
+
+   +---------------------------------------------+------------------------------------------+
+   | :Requires: `CGAL <installation.html#cgal>`_ | :License: MIT (`LGPL v3 </licensing/>`_) |
+   +---------------------------------------------+------------------------------------------+
 
 The user should provide the number of points to be generated on the torus :code:`n_samples`, and the dimension :code:`dim` of the torus on which points would be generated in :math:`R^{2dim}`.
 The :code:`sample` argument is optional and is set to **'random'** by default.
@@ -76,7 +90,7 @@ Example
 
    # Generate 50 points randomly on a torus in R^6
    gen_points = points.ctorus(n_samples = 50, dim = 3)
-   
+
    # Generate 27 points on a torus as a grid in R^6
    gen_points = points.ctorus(n_samples = 50, dim = 3, sample = 'grid')
 
@@ -99,7 +113,7 @@ Example
 
    # Generate 50 points randomly on a torus in R^6
    gen_points = points.torus(n_samples = 50, dim = 3)
-   
+
    # Generate 27 points on a torus as a grid in R^6
    gen_points = points.torus(n_samples = 50, dim = 3, sample = 'grid')
 

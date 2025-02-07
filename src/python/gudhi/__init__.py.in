@@ -19,7 +19,7 @@ __debug_info__ = @GUDHI_PYTHON_DEBUG_INFO@
 
 __all__ = [@GUDHI_PYTHON_MODULES@ @GUDHI_PYTHON_MODULES_EXTRA@]
 
-# __all__ += ['hera'] ?
+# __all__ += ['datasets', 'hera'] ?
 from ._cubical_complex import CubicalComplex
 __all__ += ['_cubical_complex.CubicalComplex']
 

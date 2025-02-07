@@ -9,8 +9,12 @@
 
 import numpy as np
 
-from ._points import ctorus
-from ._points import sphere
+try:
+    from ._points import ctorus
+    from ._points import sphere
+except ModuleNotFoundError:
+    # When no CGAL, _points is not compiled
+    pass
 
 def _generate_random_points_on_torus(n_samples, dim):
 

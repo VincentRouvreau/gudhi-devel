@@ -5,6 +5,7 @@
     Copyright (C) 2021 Inria
 
     Modification(s):
+      - 2025/02 Vincent Rouvreau: When no CGAL, test only torus, as ctorus and sphere are not available
       - YYYY/MM Author: Description of the modification
 """
 
@@ -12,11 +13,13 @@ from gudhi.datasets.generators import points
 
 import pytest
 
-def test_sphere():
-    assert points.sphere(n_samples = 10, ambient_dim = 2, radius = 1., sample = 'random').shape == (10, 2)
+# When no CGAL, sphere is not there
+if 'sphere' in dir(points):
+    def test_sphere():
+        assert points.sphere(n_samples = 10, ambient_dim = 2, radius = 1., sample = 'random').shape == (10, 2)
 
-    with pytest.raises(ValueError):
-        points.sphere(n_samples = 10, ambient_dim = 2, radius = 1., sample = 'other')
+        with pytest.raises(ValueError):
+            points.sphere(n_samples = 10, ambient_dim = 2, radius = 1., sample = 'other')
 
 def _basic_torus(impl):
     assert impl(n_samples = 64, dim = 3, sample = 'random').shape == (64, 6)
@@ -31,9 +34,17 @@ def _basic_torus(impl):
         impl(n_samples = 10, dim = 4, sample = 'other')
 
 def test_torus():
-    for torus_impl in [points.torus, points.ctorus]:
-        _basic_torus(torus_impl)
-    # Check that the two versions (torus and ctorus) generate the same output
-    assert points.ctorus(n_samples = 64, dim = 3, sample = 'random').all() == points.torus(n_samples = 64, dim = 3, sample = 'random').all()
-    assert points.ctorus(n_samples = 64, dim = 3, sample = 'grid').all() == points.torus(n_samples = 64, dim = 3, sample = 'grid').all()
-    assert points.ctorus(n_samples = 10, dim = 3, sample = 'grid').all() == points.torus(n_samples = 10, dim = 3, sample = 'grid').all()
+    _basic_torus(points.torus)
+
+# When no CGAL, ctorus is not there
+if 'ctorus' in dir(points):
+    def test_ctorus():
+        _basic_torus(points.ctorus)
+
+# When no CGAL, ctorus is not there
+if 'ctorus' in dir(points):
+    def test_both_torus():
+        # Check that the two versions (torus and ctorus) generate the same output
+        assert points.ctorus(n_samples = 64, dim = 3, sample = 'random').all() == points.torus(n_samples = 64, dim = 3, sample = 'random').all()
+        assert points.ctorus(n_samples = 64, dim = 3, sample = 'grid').all() == points.torus(n_samples = 64, dim = 3, sample = 'grid').all()
+        assert points.ctorus(n_samples = 10, dim = 3, sample = 'grid').all() == points.torus(n_samples = 10, dim = 3, sample = 'grid').all()
