@@ -249,7 +249,7 @@ if (TARGET CGAL::CGAL AND TARGET Eigen3::Eigen)
   set(GUDHI_PYBIND11_MODULES "${GUDHI_PYBIND11_MODULES}'datasets/generators/_points', ")
 endif ()
 set(GUDHI_PYBIND11_MODULES "${GUDHI_PYBIND11_MODULES}'_pers_cub_low_dim', ")
-set(GUDHI_PYBIND11_MODULES "${GUDHI_PYBIND11_MODULES}'_edge_collapse', ")
+set(GUDHI_PYBIND11_MODULES "${GUDHI_PYBIND11_MODULES}'flag_filtration/_edge_collapse', ")
 set(GUDHI_PYBIND11_MODULES "${GUDHI_PYBIND11_MODULES}'_ripser', ")
 
 # from windows vcpkg eigen 3.4.0#2 : build fails with
@@ -394,7 +394,8 @@ file(COPY "gudhi/_kepler_mapper.py.COPYRIGHT" DESTINATION "${CMAKE_CURRENT_BINAR
 file(COPY "gudhi/hera/__init__.py" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/gudhi/hera")
 file(COPY "gudhi/datasets" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/gudhi" FILES_MATCHING PATTERN "*.py")
 file(COPY "gudhi/sklearn" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/gudhi/")
-file(COPY "gudhi/flag_filtration" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/gudhi/")
+file(COPY "gudhi/flag_filtration/__init__.py" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/gudhi/flag_filtration")
+file(COPY "gudhi/flag_filtration/edge_collapse.py" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/gudhi/flag_filtration")
 
 # Some files for pip package
 file(COPY "pyproject.toml" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/")
@@ -406,6 +407,7 @@ add_gudhi_symbolic_links("gudhi/*.cc")
 add_gudhi_symbolic_links("gudhi/clustering/_tomato.cc")
 add_gudhi_symbolic_links("gudhi/hera/*.cc")
 add_gudhi_symbolic_links("gudhi/datasets/generators/_points.cc")
+add_gudhi_symbolic_links("gudhi/flag_filtration/*.cc")
 
 add_custom_command(
     OUTPUT gudhi.so
