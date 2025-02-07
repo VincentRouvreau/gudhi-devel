@@ -7,24 +7,28 @@
 # Copyright (C) 2016 Inria
 #
 # Modification(s):
+#   - 2025/02 Vincent Rouvreau: Merge off_utils.pyx and reader_utils.pyx in _file_utils.pyx
 #   - 2023/11 Vincent Rouvreau: numpy interface for read_points_from_off_file
 #   - YYYY/MM Author: Description of the modification
 
-from __future__ import print_function
-from cython cimport numeric
 from libcpp.vector cimport vector
 from libcpp.string cimport string
+from libcpp.map cimport map
+from libcpp.pair cimport pair
 cimport cython
-import errno
-import os
 import numpy as np
+from os import path
+from numpy import array as np_array
 
 __author__ = "Vincent Rouvreau"
 __copyright__ = "Copyright (C) 2016 Inria"
 __license__ = "MIT"
 
-cdef extern from "Off_reader_interface.h" namespace "Gudhi":
+cdef extern from "File_utils_interface.h" namespace "Gudhi":
     vector[vector[double]] read_points_from_OFF_file(string off_file)
+    vector[vector[double]] read_matrix_from_csv_file(string off_file, char separator)
+    map[int, vector[pair[double, double]]] read_pers_intervals_grouped_by_dimension(string filename)
+    vector[pair[double, double]] read_pers_intervals_in_dimension(string filename, int only_this_dim)
 
 def _get_next_line(file_desc, comment='#'):
     """Return the next line that is not a comment.
@@ -79,7 +83,7 @@ def _read_off_file_header(file_desc):
         dim = 3
     else:
         raise ValueError(f"Inconsistent OFF header, got '{line.rstrip()}', should be 'OFF', '4OFF' or 'nOFF'")
-        
+
     # nb_vertices can be already set by "nOFF" case, when 'dim nb_vertices nb_faces nb_edges' on the same line
     if nb_vertices < 0:
         # Number of points is the first number ("OFF" case) or the second one ("nOFF" case) of the second line
@@ -140,3 +144,64 @@ def write_points_to_off_file(fname, points):
     else:
         head = 'nOFF\n{} {} 0 0'.format(dim, points.shape[0])
     np.savetxt(fname, points, header=head, comments='')
+
+
+def read_lower_triangular_matrix_from_csv_file(csv_file='', separator=';'):
+    """Read lower triangular matrix from a CSV style file.
+
+    :param csv_file: A CSV file style name.
+    :type csv_file: string
+    :param separator: The value separator in the CSV file. Default value is ';'
+    :type separator: char
+
+    :returns:  The lower triangular matrix.
+    :rtype: List[List[float]]
+    """
+    if csv_file:
+        if path.isfile(csv_file):
+            return read_matrix_from_csv_file(csv_file.encode('utf-8'), ord(separator[0]))
+    print("file " + csv_file + " not set or not found.")
+    return []
+
+def read_persistence_intervals_grouped_by_dimension(persistence_file=''):
+    """Reads a file containing persistence intervals.
+    Each line might contain 2, 3 or 4 values: [[field] dimension] birth death
+    The return value is a `dict(dim, list(tuple(birth, death)))`
+    where `dim` is an `int`, `birth` a `float`, and `death` a `float`.
+    Note: the function does not check that birth <= death.
+
+    :param persistence_file: A persistence file style name.
+    :type persistence_file: string
+
+    :returns:  The persistence pairs grouped by dimension.
+    :rtype: Dict[int, List[Tuple[float, float]]]
+    """
+    if persistence_file:
+        if path.isfile(persistence_file):
+            return read_pers_intervals_grouped_by_dimension(persistence_file.encode('utf-8'))
+    print("file " + persistence_file + " not set or not found.")
+    return []
+
+def read_persistence_intervals_in_dimension(persistence_file='', only_this_dim=-1):
+    """Reads a file containing persistence intervals.
+    Each line of persistence_file might contain 2, 3 or 4 values:
+    [[field] dimension] birth death
+    Note: the function does not check that birth <= death.
+
+    :param persistence_file: A persistence file style name.
+    :type persistence_file: string
+    :param only_this_dim: The specific dimension. Default value is -1.
+        If `only_this_dim` = -1, dimension is ignored and all lines are returned.
+        If `only_this_dim` is >= 0, only the lines where dimension =
+        `only_this_dim` (or where dimension is not specified) are returned.
+    :type only_this_dim: int.
+
+    :returns:  The persistence intervals.
+    :rtype: numpy array of dimension 2
+    """
+    if persistence_file:
+        if path.isfile(persistence_file):
+            return np_array(read_pers_intervals_in_dimension(persistence_file.encode(
+                'utf-8'), only_this_dim))
+    print("file " + persistence_file + " not set or not found.")
+    return []

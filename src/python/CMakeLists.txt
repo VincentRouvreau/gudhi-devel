@@ -90,12 +90,12 @@ set(GUDHI_PYTHON_MODULES_EXTRA "${GUDHI_PYTHON_MODULES_EXTRA}'clustering', ")
 
 # Cython modules
 # set(GUDHI_PYTHON_MODULES "${GUDHI_PYTHON_MODULES}'_cubical_complex', ")
-set(GUDHI_PYTHON_MODULES "${GUDHI_PYTHON_MODULES}'off_utils', ")
+# set(GUDHI_PYTHON_MODULES "${GUDHI_PYTHON_MODULES}'off_utils', ")
 set(GUDHI_PYTHON_MODULES "${GUDHI_PYTHON_MODULES}'simplex_tree', ")
 set(GUDHI_PYTHON_MODULES "${GUDHI_PYTHON_MODULES}'rips_complex', ")
 set(GUDHI_PYTHON_MODULES "${GUDHI_PYTHON_MODULES}'periodic_cubical_complex', ")
 set(GUDHI_PYTHON_MODULES "${GUDHI_PYTHON_MODULES}'persistence_graphical_tools', ")
-set(GUDHI_PYTHON_MODULES "${GUDHI_PYTHON_MODULES}'reader_utils', ")
+# set(GUDHI_PYTHON_MODULES "${GUDHI_PYTHON_MODULES}'reader_utils', ")
 set(GUDHI_PYTHON_MODULES "${GUDHI_PYTHON_MODULES}'witness_complex', ")
 set(GUDHI_PYTHON_MODULES "${GUDHI_PYTHON_MODULES}'strong_witness_complex', ")
 set(GUDHI_PYTHON_MODULES "${GUDHI_PYTHON_MODULES}'nerve_gic', ")
@@ -225,12 +225,12 @@ if (TARGET Eigen3::Eigen)
   set(GUDHI_PYTHON_INCLUDE_DIRS "${GUDHI_PYTHON_INCLUDE_DIRS}'${EIGEN3_INCLUDE_DIRS}', ")
 endif (TARGET Eigen3::Eigen)
 
-set(GUDHI_CYTHON_MODULES "${GUDHI_CYTHON_MODULES}'off_utils', ")
+set(GUDHI_CYTHON_MODULES "${GUDHI_CYTHON_MODULES}'_file_utils', ")
 set(GUDHI_CYTHON_MODULES "${GUDHI_CYTHON_MODULES}'simplex_tree', ")
 set(GUDHI_CYTHON_MODULES "${GUDHI_CYTHON_MODULES}'rips_complex', ")
 set(GUDHI_CYTHON_MODULES "${GUDHI_CYTHON_MODULES}'_cubical_complex', ")
 set(GUDHI_CYTHON_MODULES "${GUDHI_CYTHON_MODULES}'periodic_cubical_complex', ")
-set(GUDHI_CYTHON_MODULES "${GUDHI_CYTHON_MODULES}'reader_utils', ")
+# set(GUDHI_CYTHON_MODULES "${GUDHI_CYTHON_MODULES}'reader_utils', ")
 set(GUDHI_CYTHON_MODULES "${GUDHI_CYTHON_MODULES}'witness_complex', ")
 set(GUDHI_CYTHON_MODULES "${GUDHI_CYTHON_MODULES}'strong_witness_complex', ")
 set(GUDHI_PYBIND11_MODULES "${GUDHI_PYBIND11_MODULES}'clustering/_tomato', ")
@@ -630,9 +630,8 @@ add_test(NAME witness_complex_from_nearest_landmark_table_py_test
 
 add_gudhi_py_test(test_witness_complex)
 
-# Reader utils
-add_gudhi_py_test(test_reader_utils)
-add_gudhi_py_test(test_off)
+# File utils
+add_gudhi_py_test(test_file_utils)
 
 # Wasserstein
 if(POT_FOUND)

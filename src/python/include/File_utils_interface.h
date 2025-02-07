@@ -2,15 +2,17 @@
  *    See file LICENSE or go to https://gudhi.inria.fr/licensing/ for full license details.
  *    Author(s):       Vincent Rouvreau
  *
- *    Copyright (C) 2017 Inria
+ *    Copyright (C) 2016 Inria
  *
  *    Modification(s):
+ *      - 2025/02 Vincent Rouvreau: Merge Off_reader_interface.h and Reader_utils_interface.h in File_utils_interface.h
  *      - YYYY/MM Author: Description of the modification
  */
 
-#ifndef INCLUDE_READER_UTILS_INTERFACE_H_
-#define INCLUDE_READER_UTILS_INTERFACE_H_
+#ifndef INCLUDE_FILE_UTILS_INTERFACE_H_
+#define INCLUDE_FILE_UTILS_INTERFACE_H_
 
+#include <gudhi/Points_off_io.h>
 #include <gudhi/reader_utils.h>
 
 #include <iostream>
@@ -20,6 +22,11 @@
 #include <utility>  // for pair<>
 
 namespace Gudhi {
+
+std::vector<std::vector<double>> read_points_from_OFF_file(const std::string& off_file) {
+  Gudhi::Points_off_reader<std::vector<double>> off_reader(off_file);
+  return off_reader.get_point_cloud();
+}
 
 // Redefine functions with a different name in order the original name can be used in the Python version.
 std::vector<std::vector<double>> read_matrix_from_csv_file(const std::string& filename,
@@ -37,8 +44,6 @@ inline std::vector<std::pair<double, double>>
   return read_persistence_intervals_in_dimension(filename, only_this_dim);
 }
 
-
 }  // namespace Gudhi
 
-
-#endif  // INCLUDE_READER_UTILS_INTERFACE_H_
+#endif  // INCLUDE_FILE_UTILS_INTERFACE_H_
