@@ -130,7 +130,7 @@ py::object wasserstein_distance(
   return py::make_tuple(dist, ret);
 }
 
-PYBIND11_MODULE(wasserstein, m) {
+PYBIND11_MODULE(_wasserstein, m) {
       m.def("wasserstein_distance", &wasserstein_distance,
           py::arg("X"), py::arg("Y"),
           py::arg("order") = 1,
