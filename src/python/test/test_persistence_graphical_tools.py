@@ -17,26 +17,26 @@ import warnings
 
 def test_array_handler():
     diags = np.array([[1, 2], [3, 4], [5, 6]], float)
-    arr_diags, input_type = gd.persistence_graphical_tools._format_handler(diags)
+    arr_diags, input_type = gd._persistence_graphical_tools._format_handler(diags)
     assert input_type == 1
     for idx in range(len(diags)):
         assert arr_diags[idx][0] == 0
         np.testing.assert_array_equal(arr_diags[idx][1], diags[idx])
 
     diags = [(1.0, 2.0), (3.0, 4.0), (5.0, 6.0)]
-    arr_diags, input_type = gd.persistence_graphical_tools._format_handler(diags)
+    arr_diags, input_type = gd._persistence_graphical_tools._format_handler(diags)
     assert input_type == 1
     for idx in range(len(diags)):
         assert arr_diags[idx][0] == 0
         assert arr_diags[idx][1] == diags[idx]
 
     diags = [(0, (1.0, 2.0)), (0, (3.0, 4.0)), (0, (5.0, 6.0))]
-    arr_diags, input_type = gd.persistence_graphical_tools._format_handler(diags)
+    arr_diags, input_type = gd._persistence_graphical_tools._format_handler(diags)
     assert input_type == 0
     assert arr_diags == diags
 
     diags = [[(1.0, 2.0), (3.0, 4.0), (5.0, 6.0)], [(1.0, 2.0), (3.0, 4.0), (5.0, 6.0)]]
-    arr_diags, input_type = gd.persistence_graphical_tools._format_handler(diags)
+    arr_diags, input_type = gd._persistence_graphical_tools._format_handler(diags)
     assert input_type == 2
     assert len(arr_diags) == 6
     for idx in range(3):
@@ -58,8 +58,8 @@ def test_min_birth_max_death():
         (0, (0.0, 0.107535)),
         (0, (0.0, 0.106382)),
     ]
-    assert gd.persistence_graphical_tools._min_birth_max_death(diags) == (0.0, 1.0)
-    assert gd.persistence_graphical_tools._min_birth_max_death(diags, band=4.0) == (0.0, 5.0)
+    assert gd._persistence_graphical_tools._min_birth_max_death(diags) == (0.0, 1.0)
+    assert gd._persistence_graphical_tools._min_birth_max_death(diags, band=4.0) == (0.0, 5.0)
 
 
 def test_limit_min_birth_max_death():
@@ -67,8 +67,8 @@ def test_limit_min_birth_max_death():
         (0, (2.0, float("inf"))),
         (0, (2.0, float("inf"))),
     ]
-    assert gd.persistence_graphical_tools._min_birth_max_death(diags) == (2.0, 3.0)
-    assert gd.persistence_graphical_tools._min_birth_max_death(diags, band=4.0) == (2.0, 6.0)
+    assert gd._persistence_graphical_tools._min_birth_max_death(diags) == (2.0, 3.0)
+    assert gd._persistence_graphical_tools._min_birth_max_death(diags, band=4.0) == (2.0, 6.0)
 
 
 def test_limit_to_max_intervals():
@@ -87,7 +87,7 @@ def test_limit_to_max_intervals():
     # check no warnings if max_intervals equals to the diagrams number
     with warnings.catch_warnings():
         warnings.simplefilter("error")
-        truncated_diags = gd.persistence_graphical_tools._limit_to_max_intervals(
+        truncated_diags = gd._persistence_graphical_tools._limit_to_max_intervals(
             diags, 10, key=lambda life_time: life_time[1][1] - life_time[1][0]
         )
         # check diagrams are not sorted
@@ -95,7 +95,7 @@ def test_limit_to_max_intervals():
 
     # check warning if max_intervals lower than the diagrams number
     with pytest.warns(UserWarning) as record:
-        truncated_diags = gd.persistence_graphical_tools._limit_to_max_intervals(
+        truncated_diags = gd._persistence_graphical_tools._limit_to_max_intervals(
             diags, 5, key=lambda life_time: life_time[1][1] - life_time[1][0]
         )
         # check diagrams are truncated and sorted by life time
@@ -136,7 +136,7 @@ def test_non_existing_persistence_file():
 
 
 def _sklearn_one_homology_dim_plot_persistence(function):
-    # from gudhi.sklearn.rips_persistence import RipsPersistence
+    # from gudhi.sklearn import RipsPersistence
     # X = [[1., 1.], [7., 0.], [4., 6.], [9., 6.], [0., 14.], [2., 19.], [9., 17.]]
     # diag = RipsPersistence(homology_dimensions=1).fit_transform([X])
     # plot_persistence_diagram(diag[0]) # should work
@@ -151,7 +151,7 @@ def test_sklearn_one_homology_dim_plot_persistence():
 
 
 def _sklearn_several_homology_dim_plot_persistence(function):
-    # from gudhi.sklearn.rips_persistence import RipsPersistence
+    # from gudhi.sklearn import RipsPersistence
     # X = [[1., 1.], [7., 0.], [4., 6.], [9., 6.], [0., 14.], [2., 19.], [9., 17.]]
     # diag = RipsPersistence(homology_dimensions=[1,0]).fit_transform([X])
     # plot_persistence_diagram(diag[0]) # should work

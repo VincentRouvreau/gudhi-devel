@@ -334,7 +334,7 @@ You can still deactivate LaTeX rendering by saying:
 .. code-block:: python
 
     import gudhi as gd
-    gd.persistence_graphical_tools._gudhi_matplotlib_use_tex=False
+    gd._persistence_graphical_tools._gudhi_matplotlib_use_tex=False
 
 Matplotlib
 ----------

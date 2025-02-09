@@ -30,6 +30,12 @@ from ._file_utils import (
     read_persistence_intervals_in_dimension,
 )
 
+from ._persistence_graphical_tools import (
+    plot_persistence_barcode,
+    plot_persistence_diagram,
+    plot_persistence_density
+)
+
 __all__ += [
     'CubicalComplex',
     'read_points_from_off_file',
@@ -37,7 +43,20 @@ __all__ += [
     'read_lower_triangular_matrix_from_csv_file',
     'read_persistence_intervals_grouped_by_dimension',
     'read_persistence_intervals_in_dimension',
+    'plot_persistence_barcode',
+    'plot_persistence_diagram',
+    'plot_persistence_density',
 ]
+
+try:
+    # if no CGAL
+    from ._bottleneck import bottleneck_distance
+
+    __all__ += [
+        'bottleneck_distance',
+    ]
+except ModuleNotFoundError:
+    pass
 
 __available_modules = ''
 __missing_modules = ''

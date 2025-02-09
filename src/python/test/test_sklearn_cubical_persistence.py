@@ -8,7 +8,7 @@
       - YYYY/MM Author: Description of the modification
 """
 
-from gudhi.sklearn.cubical_persistence import CubicalPersistence
+from gudhi.sklearn import CubicalPersistence
 import gudhi
 import numpy as np
 from sklearn import datasets

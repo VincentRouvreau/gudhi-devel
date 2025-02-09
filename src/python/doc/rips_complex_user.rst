@@ -60,7 +60,7 @@ trick gives the same persistence diagram as one would get with a plain use of `R
 often significantly smaller and thus faster to process.
 
 Finally, if you are only interested in the persistence diagram of a Rips complex, you should consider using
-:class:`~gudhi.sklearn.rips_persistence.RipsPersistence` instead, which directly returns the diagram and can be faster
+:class:`~gudhi.sklearn.RipsPersistence` instead, which directly returns the diagram and can be faster
 than explicitly building the complex before computing its persistence.
 
 Point cloud
@@ -321,7 +321,7 @@ The output is:
 Example from a point cloud combined with DistanceToMeasure
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Combining with DistanceToMeasure, one can compute the DTM-filtration of a point set, as in `this notebook <https://github.com/GUDHI/TDA-tutorial/blob/master/Tuto-GUDHI-DTM-filtrations.ipynb>`_. 
+Combining with DistanceToMeasure, one can compute the DTM-filtration of a point set, as in `this notebook <https://github.com/GUDHI/TDA-tutorial/blob/master/Tuto-GUDHI-DTM-filtrations.ipynb>`_.
 Remark that `DTMRipsComplex <rips_complex_user.html#dtm-rips-complex>`_ class provides exactly this function.
 
 .. testcode::
