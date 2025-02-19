@@ -58,6 +58,28 @@ try:
 except ModuleNotFoundError:
     pass
 
+try:
+    # if no CGAL or no Eigen
+    from ._delaunay_complex import DelaunayComplex
+    from ._delaunay_complex import AlphaComplex
+    from ._delaunay_complex import DelaunayCechComplex
+
+    from ._euclidean_strong_witness_complex import EuclideanStrongWitnessComplex
+    from ._euclidean_witness_complex import EuclideanWitnessComplex
+
+    from ._tangential_complex import TangentialComplex
+
+    __all__ += [
+        'DelaunayComplex',
+        'AlphaComplex',
+        'DelaunayCechComplex',
+        'EuclideanStrongWitnessComplex',
+        'EuclideanWitnessComplex',
+        'TangentialComplex',
+    ]
+except ModuleNotFoundError:
+    pass
+
 __available_modules = ''
 __missing_modules = ''
 
