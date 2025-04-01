@@ -1,8 +1,8 @@
-The Gudhi library is an open source library for Computational Topology and
-Topological Data Analysis (TDA). It offers state-of-the-art algorithms
-to construct various types of simplicial complexes, data structures to
-represent them, and algorithms to compute geometric approximations of shapes
-and persistent homology.
+The [Gudhi library](https://gudhi.inria.fr/python/latest/) is an open source
+library for Computational Topology and Topological Data Analysis (TDA).
+It offers state-of-the-art algorithms to construct various types of simplicial
+complexes, data structures to represent them, and algorithms to compute
+geometric approximations of shapes and persistent homology.
 
 The GUDHI library offers the following interoperable modules:
 
@@ -21,4 +21,6 @@ The GUDHI library offers the following interoperable modules:
    * Persistence diagram and barcode
 
 For more information about Topological Data Analysis and its workflow, please
-refer to the `Wikipedia TDA dedicated page <https://en.wikipedia.org/wiki/Topological_data_analysis>`_.
+refer to the
+[Wikipedia TDA dedicated page](https://en.wikipedia.org/wiki/Topological_data_analysis),
+or [contact us](https://gudhi.inria.fr/contact/)

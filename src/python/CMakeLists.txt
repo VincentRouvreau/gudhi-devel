@@ -373,57 +373,53 @@ if (TARGET CGAL::CGAL AND TARGET Eigen3::Eigen)
   set(GUDHI_NANOBIND_MODULES "${GUDHI_NANOBIND_MODULES}'_delaunay_complex', ")
 endif ()
 
-# doc/pip_introduction.inc is a restructured text file (extension changed because of sphinx warning) that describes
-# the GUDHI project on https://pypi.org/project/gudhi/
-file(READ "doc/pypi_introduction.inc" GUDHI_LONG_DESCRIPTION_WITH_UNPROPER_CR)
-string(REPLACE "\n" "\\n' \\\n        '" GUDHI_LONG_DESCRIPTION ${GUDHI_LONG_DESCRIPTION_WITH_UNPROPER_CR})
-
 # Generate setup.py file to cythonize Gudhi - This file must be named setup.py by convention
-configure_file(setup.py.in "${CMAKE_CURRENT_BINARY_DIR}/setup.py" @ONLY)
+# configure_file(setup.py.in "${CMAKE_CURRENT_BINARY_DIR}/setup.py" @ONLY)
 
 # Generate gudhi/__init__.py
 file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/gudhi")
 configure_file("gudhi/__init__.py.in" "${CMAKE_CURRENT_BINARY_DIR}/gudhi/__init__.py" @ONLY)
 
 # Other .py files
-file(COPY "gudhi/reader_utils.py" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/gudhi")
-file(COPY "gudhi/delaunay_complex.py" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/gudhi")
-file(COPY "gudhi/rips_complex.py" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/gudhi")
-file(COPY "gudhi/simplex_tree.py" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/gudhi")
-file(COPY "gudhi/persistence_graphical_tools.py" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/gudhi")
+# file(COPY "gudhi/reader_utils.py" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/gudhi")
+# file(COPY "gudhi/delaunay_complex.py" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/gudhi")
+# file(COPY "gudhi/rips_complex.py" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/gudhi")
+# file(COPY "gudhi/simplex_tree.py" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/gudhi")
+# file(COPY "gudhi/persistence_graphical_tools.py" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/gudhi")
 file(COPY "gudhi/representations" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/gudhi/")
 file(COPY "gudhi/tensorflow" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/gudhi/")
 file(COPY "gudhi/wasserstein" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/gudhi")
 file(COPY "gudhi/point_cloud" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/gudhi")
 file(COPY "gudhi/clustering" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/gudhi" FILES_MATCHING PATTERN "*.py")
-file(COPY "gudhi/weighted_rips_complex.py" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/gudhi")
-file(COPY "gudhi/dtm_rips_complex.py" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/gudhi")
-file(COPY "gudhi/cover_complex.py" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/gudhi")
-file(COPY "gudhi/cubical_complex.py" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/gudhi")
-file(COPY "gudhi/periodic_cubical_complex.py" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/gudhi")
-file(COPY "gudhi/_kepler_mapper.py" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/gudhi")
-file(COPY "gudhi/_kepler_mapper.py.COPYRIGHT" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/gudhi")
+# file(COPY "gudhi/weighted_rips_complex.py" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/gudhi")
+# file(COPY "gudhi/dtm_rips_complex.py" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/gudhi")
+# file(COPY "gudhi/cover_complex.py" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/gudhi")
+# file(COPY "gudhi/cubical_complex.py" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/gudhi")
+# file(COPY "gudhi/periodic_cubical_complex.py" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/gudhi")
+# file(COPY "gudhi/_kepler_mapper.py" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/gudhi")
+# file(COPY "gudhi/_kepler_mapper.py.COPYRIGHT" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/gudhi")
 file(COPY "gudhi/datasets" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/gudhi" FILES_MATCHING PATTERN "*.py")
 file(COPY "gudhi/sklearn" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/gudhi/")
 file(COPY "gudhi/flag_filtration" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/gudhi/")
-file(COPY "gudhi/witness_complex.py" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/gudhi")
-file(COPY "gudhi/euclidean_strong_witness_complex.py" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/gudhi")
+# file(COPY "gudhi/witness_complex.py" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/gudhi")
+# file(COPY "gudhi/euclidean_strong_witness_complex.py" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/gudhi")
 
-
-# Some files for pip package
-file(COPY "pyproject.toml" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/")
+file(COPY "doc/README.md" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+# Generate pyproject.toml file with some CMake data
+configure_file(pyproject.toml.in "${CMAKE_CURRENT_BINARY_DIR}/pyproject.toml" @ONLY)
 
 # Symbolic links to cython sources to be built. "MAKE_DIRECTORY gudhi" must be done before
-add_gudhi_symbolic_links("gudhi/*.pxd")
-add_gudhi_symbolic_links("gudhi/*.pyx")
+# add_gudhi_symbolic_links("gudhi/*.pxd")
+# add_gudhi_symbolic_links("gudhi/*.pyx")
+add_gudhi_symbolic_links("gudhi/*.py")
 
-add_custom_command(
-    OUTPUT gudhi.so
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-    COMMAND ${Python_EXECUTABLE} "${CMAKE_CURRENT_BINARY_DIR}/setup.py" "build_ext" "--inplace")
-
-add_custom_target(python ALL DEPENDS gudhi.so
-                  COMMENT "Do not forget to add ${CMAKE_CURRENT_BINARY_DIR}/ to your PYTHONPATH before using examples or tests")
+# add_custom_command(
+#     OUTPUT gudhi.so
+#     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+#     COMMAND ${Python_EXECUTABLE} "${CMAKE_CURRENT_BINARY_DIR}/setup.py" "build_ext" "--inplace")
+#
+# add_custom_target(python ALL DEPENDS gudhi.so
+#                   COMMENT "Do not forget to add ${CMAKE_CURRENT_BINARY_DIR}/ to your PYTHONPATH before using examples or tests")
 
 # Detect the installed nanobind package and import it into CMake
 execute_process(

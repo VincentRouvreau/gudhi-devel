@@ -146,7 +146,15 @@ if (WITH_GUDHI_PYTHON)
         set(DEV_MODULE Development.Module)
     endif()
 
-    find_package( Python COMPONENTS Interpreter ${DEV_MODULE} NumPy)
+    find_package(Python 3.9
+      REQUIRED COMPONENTS Interpreter ${DEV_MODULE} NumPy
+      OPTIONAL_COMPONENTS Development.SABIModule)
+
+    execute_process(
+      COMMAND "${Python_EXECUTABLE}" -m nanobind --cmake_dir
+      OUTPUT_STRIP_TRAILING_WHITESPACE OUTPUT_VARIABLE NB_DIR)
+    list(APPEND CMAKE_PREFIX_PATH "${NB_DIR}")
+    find_package(nanobind CONFIG REQUIRED)
 
     # find_python_module tries to import module in Python interpreter and to retrieve its version number
     # returns ${PYTHON_MODULE_NAME_UP}_VERSION and ${PYTHON_MODULE_NAME_UP}_FOUND
