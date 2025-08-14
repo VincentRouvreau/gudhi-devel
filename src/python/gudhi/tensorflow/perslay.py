@@ -1,323 +1,154 @@
-# This file is part of the Gudhi Library - https://gudhi.inria.fr/ - which is released under MIT.
-# See file LICENSE or go to https://gudhi.inria.fr/licensing/ for full license details.
-# Author(s):       Mathieu Carrière
-#
-# Copyright (C) 2021 Inria
-#
-# Modification(s):
-#   - YYYY/MM Author: Description of the modification
-
-__author__ = "Mathieu Carrière"
-__maintainer__ = ""
-__copyright__ = "Copyright (C) 2021 Inria"
-__license__ = "MIT"
-
-
-import tensorflow as tf
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
 import math
 
+class GridPerslayWeight(nn.Module):
+    def __init__(self, grid, grid_bnds):
+        super().__init__()
+        self.grid = nn.Parameter(torch.tensor(grid, dtype=torch.float32))
+        self.grid_bnds = torch.tensor(grid_bnds, dtype=torch.float32)
 
-class GridPerslayWeight(tf.keras.layers.Layer):
-    """
-    This is a class for computing a differentiable weight function for persistence diagram points. This function is defined from an array that contains its values on a 2D grid.
-    """
-
-    def __init__(self, grid, grid_bnds, **kwargs):
-        """
-        Constructor for the GridPerslayWeight class.
-
-        Parameters:
-            grid (n x n numpy array): grid of values.
-            grid_bnds (2 x 2 numpy array): boundaries of the grid, of the form [[min_x, max_x], [min_y, max_y]].
-        """
-        super().__init__(**kwargs)
-        self.grid = tf.Variable(initial_value=grid, trainable=True)
-        self.grid_bnds = grid_bnds
-
-    def build(self, input_shape):
-        return self
-
-    def call(self, diagrams):
-        """
-        Apply GridPerslayWeight on a ragged tensor containing a list of persistence diagrams.
-
-        Parameters:
-            diagrams (n x None x 2): ragged tensor containing n persistence diagrams. The second dimension is ragged since persistence diagrams can have different numbers of points.
-
-        Returns:
-            weight (n x None): ragged tensor containing the weights of the points in the n persistence diagrams. The second dimension is ragged since persistence diagrams can have different numbers of points.
-        """
+    def forward(self, diagrams):
+        # diagrams: list of [num_pts, 2] tensors, batch size n
         grid_shape = self.grid.shape
-        indices = []
-        for dim in range(2):
-            [m, M] = self.grid_bnds[dim]
-            coords = tf.expand_dims(diagrams[:, :, dim], -1)
-            ids = grid_shape[dim] * (coords - m) / (M - m)
-            indices.append(tf.cast(ids, tf.int32))
-        weight = tf.gather_nd(params=self.grid, indices=tf.concat(indices, axis=2))
-        return weight
+        min_x, max_x = self.grid_bnds[0]
+        min_y, max_y = self.grid_bnds[1]
+        # For each diagram in batch
+        weights = []
+        for d in diagrams:
+            # d: [num_pts, 2]
+            ids_x = ((grid_shape[0] * (d[:, 0] - min_x) / (max_x - min_x))).long().clamp(0, grid_shape[0]-1)
+            ids_y = ((grid_shape[1] * (d[:, 1] - min_y) / (max_y - min_y))).long().clamp(0, grid_shape[1]-1)
+            w = self.grid[ids_x, ids_y]
+            weights.append(w)
+        return weights
 
+class GaussianMixturePerslayWeight(nn.Module):
+    def __init__(self, gaussians):
+        super().__init__()
+        self.W = nn.Parameter(torch.tensor(gaussians, dtype=torch.float32))  # shape [4, n]
 
-class GaussianMixturePerslayWeight(tf.keras.layers.Layer):
-    """
-    This is a class for computing a differentiable weight function for persistence diagram points. This function is defined from a mixture of Gaussian functions.
-    """
+    def forward(self, diagrams):
+        # diagrams: list of [num_pts, 2] tensors
+        means = self.W[:2, :].transpose(0,1)  # [n, 2]
+        variances = self.W[2:, :].transpose(0,1)  # [n, 2]
+        weights = []
+        for d in diagrams:
+            # d: [num_pts, 2]
+            d_exp = d.unsqueeze(1)  # [num_pts, 1, 2]
+            m_exp = means.unsqueeze(0)  # [1, n, 2]
+            v_exp = variances.unsqueeze(0)  # [1, n, 2]
+            dists = ((d_exp - m_exp) ** 2) / (v_exp ** 2)
+            w = torch.exp(-dists.sum(dim=2)).sum(dim=1)
+            weights.append(w)
+        return weights
 
-    def __init__(self, gaussians, **kwargs):
-        """
-        Constructor for the GridPerslayWeight class.
-
-        Parameters:
-            gaussians (4 x n numpy array): parameters of the n Gaussian functions, of the form transpose([[mu_x^1, mu_y^1, sigma_x^1, sigma_y^1], ..., [mu_x^n, mu_y^n, sigma_x^n, sigma_y^n]]).
-        """
-        super().__init__(**kwargs)
-        self.W = tf.Variable(initial_value=gaussians, trainable=True)
-
-    def build(self, input_shape):
-        return self
-
-    def call(self, diagrams):
-        """
-        Apply GaussianMixturePerslayWeight on a ragged tensor containing a list of persistence diagrams.
-
-        Parameters:
-            diagrams (n x None x 2): ragged tensor containing n persistence diagrams. The second dimension is ragged since persistence diagrams can have different numbers of points.
-
-        Returns:
-            weight (n x None): ragged tensor containing the weights of the points in the n persistence diagrams. The second dimension is ragged since persistence diagrams can have different numbers of points.
-        """
-        means = tf.expand_dims(tf.expand_dims(self.W[:2, :], 0), 0)
-        variances = tf.expand_dims(tf.expand_dims(self.W[2:, :], 0), 0)
-        diagrams = tf.expand_dims(diagrams, -1)
-        dists = tf.math.multiply(
-            tf.math.square(diagrams - means), 1 / tf.math.square(variances)
-        )
-        weight = tf.math.reduce_sum(tf.math.exp(tf.math.reduce_sum(-dists, axis=2)), axis=2)
-        return weight
-
-
-class PowerPerslayWeight(tf.keras.layers.Layer):
-    """
-    This is a class for computing a differentiable weight function for persistence diagram points. This function is defined as a constant multiplied by the distance to the diagonal of the persistence diagram point raised to some power.
-    """
-
-    def __init__(self, constant, power, **kwargs):
-        """
-        Constructor for the PowerPerslayWeight class.
-
-        Parameters:
-            constant (float): constant value.
-            power (float): power applied to the distance to the diagonal.
-        """
-        super().__init__(**kwargs)
-        self.constant = tf.Variable(initial_value=constant, trainable=True)
+class PowerPerslayWeight(nn.Module):
+    def __init__(self, constant, power):
+        super().__init__()
+        self.constant = nn.Parameter(torch.tensor(constant, dtype=torch.float32))
         self.power = power
 
-    def build(self, input_shape):
-        return self
+    def forward(self, diagrams):
+        weights = []
+        for d in diagrams:
+            dist = torch.abs(d[:, 1] - d[:, 0])
+            w = self.constant * torch.pow(dist, self.power)
+            weights.append(w)
+        return weights
 
-    def call(self, diagrams):
-        """
-        Apply PowerPerslayWeight on a ragged tensor containing a list of persistence diagrams.
-
-        Parameters:
-            diagrams (n x None x 2): ragged tensor containing n persistence diagrams. The second dimension is ragged since persistence diagrams can have different numbers of points.
-
-        Returns:
-            weight (n x None): ragged tensor containing the weights of the points in the n persistence diagrams. The second dimension is ragged since persistence diagrams can have different numbers of points.
-        """
-        weight = self.constant * tf.math.pow(
-            tf.math.abs(diagrams[:, :, 1] - diagrams[:, :, 0]), self.power
-        )
-        return weight
-
-
-class GaussianPerslayPhi(tf.keras.layers.Layer):
-    """
-    This is a class for computing a transformation function for persistence diagram points. This function turns persistence diagram points into 2D Gaussian functions centered on the points, that are then evaluated on a regular 2D grid.
-    """
-
-    def __init__(self, image_size, image_bnds, variance, **kwargs):
-        """
-        Constructor for the GaussianPerslayPhi class.
-
-        Parameters:
-            image_size (int numpy array): number of grid elements on each grid axis, of the form [n_x, n_y].
-            image_bnds (2 x 2 numpy array): boundaries of the grid, of the form [[min_x, max_x], [min_y, max_y]].
-            variance (float): variance of the Gaussian functions.
-        """
-        super().__init__(**kwargs)
+class GaussianPerslayPhi(nn.Module):
+    def __init__(self, image_size, image_bnds, variance):
+        super().__init__()
         self.image_size = image_size
         self.image_bnds = image_bnds
-        self.variance = tf.Variable(initial_value=variance, trainable=True)
+        self.variance = nn.Parameter(torch.tensor(variance, dtype=torch.float32))
 
-    def build(self, input_shape):
-        return self
+    def forward(self, diagrams):
+        # diagrams: list of [num_pts, 2] tensors
+        step = [(self.image_bnds[i][1] - self.image_bnds[i][0]) / self.image_size[i] for i in range(2)]
+        coords = [torch.arange(self.image_bnds[i][0], self.image_bnds[i][1], step[i]) for i in range(2)]
+        M = torch.meshgrid(coords[0], coords[1], indexing='ij')
+        mu = torch.stack([tens for tens in M], dim=0)  # [2, n_x, n_y]
+        output_list = []
+        output_shape = M[0].shape + (1,)
+        for d in diagrams:
+            t = torch.as_tensor(d, dtype=torch.float32)  # Convert numpy to tensor
+            d_d = torch.stack([t[:, 0], t[:, 1] - t[:, 0]], dim=1)  # [num_pts, 2]
+            # Broadcast for gaussian eval
+            for _ in range(2):
+                d_d = d_d.unsqueeze(-1)
+            mu_exp = mu.unsqueeze(0)  # [1, 2, n_x, n_y]
+            dists = ((d_d - mu_exp) ** 2) / (2 * self.variance ** 2)
+            gauss = torch.exp(-dists.sum(dim=1)) / (2 * math.pi * (self.variance ** 2))
+            output = gauss.unsqueeze(-1)
+            output_list.append(output)
+        return output_list, output_shape
 
-    def call(self, diagrams):
-        """
-        Apply GaussianPerslayPhi on a ragged tensor containing a list of persistence diagrams.
+class TentPerslayPhi(nn.Module):
+    def __init__(self, samples):
+        super().__init__()
+        self.samples = nn.Parameter(torch.tensor(samples, dtype=torch.float32))
 
-        Parameters:
-            diagrams (n x None x 2): ragged tensor containing n persistence diagrams. The second dimension is ragged since persistence diagrams can have different numbers of points.
-
-        Returns:
-            output (n x None x image_size x image_size x 1): ragged tensor containing the evaluations on the 2D grid of the 2D Gaussian functions corresponding to the persistence diagram points, in the form of a 2D image with 1 channel that can be processed with, e.g., convolutional layers. The second dimension is ragged since persistence diagrams can have different numbers of points.
-            output_shape (int numpy array): shape of the output tensor.
-        """
-        diagrams_d = tf.concat(
-            [diagrams[:, :, 0:1], diagrams[:, :, 1:2] - diagrams[:, :, 0:1]], axis=2
-        )
-        step = [
-            (self.image_bnds[i][1] - self.image_bnds[i][0]) / self.image_size[i]
-            for i in range(2)
-        ]
-        coords = [
-            tf.range(self.image_bnds[i][0], self.image_bnds[i][1], step[i]) for i in range(2)
-        ]
-        M = tf.meshgrid(*coords)
-        mu = tf.concat([tf.expand_dims(tens, 0) for tens in M], axis=0)
-        for _ in range(2):
-            diagrams_d = tf.expand_dims(diagrams_d, -1)
-        dists = tf.math.square(diagrams_d - mu) / (2 * tf.math.square(self.variance))
-        gauss = tf.math.exp(tf.math.reduce_sum(-dists, axis=2)) / (
-            2 * math.pi * tf.math.square(self.variance)
-        )
-        output = tf.expand_dims(gauss, -1)
-        output_shape = M[0].shape + tuple([1])
-        return output, output_shape
-
-
-class TentPerslayPhi(tf.keras.layers.Layer):
-    """
-    This is a class for computing a transformation function for persistence diagram points. This function turns persistence diagram points into 1D tent functions (linearly increasing on the first half of the bar corresponding to the point from zero to half of the bar length, linearly decreasing on the second half and zero elsewhere) centered on the points, that are then evaluated on a regular 1D grid.
-    """
-
-    def __init__(self, samples, **kwargs):
-        """
-        Constructor for the GaussianPerslayPhi class.
-
-        Parameters:
-            samples (float numpy array): grid elements on which to evaluate the tent functions, of the form [x_1, ..., x_n].
-        """
-        super().__init__(**kwargs)
-        self.samples = tf.Variable(initial_value=samples, trainable=True)
-
-    def build(self, input_shape):
-        return self
-
-    def call(self, diagrams):
-        """
-        Apply TentPerslayPhi on a ragged tensor containing a list of persistence diagrams.
-
-        Parameters:
-            diagrams (n x None x 2): ragged tensor containing n persistence diagrams. The second dimension is ragged since persistence diagrams can have different numbers of points.
-
-        Returns:
-            output (n x None x num_samples): ragged tensor containing the evaluations on the 1D grid of the 1D tent functions corresponding to the persistence diagram points. The second dimension is ragged since persistence diagrams can have different numbers of points.
-            output_shape (int numpy array): shape of the output tensor.
-        """
-        samples_d = tf.expand_dims(tf.expand_dims(self.samples, 0), 0)
-        xs, ys = diagrams[:, :, 0:1], diagrams[:, :, 1:2]
-        output = tf.math.maximum(
-            0.5 * (ys - xs) - tf.math.abs(samples_d - 0.5 * (ys + xs)), tf.constant([0.0])
-        )
+    def forward(self, diagrams):
+        output_list = []
         output_shape = self.samples.shape
-        return output, output_shape
+        for d in diagrams:
+            xs = d[:, 0:1]  # [num_pts,1]
+            ys = d[:, 1:2]
+            samples_d = self.samples.unsqueeze(0).unsqueeze(0)  # [1,1,num_samples]
+            val = 0.5 * (ys - xs) - torch.abs(samples_d - 0.5 * (ys + xs))
+            output = torch.maximum(val, torch.tensor(0.0))
+            output_list.append(output.squeeze(1))  # [num_pts, num_samples]
+        return output_list, output_shape
 
+class FlatPerslayPhi(nn.Module):
+    def __init__(self, samples, theta):
+        super().__init__()
+        self.samples = nn.Parameter(torch.tensor(samples, dtype=torch.float32))
+        self.theta = nn.Parameter(torch.tensor(theta, dtype=torch.float32))
 
-class FlatPerslayPhi(tf.keras.layers.Layer):
-    """
-    This is a class for computing a transformation function for persistence diagram points. This function turns persistence diagram points into 1D constant functions (that evaluate to half of the bar length on the bar corresponding to the point and zero elsewhere), that are then evaluated on a regular 1D grid.
-    """
-
-    def __init__(self, samples, theta, **kwargs):
-        """
-        Constructor for the FlatPerslayPhi class.
-
-        Parameters:
-            samples (float numpy array): grid elements on which to evaluate the constant functions, of the form [x_1, ..., x_n].
-            theta (float): sigmoid parameter used to approximate the constant function with a differentiable sigmoid function. The bigger the theta, the closer to a constant function the output will be.
-        """
-        super().__init__(**kwargs)
-        self.samples = tf.Variable(initial_value=samples, trainable=True)
-        self.theta = tf.Variable(initial_value=theta, trainable=True)
-
-    def build(self, input_shape):
-        return self
-
-    def call(self, diagrams):
-        """
-        Apply FlatPerslayPhi on a ragged tensor containing a list of persistence diagrams.
-
-        Parameters:
-            diagrams (n x None x 2): ragged tensor containing n persistence diagrams. The second dimension is ragged since persistence diagrams can have different numbers of points.
-
-        Returns:
-            output (n x None x num_samples): ragged tensor containing the evaluations on the 1D grid of the 1D constant functions corresponding to the persistence diagram points. The second dimension is ragged since persistence diagrams can have different numbers of points.
-            output_shape (int numpy array): shape of the output tensor.
-        """
-        samples_d = tf.expand_dims(tf.expand_dims(self.samples, 0), 0)
-        xs, ys = diagrams[:, :, 0:1], diagrams[:, :, 1:2]
-        output = 1.0 / (
-            1.0
-            + tf.math.exp(
-                -self.theta * (0.5 * (ys - xs) - tf.math.abs(samples_d - 0.5 * (ys + xs)))
-            )
-        )
+    def forward(self, diagrams):
+        output_list = []
         output_shape = self.samples.shape
-        return output, output_shape
+        for d in diagrams:
+            xs = d[:, 0:1]
+            ys = d[:, 1:2]
+            samples_d = self.samples.unsqueeze(0).unsqueeze(0)
+            val = 0.5 * (ys - xs) - torch.abs(samples_d - 0.5 * (ys + xs))
+            output = 1.0 / (1.0 + torch.exp(-self.theta * val))
+            output_list.append(output.squeeze(1))
+        return output_list, output_shape
 
-
-class Perslay(tf.keras.layers.Layer):
-    """
-    This is a TensorFlow layer for vectorizing persistence diagrams in a differentiable way within a neural network. This function implements the PersLay equation, see `the corresponding article <http://proceedings.mlr.press/v108/carriere20a.html>`_.
-    """
-
-    def __init__(self, weight, phi, perm_op, rho, **kwargs):
-        """
-        Constructor for the Perslay class.
-
-        Parameters:
-            weight (function): weight function for the persistence diagram points. Can be either :class:`~gudhi.tensorflow.perslay.GridPerslayWeight`, :class:`~gudhi.tensorflow.perslay.GaussianMixturePerslayWeight`, :class:`~gudhi.tensorflow.perslay.PowerPerslayWeight`, or a custom TensorFlow function that takes persistence diagrams as argument (represented as an (n x None x 2) ragged tensor, where n is the number of diagrams).
-            phi (function): transformation function for the persistence diagram points. Can be either :class:`~gudhi.tensorflow.perslay.GaussianPerslayPhi`, :class:`~gudhi.tensorflow.perslay.TentPerslayPhi`, :class:`~gudhi.tensorflow.perslay.FlatPerslayPhi`, or a custom TensorFlow class (that can have trainable parameters) with a method `call` that takes persistence diagrams as argument (represented as an (n x None x 2) ragged tensor, where n is the number of diagrams).
-            perm_op (function): permutation invariant function, such as `tf.math.reduce_sum`, `tf.math.reduce_mean`, `tf.math.reduce_max`, `tf.math.reduce_min`, or a custom TensorFlow function that takes two arguments: a tensor and an axis on which to apply the permutation invariant operation. If perm_op is the string "topk" (where k is a number), this function will be computed as `tf.math.top_k` with parameter `int(k)`.
-            rho (function): postprocessing function that is applied after the permutation invariant operation. Can be any TensorFlow layer.
-        """
-        super().__init__(**kwargs)
+class Perslay(nn.Module):
+    def __init__(self, weight, phi, perm_op, rho):
+        super().__init__()
         self.weight = weight
         self.phi = phi
         self.perm_op = perm_op
         self.rho = rho
 
-    def build(self, input_shape):
-        return self
-
-    def call(self, diagrams):
-        """
-        Apply Perslay on a ragged tensor containing a list of persistence diagrams.
-
-        Parameters:
-            diagrams (n x None x 2): ragged tensor containing n persistence diagrams. The second dimension is ragged since persistence diagrams can have different numbers of points.
-
-        Returns:
-            vector (n x output_shape): tensor containing the vectorizations of the persistence diagrams.
-        """
-        vector, dim = self.phi(diagrams)
-        weight = self.weight(diagrams)
-        for _ in range(len(dim)):
-            weight = tf.expand_dims(weight, -1)
-        vector = tf.math.multiply(vector, weight)
-
-        permop = self.perm_op
-        if type(permop) == str and permop[:3] == "top":
-            k = int(permop[3:])
-            vector = vector.to_tensor(default_value=-1e10)
-            vector = tf.math.top_k(tf.transpose(vector, perm=[0, 2, 1]), k=k).values
-            vector = tf.reshape(vector, [-1, k * dim[0]])
-        else:
-            vector = permop(vector, axis=1)
-
-        vector = self.rho(vector)
-
-        return vector
+    def forward(self, diagrams):
+        # diagrams: list of [num_pts, 2] tensors
+        vector_list, dim = self.phi(diagrams)
+        weight_list = self.weight(diagrams)
+        output_list = []
+        for v, w in zip(vector_list, weight_list):
+            # expand weight to match v's shape
+            for _ in range(len(dim)):
+                w = w.unsqueeze(-1)
+            vw = v * w
+            if isinstance(self.perm_op, str) and self.perm_op[:3] == "top":
+                k = int(self.perm_op[3:])
+                # pad vw to fixed length
+                vw_pad = F.pad(vw, (0,0,0, max(0, k*dim[0]-vw.shape[0])), value=-1e10)
+                vw_reshaped = vw_pad.transpose(0,1).reshape(-1)
+                topk, _ = torch.topk(vw_reshaped, k*dim[0])
+                out = topk
+            else:
+                out = self.perm_op(vw, dim=0)
+            out2 = self.rho(out)
+            output_list.append(out2)
+        # Stack outputs for batch
+        return torch.stack(output_list)

@@ -23,69 +23,59 @@ Example
 PersLay
 ^^^^^^^
 
-.. testsetup:: perslay
-
-    import numpy
-    numpy.set_printoptions(precision=5)
 
 .. testcode:: perslay
 
     import numpy             as np
-    import tensorflow        as tf
+    import torch
     from sklearn.preprocessing import MinMaxScaler
     import gudhi.representations as gdr
     import gudhi.tensorflow.perslay as prsl
 
     diagrams = [np.array([[0.,4.],[1.,2.],[3.,8.],[6.,8.]])]
     diagrams = gdr.DiagramScaler(use=True, scalers=[([0,1], MinMaxScaler())]).fit_transform(diagrams)
-    diagrams = tf.RaggedTensor.from_tensor(tf.constant(diagrams, dtype=tf.float32))
+    diagrams = torch.tensor(diagrams, dtype=torch.float32)
 
-    rho = tf.identity
+    rho = torch.nn.Identity()
     phi = prsl.GaussianPerslayPhi((5, 5), ((-.5, 1.5), (-.5, 1.5)), .1)
     weight = prsl.PowerPerslayWeight(1.,0.)
-    perm_op = tf.math.reduce_sum
+    perm_op = torch.sum
 
     perslay = prsl.Perslay(phi=phi, weight=weight, perm_op=perm_op, rho=rho)
     vectors = perslay(diagrams)
     print(vectors)
 
-.. testcleanup:: perslay
-
-    numpy.set_printoptions(precision=8)
-
 .. testoutput:: perslay
 
-    tf.Tensor(
-    [[[[1.72661e-16]
-       [4.17060e-09]
-       [1.13369e-08]
-       [8.57388e-12]
-       [2.12439e-14]]
+    tensor([[[[1.7266e-16],
+              [4.1715e-09],
+              [8.0383e-06],
+              [8.0269e-06],
+              [9.0331e-13]],
 
-      [[4.17151e-09]
-       [1.00741e-01]
-       [2.73843e-01]
-       [3.07242e-02]
-       [7.61575e-05]]
+             [[4.1706e-09],
+              [1.0074e-01],
+              [1.5803e+00],
+              [1.3066e+00],
+              [1.4955e-07]],
 
-      [[8.03829e-06]
-       [1.58027e+00]
-       [8.29970e-01]
-       [1.23954e+01]
-       [3.07241e-02]]
+             [[1.1337e-08],
+              [2.7384e-01],
+              [8.2997e-01],
+              [9.0923e+00],
+              [1.5146e-04]],
 
-      [[8.02694e-06]
-       [1.30657e+00]
-       [9.09230e+00]
-       [6.16648e-02]
-       [1.39492e-06]]
+             [[8.5739e-12],
+              [3.0724e-02],
+              [1.2395e+01],
+              [6.1665e-02],
+              [1.0205e-06]],
 
-      [[9.03313e-13]
-       [1.49548e-07]
-       [1.51460e-04]
-       [1.02051e-06]
-       [7.80935e-16]]]], shape=(1, 5, 5, 1), dtype=float32)
-
+             [[2.1244e-14],
+              [7.6157e-05],
+              [3.0724e-02],
+              [1.3949e-06],
+              [7.8094e-16]]]], grad_fn=<StackBackward0>)
 
 Perslay reference manual
 ------------------------
