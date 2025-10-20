@@ -13,7 +13,7 @@ __license__ = "MIT"
 import numpy as np
 import tensorflow as tf
 
-from ..rips_complex import RipsComplex
+from ..filtrations.rips_complex import rips_complex
 
 
 ############################
@@ -29,8 +29,7 @@ def _Rips(DX, max_edge, dimensions, homology_coeff_field):
     #             dimensions (homology dimensions)
 
     # Compute the persistence pairs with Gudhi
-    rc = RipsComplex(distance_matrix=DX, max_edge_length=max_edge)
-    st = rc.create_simplex_tree(max_dimension=max(dimensions) + 1)
+    st = rips_complex(distance_matrix=DX, max_edge_length=max_edge, max_dimension=max(dimensions) + 1)
     st.compute_persistence(homology_coeff_field=homology_coeff_field)
     pairs = st.flag_persistence_generators()
 

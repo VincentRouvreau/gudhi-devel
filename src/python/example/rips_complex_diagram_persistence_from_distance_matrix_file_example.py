@@ -18,7 +18,7 @@ import gudhi as gd
 
 
 parser = argparse.ArgumentParser(
-    description="RipsComplex creation from " "a distance matrix read in a csv file.",
+    description="Vietoris-Rips complex creation from " "a distance matrix read in a csv file.",
     epilog="Example: "
     "example/rips_complex_diagram_persistence_from_distance_matrix_file_example.py "
     "-f ../data/distance_matrix/lower_triangular_distance_matrix.csv -s , -e 12.0 -d 3"
@@ -40,23 +40,22 @@ parser.add_argument(
 args = parser.parse_args()
 
 print("#####################################################################")
-print("RipsComplex creation from distance matrix read in a csv file")
+print("Vietoris-Rips complex creation from distance matrix read in a csv file")
 
-print(f"RipsComplex with max_edge_length={args.max_edge_length}")
+print(f"Vietoris-Rips complex with max_edge_length={args.max_edge_length}")
 
 distance_matrix = gd.read_lower_triangular_matrix_from_csv_file(
     csv_file=args.file, separator=args.separator
 )
-rips_complex = gd.RipsComplex(
-    distance_matrix=distance_matrix, max_edge_length=args.max_edge_length
+cplx = gd.filtrations.rips_complex(
+    distance_matrix=distance_matrix, max_edge_length=args.max_edge_length, max_dimension=args.max_dimension
 )
-simplex_tree = rips_complex.create_simplex_tree(max_dimension=args.max_dimension)
 
-print(f"Number of simplices={simplex_tree.num_simplices()}")
+print(f"Number of simplices={cplx.num_simplices()}")
 
-diag = simplex_tree.persistence()
+diag = cplx.persistence()
 
-print(f"betti_numbers()={simplex_tree.betti_numbers()}")
+print(f"betti_numbers()={cplx.betti_numbers()}")
 
 if args.no_diagram == False:
     import matplotlib.pyplot as plot

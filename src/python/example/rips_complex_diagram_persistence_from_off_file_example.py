@@ -20,7 +20,7 @@ import gudhi as gd
 
 
 parser = argparse.ArgumentParser(
-    description="RipsComplex creation from " "points read in a OFF file.",
+    description="Vietoris-Rips complex creation from " "points read in a OFF file.",
     epilog="Example: "
     "example/rips_complex_diagram_persistence_from_off_file_example.py "
     "-f ../data/points/tore3D_300.off -a 0.6"
@@ -44,22 +44,21 @@ with open(args.file) as f:
     first_line = f.readline()
     if (first_line == "OFF\n") or (first_line == "nOFF\n"):
         print("##############################################################")
-        print("RipsComplex creation from points read in a OFF file")
+        print("Vietoris-Rips complex creation from points read in a OFF file")
 
-        message = "RipsComplex with max_edge_length=" + repr(args.max_edge_length)
+        message = "Vietoris-Rips complex with max_edge_length=" + repr(args.max_edge_length)
         print(message)
 
         point_cloud = gd.read_points_from_off_file(off_file=args.file)
-        rips_complex = gd.RipsComplex(
-            points=point_cloud, max_edge_length=args.max_edge_length
+        cplx = gd.filtrations.rips_complex(
+            points=point_cloud, max_edge_length=args.max_edge_length, max_dimension=args.max_dimension
         )
-        simplex_tree = rips_complex.create_simplex_tree(max_dimension=args.max_dimension)
 
-        print(f"Number of simplices={simplex_tree.num_simplices()}")
+        print(f"Number of simplices={cplx.num_simplices()}")
 
-        diag = simplex_tree.persistence()
+        diag = cplx.persistence()
 
-        print(f"betti_numbers()={simplex_tree.betti_numbers()}")
+        print(f"betti_numbers()={cplx.betti_numbers()}")
 
         if args.no_diagram == False:
             import matplotlib.pyplot as plot

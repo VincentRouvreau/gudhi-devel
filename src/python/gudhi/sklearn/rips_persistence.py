@@ -20,7 +20,7 @@ from scipy.sparse import coo_matrix
 from scipy.spatial import cKDTree
 from scipy.spatial.distance import pdist, squareform
 
-from .._ripser_ext import _lower, _full, _sparse, _lower_to_coo, _lower_cone_radius
+from ..filtrations._ripser_ext import _lower, _full, _sparse, _lower_to_coo, _lower_cone_radius
 from ..flag_filtration.edge_collapse import reduce_graph
 from .. import SimplexTree
 

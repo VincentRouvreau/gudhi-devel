@@ -19,7 +19,7 @@ import gudhi as gd
 
 
 parser = argparse.ArgumentParser(
-    description="RipsComplex creation from " "a correlation matrix read in a csv file.",
+    description="Vietoris-Rips complex creation from " "a correlation matrix read in a csv file.",
     epilog="Example: "
     "example/rips_complex_diagram_persistence_from_correlation_matrix_file_example.py "
     "-f ../data/correlation_matrix/lower_triangular_correlation_matrix.csv -e 12.0 -d 3"
@@ -49,9 +49,9 @@ print("bottleneck distance and persistence graphical tool will not work")
 print("properly, this is a known issue.")
 
 print("#####################################################################")
-print("RipsComplex creation from correlation matrix read in a csv file")
+print("Vietoris-Rips complex creation from correlation matrix read in a csv file")
 
-print(f"RipsComplex with min_edge_correlation={args.min_edge_correlation}")
+print(f"Vietoris-Rips complex with min_edge_correlation={args.min_edge_correlation}")
 
 correlation_matrix = gd.read_lower_triangular_matrix_from_csv_file(csv_file=args.file)
 # Given a correlation matrix M, we compute component-wise M'[i,j] = 1-M[i,j] to get a distance matrix:
@@ -60,16 +60,15 @@ distance_matrix = [
     for i in range(len(correlation_matrix))
 ]
 
-rips_complex = gd.RipsComplex(
-    distance_matrix=distance_matrix, max_edge_length=1.0 - args.min_edge_correlation
+cplx = gd.filtrations.rips_complex(
+    distance_matrix=distance_matrix, max_edge_length=1.0 - args.min_edge_correlation, max_dimension=args.max_dimension
 )
-simplex_tree = rips_complex.create_simplex_tree(max_dimension=args.max_dimension)
 
-print(f"Number of simplices={simplex_tree.num_simplices()}")
+print(f"Number of simplices={cplx.num_simplices()}")
 
-diag = simplex_tree.persistence()
+diag = cplx.persistence()
 
-print(f"betti_numbers()={simplex_tree.betti_numbers()}")
+print(f"betti_numbers()={cplx.betti_numbers()}")
 
 # invert the persistence diagram
 invert_diag = [

@@ -15,7 +15,7 @@ points, and a simplex is present if and only if its diameter is smaller than som
 parameters α defines a filtered simplicial complex, where the filtration value of a simplex is its diameter.
 The filtration can be restricted to values α smaller than some threshold, to reduce its size.  Beware that some
 people define the Rips complex using a bound of 2α instead of α, particularly when comparing it to an ambient
-Čech complex.  They end up with the same combinatorial object, but filtration values which are half of ours.
+Čech complex. They end up with the same combinatorial object, but filtration values which are half of ours.
 
 The input discrete metric space can be provided as a point cloud plus a distance function, or as a distance matrix.
 
@@ -76,17 +76,14 @@ Finally, it is asked to display information about the simplicial complex.
 
 .. testcode::
 
-    import gudhi
-    rips_complex = gudhi.RipsComplex(points=[[1, 1], [7, 0], [4, 6], [9, 6], [0, 14], [2, 19], [9, 17]],
-                                     max_edge_length=12.0)
+    from gudhi.filtrations import rips_complex
+    rips = rips_complex(points=[[1, 1], [7, 0], [4, 6], [9, 6], [0, 14], [2, 19], [9, 17]],
+                        max_edge_length=12.0, max_dimension=1)
 
-    simplex_tree = rips_complex.create_simplex_tree(max_dimension=1)
-    result_str = 'Rips complex is of dimension ' + repr(simplex_tree.dimension()) + ' - ' + \
-        repr(simplex_tree.num_simplices()) + ' simplices - ' + \
-        repr(simplex_tree.num_vertices()) + ' vertices.'
-    print(result_str)
+    print(f'Rips complex is of dimension {rips.dimension()} - {rips.num_simplices()} simplices -',
+          f'{rips.num_vertices()} vertices.')
     fmt = '%s -> %.2f'
-    for filtered_value in simplex_tree.get_filtration():
+    for filtered_value in rips.get_filtration():
         print(fmt % tuple(filtered_value))
 
 When launching (Rips maximal distance between 2 points is 12.0, is expanded
@@ -118,8 +115,8 @@ Notice that if we use
 
 .. code-block:: python
 
-    rips_complex = gudhi.RipsComplex(points=[[1, 1], [7, 0], [4, 6], [9, 6], [0, 14], [2, 19], [9, 17]],
-                                     max_edge_length=12.0, sparse=2)
+    rips = rips_complex(points=[[1, 1], [7, 0], [4, 6], [9, 6], [0, 14], [2, 19], [9, 17]],
+                        max_edge_length=12.0, sparse=2, max_dimension=1)
 
 asking for a very sparse version (theory only gives some guarantee on the meaning of the output if `sparse<1`),
 2 to 5 edges disappear, depending on the random vertex used to start the sparsification.
@@ -127,13 +124,13 @@ asking for a very sparse version (theory only gives some guarantee on the meanin
 Example step by step
 ^^^^^^^^^^^^^^^^^^^^
 
-While :doc:`RipsComplex <rips_complex_ref>` is convenient, for instance to build a simplicial complex in one line
+While :func:`~gudhi.filtrations.rips_complex` is convenient, for instance to build a simplicial complex in one line
 
 .. testcode::
 
-   import gudhi
+   from gudhi.filtrations import rips_complex
    points = [[1, 1], [7, 0], [4, 6], [9, 6], [0, 14], [2, 19], [9, 17]]
-   cplx = gudhi.RipsComplex(points=points, max_edge_length=12.0).create_simplex_tree(max_dimension=2)
+   cplx = rips_complex(points=points, max_edge_length=12.0, max_dimension=2)
 
 you can achieve the same result without this class for more flexibility
 
@@ -176,23 +173,19 @@ Finally, it is asked to display information about the simplicial complex.
 
 .. testcode::
 
-    import gudhi
-    rips_complex = gudhi.RipsComplex(distance_matrix=[[],
-                                                      [6.0827625303],
-                                                      [5.8309518948, 6.7082039325],
-                                                      [9.4339811321, 6.3245553203, 5],
-                                                      [13.0384048104, 15.6524758425, 8.94427191, 12.0415945788],
-                                                      [18.0277563773, 19.6468827044, 13.152946438, 14.7648230602, 5.3851648071],
-                                                      [17.88854382, 17.1172427686, 12.0830459736, 11, 9.4868329805, 7.2801098893]],
-                                     max_edge_length=12.0)
-
-    simplex_tree = rips_complex.create_simplex_tree(max_dimension=1)
-    result_str = 'Rips complex is of dimension ' + repr(simplex_tree.dimension()) + ' - ' + \
-        repr(simplex_tree.num_simplices()) + ' simplices - ' + \
-        repr(simplex_tree.num_vertices()) + ' vertices.'
-    print(result_str)
+    from gudhi.filtrations import rips_complex
+    rips = rips_complex(distance_matrix=[[],
+                                         [6.0827625303],
+                                         [5.8309518948, 6.7082039325],
+                                         [9.4339811321, 6.3245553203, 5],
+                                         [13.0384048104, 15.6524758425, 8.94427191, 12.0415945788],
+                                         [18.0277563773, 19.6468827044, 13.152946438, 14.7648230602, 5.3851648071],
+                                         [17.88854382, 17.1172427686, 12.0830459736, 11, 9.4868329805, 7.2801098893]],
+                        max_edge_length=12.0, max_dimension=1)
+    print(f'Rips complex is of dimension {rips.dimension()} - {rips.num_simplices()} simplices -',
+          f'{rips.num_vertices()} vertices.')
     fmt = '%s -> %.2f'
-    for filtered_value in simplex_tree.get_filtration():
+    for filtered_value in rips.get_filtration():
         print(fmt % tuple(filtered_value))
 
 When launching (Rips maximal distance between 2 points is 12.0, is expanded
@@ -237,7 +230,7 @@ Finally, it is asked to display information about the simplicial complex.
 
 .. testcode::
 
-    import gudhi
+    from gudhi.filtrations import rips_complex
     import numpy as np
 
     # User defined correlation matrix is:
@@ -253,15 +246,11 @@ Finally, it is asked to display information about the simplicial complex.
                                 [0.89, 0.61, 0.03, 0.7, 1.]], float)
 
     distance_matrix = 1 - correlation_matrix
-    rips_complex = gudhi.RipsComplex(distance_matrix=distance_matrix, max_edge_length=1.0)
-
-    simplex_tree = rips_complex.create_simplex_tree(max_dimension=1)
-    result_str = 'Rips complex is of dimension ' + repr(simplex_tree.dimension()) + ' - ' + \
-        repr(simplex_tree.num_simplices()) + ' simplices - ' + \
-        repr(simplex_tree.num_vertices()) + ' vertices.'
-    print(result_str)
+    rips = rips_complex(distance_matrix=distance_matrix, max_edge_length=1.0, max_dimension=1)
+    print(f'Rips complex is of dimension {rips.dimension()} - {rips.num_simplices()} simplices -',
+          f'{rips.num_vertices()} vertices.')
     fmt = '%s -> %.2f'
-    for filtered_value in simplex_tree.get_filtration():
+    for filtered_value in rips.get_filtration():
         print(fmt % tuple(filtered_value))
 
 When launching (Rips maximal distance between 2 points is 12.0, is expanded

@@ -12,17 +12,18 @@
 from math import sqrt
 import numpy as np
 
-from gudhi import RipsComplex
+from gudhi import RipsComplex, read_lower_triangular_matrix_from_csv_file
+from gudhi.filtrations import rips_complex
 
 
 def test_empty_rips():
-    rips_complex = RipsComplex()
+    rips = RipsComplex()
 
 
 def _test_rips_from_points(point_list):
-    rips_complex = RipsComplex(points=point_list, max_edge_length=42)
+    rips = RipsComplex(points=point_list, max_edge_length=42)
 
-    simplex_tree = rips_complex.create_simplex_tree(max_dimension=1)
+    simplex_tree = rips.create_simplex_tree(max_dimension=1)
 
     assert simplex_tree._is_persistence_defined() == False
 
@@ -101,9 +102,9 @@ def test_sparse_filtered_rips_from_numpy_points():
 
 
 def _test_rips_from_distance_matrix(distance_matrix):
-    rips_complex = RipsComplex(distance_matrix=distance_matrix, max_edge_length=42)
+    rips = RipsComplex(distance_matrix=distance_matrix, max_edge_length=42)
 
-    simplex_tree = rips_complex.create_simplex_tree(max_dimension=1)
+    simplex_tree = rips.create_simplex_tree(max_dimension=1)
 
     assert simplex_tree._is_persistence_defined() == False
 
@@ -242,3 +243,21 @@ def test_tensors():
         rips = RipsComplex(points=points)
     except ImportError:
         pass
+
+def test_filtration_rips_complex_function():
+    pts = np.array([[1, 1], [7, 0], [4, 6], [9, 6], [0, 14], [2, 19], [9, 17]])
+    nb_pts = pts.shape[0]
+    dists = np.zeros((nb_pts, nb_pts))
+    # Compute distance matrix with numpy to avoid scipy dependency
+    for i in range(nb_pts):
+        for j in range(nb_pts):
+            dists[i][j] = np.sqrt(np.sum((pts[i] - pts[j]) ** 2))
+    test_filename = 'test_filtration_rips_complex_function.csv'
+    delimiter = ','
+    np.savetxt(test_filename, dists, delimiter=delimiter)
+    sequence_dists = read_lower_triangular_matrix_from_csv_file(test_filename, separator=delimiter)
+    st1 = rips_complex(points=pts, max_edge_length=15.)
+    st2 = rips_complex(distance_matrix=dists, max_edge_length=15.)
+    st3 = rips_complex(distance_matrix=sequence_dists, max_edge_length=15.)
+    assert st1 == st2
+    assert st2 == st3

@@ -16,8 +16,9 @@ from typing import Literal, Optional
 from collections.abc import Sequence
 from numpy.typing import ArrayLike
 
-from gudhi import _rips_complex_ext as t
+from gudhi.filtrations import _rips_complex_ext as t
 from gudhi.simplex_tree import SimplexTree
+import numpy as np
 
 
 # RipsComplex python interface
@@ -76,3 +77,46 @@ class RipsComplex(t.Rips_complex_interface):
         stree = SimplexTree()
         super().create_simplex_tree(stree, max_dimension)
         return stree
+
+def rips_complex(
+    *,
+    points: ArrayLike = [],
+    distance_matrix: ArrayLike = [],
+    max_edge_length: float = float("inf"),
+    sparse: Optional[float] = None,
+    max_dimension: int = 1
+):
+    """Construct and return a simplex tree encoding the Vietoris–Rips filtration.
+
+    :param points: A list of points in d-Dimension.
+    :type points: Sequence[Sequence[float]] or any array like object of ndim 2 and dtype convertible to float.
+
+    Or
+
+    :param distance_matrix: A distance matrix (full square or lower triangular).
+    :type distance_matrix: Sequence[Sequence[float]] (square or just the lower triangle) or any square array like
+        object of dtype convertible to float.
+
+    And in both cases
+
+    :param max_edge_length: Maximal edge length. All edges of the graph strictly greater than `threshold` are not
+        inserted in the graph.
+    :type max_edge_length: float
+    :param sparse: If this is not None, it switches to building a sparse Rips and represents the approximation
+        parameter epsilon.
+    :type sparse: float
+    :param max_dimension: graph expansion for Rips until this given maximal dimension.
+    :type max_dimension: int
+    
+    :returns: A simplex tree encoding the Vietoris–Rips filtration.
+    :rtype: SimplexTree
+    """
+    # Fix https://github.com/GUDHI/gudhi-devel/issues/1169 - enhancement only for numpy squared distance matrices
+    if isinstance(distance_matrix, np.ndarray):
+        st = SimplexTree.create_from_array(distance_matrix)
+        st.expansion(max_dimension=max_dimension)
+        if not np.isinf(max_edge_length):
+            st.prune_above_filtration(max_edge_length)
+        return st
+    r = RipsComplex(points=points, distance_matrix=distance_matrix, max_edge_length=max_edge_length, sparse=sparse)
+    return r.create_simplex_tree(max_dimension=max_dimension)

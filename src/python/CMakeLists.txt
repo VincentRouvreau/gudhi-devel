@@ -218,6 +218,7 @@ find_package(nanobind CONFIG REQUIRED)
 # Add src/python/include directory
 include_directories(include)
 add_subdirectory("gudhi")
+add_subdirectory("gudhi/filtrations")
 add_subdirectory("gudhi/clustering")
 add_subdirectory("gudhi/datasets/generators")
 

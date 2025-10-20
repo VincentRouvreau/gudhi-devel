@@ -6,6 +6,8 @@
 Rips complex reference manual
 =============================
 
+.. autofunction:: gudhi.filtrations.rips_complex
+
 .. autoclass:: gudhi.RipsComplex
    :members:
    :undoc-members:

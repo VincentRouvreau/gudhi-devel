@@ -17,8 +17,9 @@ import pytest
 
 from gudhi.datasets.generators import points
 from gudhi.sklearn import RipsPersistence
-from gudhi import RipsComplex, SimplexTree
-from gudhi._ripser_ext import _lower, _full, _sparse, _lower_to_coo, _lower_cone_radius
+from gudhi import SimplexTree
+from gudhi.filtrations import rips_complex
+from gudhi.filtrations._ripser_ext import _lower, _full, _sparse, _lower_to_coo, _lower_cone_radius
 from gudhi import bottleneck_distance
 
 
@@ -115,7 +116,7 @@ def cmp_rips(point_cloud):
     assert cr < 2.0
 
     ## Compute with the SimplexTree
-    stree = RipsComplex(distance_matrix=dists).create_simplex_tree(max_dimension=2)
+    stree = rips_complex(distance_matrix=dists, max_dimension=2)
     stree.compute_persistence(homology_coeff_field=field, persistence_dim_max=True)
     dgm0 = stree.persistence_intervals_in_dimension(0)
     dgm1 = stree.persistence_intervals_in_dimension(1)

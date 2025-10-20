@@ -1,7 +1,5 @@
 nanobind_add_module_with_targets(_pers_cub_low_dim_ext _pers_cub_low_dim.cc TARGETS TBB::tbb)
 nanobind_add_module_with_targets(_cubical_complex_ext _cubical_complex.cc TARGETS TBB::tbb)
-nanobind_add_module_with_targets(_ripser_ext _ripser.cc)
-nanobind_add_module_with_targets(_rips_complex_ext _rips_complex.cc TARGETS TBB::tbb)
 nanobind_add_module_with_targets(_edge_collapse_ext _edge_collapse.cc TARGETS TBB::tbb)
 nanobind_add_module_with_targets(_simplex_tree_ext _simplex_tree.cc TARGETS TBB::tbb)
 nanobind_add_module_with_targets(_reader_utils_ext _reader_utils.cc)
@@ -16,4 +14,3 @@ nanobind_add_module_with_targets(_tangential_complex_ext _tangential_complex.cc 
 nanobind_add_module_with_targets(_euclidean_witness_complex_ext _euclidean_witness_complex.cc TARGETS Eigen3::Eigen CGAL::CGAL TBB::tbb)
 nanobind_add_module_with_targets(_euclidean_strong_witness_complex_ext _euclidean_strong_witness_complex.cc TARGETS Eigen3::Eigen CGAL::CGAL TBB::tbb)
 nanobind_add_module_with_targets(_subsampling_ext _subsampling.cc TARGETS Eigen3::Eigen CGAL::CGAL TBB::tbb)
-

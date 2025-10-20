@@ -403,7 +403,7 @@ class SimplexTree(t._Simplex_tree_python_interface):
         expansion has the same persistent homology, using a technique known as edge collapses
         (see :cite:`edgecollapsearxiv`).
 
-        A natural application is to get a simplex tree of dimension 1 from :class:`~gudhi.RipsComplex`,
+        A natural application is to get a simplex tree of dimension 1 from :func:`~gudhi.filtrations.rips_complex`,
         then collapse edges, perform :meth:`expansion()` and finally compute persistence
         (cf. :download:`rips_complex_edge_collapse_example.py <../example/rips_complex_edge_collapse_example.py>`).
 

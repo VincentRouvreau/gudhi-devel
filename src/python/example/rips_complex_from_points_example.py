@@ -13,18 +13,16 @@
 __license__ = "MIT"
 
 
-from gudhi import RipsComplex
+from gudhi.filtrations import rips_complex
 
 
 print("#####################################################################")
-print("RipsComplex creation from points")
-rips = RipsComplex(points=[[0, 0], [1, 0], [0, 1], [1, 1]], max_edge_length=42)
-
-simplex_tree = rips.create_simplex_tree(max_dimension=1)
+print("Vietoris-Rips complex creation from points")
+cplx = rips_complex(points=[[0, 0], [1, 0], [0, 1], [1, 1]], max_edge_length=42, max_dimension=1)
 
 print("filtrations=")
-for simplex_with_filtration in simplex_tree.get_filtration():
+for simplex_with_filtration in cplx.get_filtration():
     print("(%s, %.2f)" % tuple(simplex_with_filtration))
 
-print("star([0])=", simplex_tree.get_star([0]))
-print("coface([0], 1)=", simplex_tree.get_cofaces([0], 1))
+print("star([0])=", cplx.get_star([0]))
+print("coface([0], 1)=", cplx.get_cofaces([0], 1))
