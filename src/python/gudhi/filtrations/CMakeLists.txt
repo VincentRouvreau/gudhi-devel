@@ -1,0 +1,2 @@
+nanobind_add_module_with_targets(_ripser_ext _ripser.cc)
+nanobind_add_module_with_targets(_rips_complex_ext _rips_complex.cc TARGETS TBB::tbb)
