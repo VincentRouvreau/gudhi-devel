@@ -39,10 +39,10 @@ class Cubical_complex_interface : public Bitmap_cubical_complex<Bitmap_cubical_c
   
   explicit Cubical_complex_interface(nb::ndarray<const int, nb::ndim<1>, nb::c_contig >& dim,
                                      nb::ndarray<const double, nb::ndim<1>, nb::c_contig >& cells,
-                                     bool vertices)
+                                     bool input_top_cells)
     : Base(std::vector<unsigned>(dim.data(), dim.data() + dim.size()),
            std::vector<double>(cells.data(), cells.data() + cells.size()),
-           vertices) {}
+           input_top_cells) {}
   // TODO: nanobind is probably making a copy here (to verify), as it is only used privately we could think
   // at another strategy?
   // But as the vector is probably very small (number of dimensions), it is perhaps not worth it.
@@ -95,7 +95,9 @@ NB_MODULE(_cubical_complex_ext, m)
   m.attr("__license__") = "MIT";
   
   nb::class_<CC>(m, "_Bitmap_cubical_complex_interface")
-      .def(nb::init<nb::ndarray<const int, nb::ndim<1>, nb::c_contig >&, nb::ndarray<const double, nb::ndim<1>, nb::c_contig >&, bool>(),
+      .def(nb::init<nb::ndarray<const int, nb::ndim<1>, nb::c_contig >&,
+                    nb::ndarray<const double, nb::ndim<1>, nb::c_contig >&,
+                    bool>(),
            nb::call_guard<nb::gil_scoped_release>())
       .def(nb::init<const std::string&>(), nb::call_guard<nb::gil_scoped_release>())
       .def("num_simplices", &CC::num_simplices, nb::call_guard<nb::gil_scoped_release>(), R"doc(

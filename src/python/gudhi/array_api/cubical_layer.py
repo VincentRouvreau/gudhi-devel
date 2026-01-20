@@ -16,80 +16,27 @@ from ..cubical_complex import CubicalComplex
 from typing import Iterable, Optional
 from .._cubical_complex_ext import _Bitmap_cubical_complex_interface, _Cubical_complex_persistence_interface
 
-######################
-# Cubical filtration #
-######################
-
-
-# The parameters of the model are the pixel values.
-
-def _Cubical(xp, Xflat, Xdim, dimensions, homology_coeff_field):
-    # Parameters: Xflat (flattened image),
-    #             Xdim (shape of non-flattened image)
-    #             dimensions (homology dimensions)
-
-    # Compute the persistence pairs with Gudhi
-    # We reverse the dimensions because CubicalComplex uses Fortran ordering
-    print(f"Xdim dtype = {xp.asarray(Xdim[::-1]).dtype} - Xflat dtype = {xp.asarray(Xflat).dtype}")
-    cc = _Bitmap_cubical_complex_interface(xp.asarray(Xdim[::-1]), xp.asarray(Xflat), True)
-    pers = _Cubical_complex_persistence_interface(cc, True)
-    pers._compute_persistence(homology_coeff_field, 0.)
-
-    # Retrieve and output image indices/pixels corresponding to positive and negative simplices
-    #cof_pp = pers.cofaces_of_persistence_pairs()
-    cof_pp = [[], []]
-    # TODO: verify the return type of cofaces_of_cubical_persistence_pairs() by nanobind
-    # a copy is perhaps avoidable?
-    pr = np.array(pers._cofaces_of_cubical_persistence_pairs())
-
-    max_dim = 0
-    if len(pr) > 0:
-        max_dim = np.max(pr[:, 0]) + 1
-    
-    ess_bool = (pr[:, 2] == -1)
-    reg_bool = np.invert(ess_bool)
-    
-    ess_ind = np.argwhere(ess_bool)[:, 0]
-    ess = pr[ess_ind]
-    reg_ind = np.argwhere(reg_bool)[:, 0]
-    reg = pr[reg_ind]
-
-    for dim in range(max_dim):
-        hidxs = np.argwhere(ess[:, 0] == dim)[:, 0]
-        #print(f"ess [{hidxs=}] {ess[hidxs][:, 1]}")
-        cof_pp[1].append(ess[hidxs][:, 1])
-
-        hidxs = np.argwhere(reg[:, 0] == dim)[:, 0]
-        #print(f"reg [{hidxs=}] {reg[hidxs][:, 1:]}")
-        cof_pp[0].append(reg[hidxs][:, 1:])
-
-    L_cofs = []
-    for dim in dimensions:
-        try:
-            cof = xp.asarray(cof_pp[0][dim])
-        except IndexError:
-            cof = xp.asarray([])
-
-        L_cofs.append(cof)
-
-    return L_cofs
-
 
 class CubicalLayer():
     """
     Layer for computing the persistent homology of a cubical complex
     """
-    def __init__(self, homology_dimensions: Iterable[int], min_persistence: Optional[Iterable[float]] = None,
-                 homology_coeff_field: int = 11):
+    def __init__(self, homology_dimensions: Iterable[int], input_type: str = "top_dimensional_cells",
+                 min_persistence: Optional[Iterable[float]] = None, homology_coeff_field: int = 11):
         """Constructor for the CubicalLayer class
 
         Parameters:
             homology_dimensions: list of homology dimensions.
+            input_type: 'top_dimensional_cells' if the filtration values passed to `__call__()` are those of the
+                top-dimensional cells, 'vertices' if they correspond to the vertices.
             min_persistence: minimum distance-to-diagonal of the points in the output persistence diagrams
                 (default None, in which case `0.` is used for all dimensions)
             homology_coeff_field: homology field coefficient. Must be a prime number. Default value is 11.
         """
         self.dimensions = homology_dimensions
+        if input_type not in ["top_dimensional_cells", "vertices"]:
+            raise ValueError("input_type can only be 'top_dimensional_cells' or 'vertices'")
+        self.input_top_cells = (input_type == "top_dimensional_cells")
         self.min_persistence = min_persistence
         if min_persistence is None:
             self.min_persistence = np.zeros(len(self.dimensions), dtype=np.float64)
@@ -117,17 +64,35 @@ class CubicalLayer():
         # Compute pixels associated to positive and negative simplices
         # Don't compute gradient for this operation
         Xflat = xp.reshape(X, [-1])
-        
-        indices_list = _Cubical(xp, Xflat, X.shape, self.dimensions, self.hcf)
+        # We reverse the dimensions because CubicalComplex uses Fortran ordering
+        Xdim = xp.asarray(X.shape[::-1])
         
         # index of minimum pixel value for essential persistence diagram
         index_essential = xp.argmin(Xflat)
+
+        cc = _Bitmap_cubical_complex_interface(Xdim, Xflat, self.input_top_cells)
+        pers = _Cubical_complex_persistence_interface(cc, True)
+        pers._compute_persistence(self.hcf, 0.)
+        
+        # TODO: verify the return type of cofaces_of_cubical_persistence_pairs() by nanobind
+        # a copy is perhaps avoidable?
+        if self.input_top_cells:
+            pers_pairs = np.array(pers._cofaces_of_cubical_persistence_pairs())
+        else:
+            pers_pairs = np.array(pers._vertices_of_cubical_persistence_pairs())
+        
+        # Get only finite persistence pairs - when top-dimensional coface of negative simplex is not -1
+        finite_pers_pairs_ind = np.argwhere(pers_pairs[:, 2] != -1)[:, 0]
+        finite_pers_pairs = pers_pairs[finite_pers_pairs_ind]
+        
         # Get persistence diagram by simply picking the corresponding entries in the image
         self.dgms = []
         for idx_dim, dimension in enumerate(self.dimensions):
             # xp.take requires a vector of indices with pytorch (but can be an array for numpy)
+            hidxs = np.argwhere(finite_pers_pairs[:, 0] == dimension)[:, 0]
+            indices_flat = np.reshape(finite_pers_pairs[hidxs][:, 1:], [-1])
             # Force dtype - maybe better somewhere else - maybe comes when empty
-            indices_flat = xp.asarray(xp.reshape(indices_list[idx_dim], [-1]), dtype=index_essential.dtype)
+            indices_flat = xp.asarray(indices_flat, dtype=index_essential.dtype)
             finite_dgm = xp.reshape(xp.take(Xflat, indices_flat), [-1, 2])
             if dimension == 0:
                 essential_dgm = xp.reshape(xp.take(Xflat, index_essential), [-1, 1])

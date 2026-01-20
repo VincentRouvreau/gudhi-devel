@@ -69,3 +69,22 @@ cl(X)
 #        [11., 14.],
 #        [11., 16.],
 #        [10., 16.]], dtype=float32), Array([], shape=(0, 1), dtype=float32))]
+
+
+### input_type="vertices"
+
+cp = CubicalPersistence(homology_dimensions=[0, 1], input_type="vertices", n_jobs=-2)
+cp.fit_transform([digits])
+# [[array([[ 0.,  8.],
+#        [ 0., 12.],
+#        [ 0., inf]]), array([[10., 11.],
+#        [15., 16.]])]]
+
+from gudhi.array_api import CubicalLayer
+import torch
+X = torch.tensor(digits)
+cl = CubicalLayer(homology_dimensions=[0, 1], input_type="vertices")
+cl(X)
+# [(tensor([[ 0.,  8.],
+#         [ 0., 12.]], dtype=torch.float64), tensor([[0.]], dtype=torch.float64)), (tensor([[10., 11.],
+#         [15., 16.]], dtype=torch.float64), tensor([], size=(0, 1), dtype=torch.float64))]
