@@ -14,7 +14,7 @@ from array_api_compat import get_namespace
 import numpy as np
 from ..cubical_complex import CubicalComplex
 from typing import Iterable, Optional
-
+from .._cubical_complex_ext import _Bitmap_cubical_complex_interface, _Cubical_complex_persistence_interface
 
 ######################
 # Cubical filtration #
@@ -30,11 +30,38 @@ def _Cubical(xp, Xflat, Xdim, dimensions, homology_coeff_field):
 
     # Compute the persistence pairs with Gudhi
     # We reverse the dimensions because CubicalComplex uses Fortran ordering
-    cc = CubicalComplex(dimensions=Xdim[::-1], top_dimensional_cells=np.asarray(Xflat))
-    cc.compute_persistence(homology_coeff_field=homology_coeff_field)
+    print(f"Xdim dtype = {xp.asarray(Xdim[::-1]).dtype} - Xflat dtype = {xp.asarray(Xflat).dtype}")
+    cc = _Bitmap_cubical_complex_interface(xp.asarray(Xdim[::-1]), xp.asarray(Xflat), True)
+    pers = _Cubical_complex_persistence_interface(cc, True)
+    pers._compute_persistence(homology_coeff_field, 0.)
 
     # Retrieve and output image indices/pixels corresponding to positive and negative simplices
-    cof_pp = cc.cofaces_of_persistence_pairs()
+    #cof_pp = pers.cofaces_of_persistence_pairs()
+    cof_pp = [[], []]
+    # TODO: verify the return type of cofaces_of_cubical_persistence_pairs() by nanobind
+    # a copy is perhaps avoidable?
+    pr = np.array(pers._cofaces_of_cubical_persistence_pairs())
+
+    max_dim = 0
+    if len(pr) > 0:
+        max_dim = np.max(pr[:, 0]) + 1
+    
+    ess_bool = (pr[:, 2] == -1)
+    reg_bool = np.invert(ess_bool)
+    
+    ess_ind = np.argwhere(ess_bool)[:, 0]
+    ess = pr[ess_ind]
+    reg_ind = np.argwhere(reg_bool)[:, 0]
+    reg = pr[reg_ind]
+
+    for dim in range(max_dim):
+        hidxs = np.argwhere(ess[:, 0] == dim)[:, 0]
+        #print(f"ess [{hidxs=}] {ess[hidxs][:, 1]}")
+        cof_pp[1].append(ess[hidxs][:, 1])
+
+        hidxs = np.argwhere(reg[:, 0] == dim)[:, 0]
+        #print(f"reg [{hidxs=}] {reg[hidxs][:, 1:]}")
+        cof_pp[0].append(reg[hidxs][:, 1:])
 
     L_cofs = []
     for dim in dimensions:
@@ -99,7 +126,8 @@ class CubicalLayer():
         self.dgms = []
         for idx_dim, dimension in enumerate(self.dimensions):
             # xp.take requires a vector of indices with pytorch (but can be an array for numpy)
-            indices_flat = xp.reshape(indices_list[idx_dim], [-1])
+            # Force dtype - maybe better somewhere else - maybe comes when empty
+            indices_flat = xp.asarray(xp.reshape(indices_list[idx_dim], [-1]), dtype=index_essential.dtype)
             finite_dgm = xp.reshape(xp.take(Xflat, indices_flat), [-1, 2])
             if dimension == 0:
                 essential_dgm = xp.reshape(xp.take(Xflat, index_essential), [-1, 1])

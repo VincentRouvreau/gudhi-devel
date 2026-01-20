@@ -102,7 +102,7 @@ class CubicalComplex(_Bitmap_cubical_complex_interface):
             array = np.asarray(array, order="F")
             dimensions = array.shape
             array = array.ravel(order="F")
-        super().__init__(dimensions, array, vertices is None)
+        super().__init__(np.asarray(dimensions), np.asarray(array), vertices is None)
 
     def _is_persistence_defined(self):
         """Returns true if Persistence pointer is not None."""
