@@ -33,7 +33,7 @@ cl.call(X)
 from gudhi.array_api import CubicalLayer
 import torch
 X = torch.tensor(digits)
-cl = CubicalLayer(homology_dimensions=[0, 1])
+cl = CubicalLayer(homology_dimensions=[0, 1], enable_autodiff=False)
 cl(X)
 # [(tensor([[0., 8.],
 #         [0., 9.]], dtype=torch.float64), tensor([[0.]], dtype=torch.float64)), (tensor([[10., 11.],

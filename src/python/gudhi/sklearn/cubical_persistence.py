@@ -15,13 +15,7 @@ from numpy.typing import ArrayLike
 from typing import Union, Literal, Optional
 from sklearn.base import BaseEstimator, TransformerMixin
 from joblib import Parallel, delayed
-
-from .. import CubicalComplex
-from .._pers_cub_low_dim_ext import (
-    _persistence_on_a_line,
-    _persistence_on_rectangle_from_top_cells,
-)
-
+from ..array_api.cubical_layer import cubical_persistence
 
 # Mermaid sequence diagram - https://mermaid-js.github.io/mermaid-live-editor/
 # sequenceDiagram
@@ -88,41 +82,6 @@ class CubicalPersistence(BaseEstimator, TransformerMixin):
             self._dim_list = self._dim_list.reshape(1)
         return self
 
-    def __transform(self, cells):
-        cells = np.asarray(cells)
-        if len(cells.shape) == 1 and self.min_persistence >= 0:
-            res = _persistence_on_a_line(cells)
-            if self.min_persistence > 0:
-                # It would be more efficient inside _persistence_on_a_line, but not worth it?
-                res = res[res[:, 1] - res[:, 0] > self.min_persistence]
-            # Wasteful if dim_list_ does not contain 0, but that seems unlikely.
-            return [res if i == 0 else np.empty((0, 2)) for i in self._dim_list]
-
-        if len(cells.shape) == 2 and self.input_type == "top_dimensional_cells" and self.min_persistence >= 0:
-            if cells.size == 0:
-                diags = [np.empty((0, 2)), np.empty((0, 2))]
-            elif cells.shape[0] == 1 or cells.shape[1] == 1:
-                diags = [_persistence_on_a_line(cells.reshape(-1)), np.empty((0, 2))]
-            elif cells.shape[0] == 2:
-                diags = [_persistence_on_a_line(cells.min(0)), np.empty((0, 2))]
-            elif cells.shape[1] == 2:
-                diags = [_persistence_on_a_line(cells.min(1)), np.empty((0, 2))]
-            else:
-                diags = _persistence_on_rectangle_from_top_cells(cells, self.min_persistence)
-            return [diags[i] if i in (0, 1) else np.empty((0, 2)) for i in self._dim_list]
-
-        if self.input_type == "top_dimensional_cells":
-            cubical_complex = CubicalComplex(top_dimensional_cells=cells)
-        elif self.input_type == "vertices":
-            cubical_complex = CubicalComplex(vertices=cells)
-        else:
-            raise ValueError("input_type can only be 'top_dimensional_cells' or 'vertices'")
-        cubical_complex.compute_persistence(
-            homology_coeff_field=self.homology_coeff_field,
-            min_persistence=self.min_persistence,
-        )
-        return [cubical_complex.persistence_intervals_in_dimension(dim) for dim in self._dim_list]
-
     def transform(self, X, Y=None):
         """Compute all the cubical complexes and their associated persistence diagrams.
 
@@ -137,7 +96,16 @@ class CubicalPersistence(BaseEstimator, TransformerMixin):
         :rtype: list of (,2) array_like or list of list of (,2) array_like
         """
         # threads is preferred as cubical construction and persistence computation releases the GIL
-        res = Parallel(n_jobs=self.n_jobs, prefer="threads")(delayed(self.__transform)(cells) for cells in X)
+        res = Parallel(n_jobs=self.n_jobs, prefer="threads")(
+            delayed(cubical_persistence)(
+                np.asarray(cells),
+                homology_dimensions=self._dim_list,
+                input_type=self.input_type,
+                min_persistence=self.min_persistence,
+                homology_coeff_field=self.homology_coeff_field,
+            )
+            for cells in X
+        )
         # cf. `fit`
         if self._unwrap:
             res = [d[0] for d in res]
