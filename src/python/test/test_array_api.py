@@ -33,7 +33,7 @@ cl.call(X)
 from gudhi.array_api import CubicalLayer
 import torch
 X = torch.tensor(digits)
-cl = CubicalLayer(homology_dimensions=[0, 1], enable_autodiff=False)
+cl = CubicalLayer(homology_dimensions=[0, 1])
 cl(X)
 # [(tensor([[0., 8.],
 #         [0., 9.]], dtype=torch.float64), tensor([[0.]], dtype=torch.float64)), (tensor([[10., 11.],
@@ -46,6 +46,15 @@ cl = CubicalLayer(homology_dimensions=[0, 1])
 cl(X)
 dgm = cl(X)[0][0]
 loss = torch.sum(torch.square(0.5 * (dgm[:, 1] - dgm[:, 0])))
+grads = torch.autograd.grad(loss, X)
+print(grads)
+# (tensor([[ 0.0000,  0.0000,  0.0000],
+#         [ 0.0000,  0.5000,  0.0000],
+#         [ 0.0000,  0.0000, -0.5000]]),)
+
+from gudhi.array_api import cubical_persistence
+dgm = cubical_persistence(X, homology_dimensions=[0, 1])
+loss = torch.sum(torch.square(0.5 * (dgm[0][0][:, 1] - dgm[0][0][:, 0])))
 grads = torch.autograd.grad(loss, X)
 print(grads)
 # (tensor([[ 0.0000,  0.0000,  0.0000],

@@ -273,6 +273,18 @@ Run time dependencies
 These third party dependencies are detected by Python `import` mechanism at run time.
 They can be installed when required.
 
+Array API compatibility
+-----------------------
+
+In order to reduce code duplication, we use
+`Array API compatibility <https://data-apis.org/array-api-compat/>`_ which
+wraps arrays from PyTorch, JAX, NumPy, CuPy, ... in a common interface.
+Note that some Scikit-learn interfaces are using this wrapper and that
+TensorFlow is not available with this wrapper.
+
+Some Python functions can handle automatic differentiation (possibly only when
+a flag `preserve_gradient=True` is used with PyTorch or JAX tensors).
+
 EagerPy
 -------
 
