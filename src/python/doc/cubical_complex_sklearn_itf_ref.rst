@@ -11,7 +11,7 @@ Cubical complex persistence scikit-learn like interface
 
    * - :Since: GUDHI 3.6.0
      - :License: MIT
-     - :Requires: `Scikit-learn <installation.html#scikit-learn>`_
+     - :Requires: `Scikit-learn <installation.html#scikit-learn>`_,  `array-api-compat <installation.html#array-api-compatibility>`_
 
 Cubical complex persistence scikit-learn like interface example
 ---------------------------------------------------------------

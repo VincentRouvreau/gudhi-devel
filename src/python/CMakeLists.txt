@@ -163,6 +163,12 @@ if(SPHINX-AUTODOC-TYPEHINTS_FOUND)
 else()
   disable_python_documentation("sphinx-autodoc-typehints")
 endif()
+if(ARRAY-API-COMPAT_FOUND)
+  add_gudhi_debug_info("array-api-compat version ${ARRAY-API-COMPAT_VERSION}")
+else()
+  disable_python_documentation("array-api-compat")
+endif()
+
 if(NETWORKX_FOUND)
   add_gudhi_debug_info("NetworkX version ${NETWORKX_VERSION}")
 endif()
@@ -273,7 +279,7 @@ add_gudhi_py_test(test_cubical_complex)
 add_gudhi_py_test(test_cubical_persistence_low_dim)
 
 # Datasets are fetched for these tests
-if(SCIKIT-LEARN_FOUND AND WITH_GUDHI_REMOTE_TEST)
+if(SCIKIT-LEARN_FOUND AND ARRAY-API-COMPAT_FOUND AND WITH_GUDHI_REMOTE_TEST)
   add_gudhi_py_test(test_sklearn_cubical_persistence)
 
   add_test(NAME cubical_complex_sklearn_itf_py_test

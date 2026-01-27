@@ -21,7 +21,6 @@ from .._pers_cub_low_dim_ext import (
 )
 
 
-
 def _persistence_from_cells_without_autodiff(
     cells,
     homology_dimensions: Iterable[int],
@@ -119,16 +118,17 @@ def _persistence_from_cells_with_autodiff(
             dgms.append((finite_dgm, essential_dgm))
     return dgms
 
+
 def cubical_persistence(
     cells,
     homology_dimensions: Iterable[int],
     input_type: Literal["top_dimensional_cells", "vertices"] = "top_dimensional_cells",
     min_persistence: float = 0.0,
     homology_coeff_field: int = 11,
-    preserve_gradient: bool = True
+    preserve_gradient: bool = True,
 ):
     """
-    Constructs for the CubicalPersistence class.
+    Returns the persistent homology bar code from the cubical complex.
     Parameters:
         homology_dimensions: The returned persistence diagrams dimension(s).
         input_type: 'top_dimensional_cells' if the filtration values passed are those of the top-dimensional cells,
@@ -137,20 +137,23 @@ def cubical_persistence(
         min_persistence: The minimum persistence value to take into account (strictly greater than
             `min_persistence`). Default value is `0.0`. Set `min_persistence` to `-1.0` to see all values.
         preserve_gradient: Shall the function preserve the input gradient or not. Default value is `True`.
-            Faster when set to `False`. If the input is a NumPy array, `preserve_gradient` is forced to `False`.
+            Faster when set to `False`. If the input is not a PyTorch or JAX array, `preserve_gradient` is forced to
+            `False`.
     """
     if input_type not in ["top_dimensional_cells", "vertices"]:
         raise ValueError("input_type can only be 'top_dimensional_cells' or 'vertices'")
-    
-    input_is_from_top_cells = (input_type == "top_dimensional_cells")
+
+    input_is_from_top_cells = input_type == "top_dimensional_cells"
     possibly_with_gradient = is_torch_array(cells) or is_jax_array(cells)
     if possibly_with_gradient and preserve_gradient == True:
-        return _persistence_from_cells_with_autodiff(cells, homology_dimensions, input_is_from_top_cells,
-                                                     min_persistence, homology_coeff_field)
+        return _persistence_from_cells_with_autodiff(
+            cells, homology_dimensions, input_is_from_top_cells, min_persistence, homology_coeff_field
+        )
     else:
-        return _persistence_from_cells_without_autodiff(cells, homology_dimensions, input_is_from_top_cells,
-                                                        min_persistence, homology_coeff_field)
-        
+        return _persistence_from_cells_without_autodiff(
+            cells, homology_dimensions, input_is_from_top_cells, min_persistence, homology_coeff_field
+        )
+
 
 class CubicalLayer:
     """
@@ -161,7 +164,7 @@ class CubicalLayer:
         self,
         homology_dimensions: Iterable[int],
         input_type: str = "top_dimensional_cells",
-        min_persistence: float = 0.,
+        min_persistence: float = 0.0,
         homology_coeff_field: int = 11,
     ):
         """Constructor for the CubicalLayer class
