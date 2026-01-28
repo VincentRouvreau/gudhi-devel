@@ -105,17 +105,25 @@ def _persistence_from_cells_with_autodiff(
         finite_dgm = xp.reshape(xp.take(Xflat, indices_flat), [-1, 2])
         if dimension == 0:
             essential_dgm = xp.reshape(xp.take(Xflat, index_essential), [-1, 1])
+            # Extend with a +inf value at the end for essential diagram to return a bar code [birth, +inf]
+            essential_dgm = xp.concat((essential_dgm, xp.asarray([[xp.inf]])), axis=1)
         else:
-            essential_dgm = xp.zeros([0, 1], dtype=cells.dtype)
+            essential_dgm = xp.zeros([0, 2], dtype=cells.dtype)
 
         if min_persistence >= 0:
             pers = xp.abs(finite_dgm[:, 1] - finite_dgm[:, 0])
             mask = pers > min_persistence
             idx = xp.nonzero(mask)[0]
             finite_dgm = xp.take(finite_dgm, idx, axis=0)
-            dgms.append((finite_dgm, essential_dgm))
+        
+        if dimension == 0:
+            essential_dgm = xp.reshape(xp.take(Xflat, index_essential), [-1, 1])
+            # Extend with a +inf value at the end for essential diagram to return a bar code [birth, +inf]
+            essential_dgm = xp.concat((essential_dgm, xp.asarray([[xp.inf]])), axis=1)
+            dgm = xp.concat((finite_dgm, essential_dgm))
         else:
-            dgms.append((finite_dgm, essential_dgm))
+            dgm = finite_dgm
+        dgms.append(dgm)
     return dgms
 
 
