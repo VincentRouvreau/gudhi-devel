@@ -171,7 +171,7 @@ class CubicalLayer:
     def __init__(
         self,
         homology_dimensions: Iterable[int],
-        input_type: str = "top_dimensional_cells",
+        input_type: Literal["top_dimensional_cells", "vertices"] = "top_dimensional_cells",
         min_persistence: float = 0.0,
         homology_coeff_field: int = 11,
     ):
