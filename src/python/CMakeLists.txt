@@ -288,6 +288,10 @@ if(SCIKIT-LEARN_FOUND AND ARRAY-API-COMPAT_FOUND AND WITH_GUDHI_REMOTE_TEST)
            ${Python_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/example/cubical_complex_sklearn_itf.py")
 endif()
 
+if(ARRAY-API-COMPAT_FOUND)
+  add_gudhi_py_test(test_cubical_array_api)
+endif()
+
 # Test examples
 if (TARGET CGAL::CGAL AND TARGET Eigen3::Eigen)
   # Bottleneck and Alpha
