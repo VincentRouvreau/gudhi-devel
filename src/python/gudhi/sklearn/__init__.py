@@ -1,10 +1,17 @@
-from .cubical_persistence import CubicalPersistence
 from .rips_persistence import RipsPersistence
 
 __all__ = [
-    'CubicalPersistence',
     'RipsPersistence',
 ]
+
+try:
+    # If no array_api_compat
+    from .cubical_persistence import CubicalPersistence
+    __all__ += [
+        'CubicalPersistence',
+    ]
+except ModuleNotFoundError:
+    pass
 
 try:
     # if no CGAL
