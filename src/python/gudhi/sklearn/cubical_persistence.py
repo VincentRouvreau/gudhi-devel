@@ -15,6 +15,7 @@ from numpy.typing import ArrayLike
 from typing import Union, Literal, Optional
 from sklearn.base import BaseEstimator, TransformerMixin
 from joblib import Parallel, delayed
+from array_api_compat import numpy as numpy_namespace
 from ..array_api.cubical_layer import cubical_persistence
 
 # Mermaid sequence diagram - https://mermaid-js.github.io/mermaid-live-editor/
@@ -103,6 +104,7 @@ class CubicalPersistence(BaseEstimator, TransformerMixin):
                 input_type=self.input_type,
                 min_persistence=self.min_persistence,
                 homology_coeff_field=self.homology_coeff_field,
+                array_api_namespace=numpy_namespace,
             )
             for cells in X
         )

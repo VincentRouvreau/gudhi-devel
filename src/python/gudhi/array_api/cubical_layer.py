@@ -10,10 +10,12 @@
 __license__ = "MIT"
 
 
-from array_api_compat import get_namespace, is_torch_array, is_jax_array
+from array_api_compat import get_namespace, is_torch_namespace, is_jax_namespace
 import numpy as np
-from ..cubical_complex import CubicalComplex
+import warnings
 from typing import Literal, Iterable, Optional
+
+from ..cubical_complex import CubicalComplex
 from .._cubical_complex_ext import _Bitmap_cubical_complex_interface, _Cubical_complex_persistence_interface
 from .._pers_cub_low_dim_ext import (
     _persistence_on_a_line,
@@ -22,13 +24,14 @@ from .._pers_cub_low_dim_ext import (
 
 
 def _persistence_from_cells_without_autodiff(
+    array_api_namespace,
     cells,
     homology_dimensions: Iterable[int],
     input_is_from_top_cells: bool,
     min_persistence: float = 0.0,
     homology_coeff_field: int = 11,
 ):
-    xp = get_namespace(cells)
+    xp = array_api_namespace
     cells = xp.asarray(cells)
     if len(cells.shape) == 1 and min_persistence >= 0.0:
         res = xp.asarray(_persistence_on_a_line(cells))
@@ -63,13 +66,23 @@ def _persistence_from_cells_without_autodiff(
 
 
 def _persistence_from_cells_with_autodiff(
+    array_api_namespace,
     cells,
     homology_dimensions: Iterable[int],
     input_is_from_top_cells: bool,
     min_persistence: float = 0.0,
     homology_coeff_field: int = 11,
 ):
-    xp = get_namespace(cells)
+    if (is_torch_namespace(array_api_namespace) or is_jax_namespace(array_api_namespace)) == False:
+        warnings.warn(
+            """
+            The input 'cells' is not a torch tensor, nor a jax numpy array and it is asked to preserve gradient.
+            'preserve_gradient' is slower and not available for other namespaces than torch and jax
+            """,
+            UserWarning,
+        )
+
+    xp = array_api_namespace
     # Compute pixels associated to positive and negative simplices
     # Don't compute gradient for this operation
     Xflat = xp.reshape(cells, [-1])
@@ -115,7 +128,7 @@ def _persistence_from_cells_with_autodiff(
             mask = pers > min_persistence
             idx = xp.nonzero(mask)[0]
             finite_dgm = xp.take(finite_dgm, idx, axis=0)
-        
+
         if dimension == 0:
             essential_dgm = xp.reshape(xp.take(Xflat, index_essential), [-1, 1])
             # Extend with a +inf value at the end for essential diagram to return a bar code [birth, +inf]
@@ -133,7 +146,8 @@ def cubical_persistence(
     input_type: Literal["top_dimensional_cells", "vertices"] = "top_dimensional_cells",
     min_persistence: float = 0.0,
     homology_coeff_field: int = 11,
-    preserve_gradient: bool = True,
+    preserve_gradient: bool = False,
+    array_api_namespace=None,
 ):
     """
     Returns the persistent homology bar code from the cubical complex.
@@ -144,22 +158,26 @@ def cubical_persistence(
         homology_coeff_field: The homology coefficient field. Must be a prime number. Default value is 11.
         min_persistence: The minimum persistence value to take into account (strictly greater than
             `min_persistence`). Default value is `0.0`. Set `min_persistence` to `-1.0` to see all values.
-        preserve_gradient: Shall the function preserve the input gradient or not. Default value is `True`.
-            Faster when set to `False`. If the input is not a PyTorch or JAX array, `preserve_gradient` is forced to
-            `False`.
+        preserve_gradient: Shall the function preserve the input gradient or not. Default value is `False` (faster).
+            If the input is a PyTorch or JAX array with gradients, `preserve_gradient` can be set to `True` to allow
+            persistence optimization.
     """
     if input_type not in ["top_dimensional_cells", "vertices"]:
         raise ValueError("input_type can only be 'top_dimensional_cells' or 'vertices'")
 
+    if array_api_namespace is None:
+        xp = get_namespace(cells)
+    else:
+        xp = array_api_namespace
+
     input_is_from_top_cells = input_type == "top_dimensional_cells"
-    possibly_with_gradient = is_torch_array(cells) or is_jax_array(cells)
-    if possibly_with_gradient and preserve_gradient == True:
+    if preserve_gradient == True:
         return _persistence_from_cells_with_autodiff(
-            cells, homology_dimensions, input_is_from_top_cells, min_persistence, homology_coeff_field
+            xp, cells, homology_dimensions, input_is_from_top_cells, min_persistence, homology_coeff_field
         )
     else:
         return _persistence_from_cells_without_autodiff(
-            cells, homology_dimensions, input_is_from_top_cells, min_persistence, homology_coeff_field
+            xp, cells, homology_dimensions, input_is_from_top_cells, min_persistence, homology_coeff_field
         )
 
 
