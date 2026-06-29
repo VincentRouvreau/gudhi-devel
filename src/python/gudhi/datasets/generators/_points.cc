@@ -144,7 +144,7 @@ If sample is 'grid': (⌊n_samples**(1./dim)⌋**dim, 2*dim), where shape[0] is 
         nb::arg("minor_radius") = 0.5,
         nb::arg("uniform") = false,
         R"doc(
-Generate random i.i.d., or uniformly distributed points on a 2-torus in R^3d.
+Generate random i.i.d., or uniformly distributed points on a 2-torus in R^3.
 
 :param n_samples: The number of points to be generated.
 :type n_samples: integer
