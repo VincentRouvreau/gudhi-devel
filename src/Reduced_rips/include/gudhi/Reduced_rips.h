@@ -11,9 +11,17 @@
  *    - YYYY/MM Author: Description of the modification
  */
 
+/**
+ * @file Reduced_rips.h
+ * @author Thomas Burnett, Musashi Koyama
+ * @brief The public Reduced_rips class: degree-1 Vietoris-Rips persistence from a point cloud or a distance
+ * matrix, via the Reduced Vietoris-Rips filtration.
+ */
+
 #ifndef REDUCED_RIPS_H_
 #define REDUCED_RIPS_H_
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <iterator>
@@ -22,9 +30,10 @@
 #include <vector>
 
 #include <gudhi/Debug_utils.h>
-#include <gudhi/Reduced_rips/Cloud.h>
+#include <gudhi/Reduced_rips/Euclidean_geometry.h>
 #include <gudhi/Reduced_rips/Euclidean_kd_tree.h>
-#include <gudhi/Reduced_rips/Geometry.h>
+#include <gudhi/Reduced_rips/Helpers.h>
+#include <gudhi/Reduced_rips/Matrix_geometry.h>
 #include <gudhi/Reduced_rips/Persistence_engine.h>
 
 namespace Gudhi {
@@ -44,14 +53,14 @@ namespace reduced_rips {
  * paper). This scales to far larger inputs than building the full complex would, though only degree 1 is
  * computed.
  *
- * Two inputs are accepted, via two named factories (#from_points and #from_distance_matrix) that share one
+ * Two inputs are accepted, via two named factories (@ref from_points and @ref from_distance_matrix) that share one
  * metric reduction core:
  * - a **Euclidean point cloud** (the primary constructor): the relative neighborhood graph is computed with
  *   a Delaunay triangulation in ambient dimension 2 and 3 (selected at run time from the point dimension)
  *   and a direct O(n^2) construction in higher dimension; neighbor queries use a kd-tree or a brute-force
  *   scan (see #Search). The lens-ball / wide-angle certificates of the reference paper accelerate the lune
  *   computation;
- * - an **arbitrary symmetric distance matrix** (#from_distance_matrix): the same reduction, driven purely by
+ * - an **arbitrary symmetric distance matrix** (@ref from_distance_matrix): the same reduction, driven purely by
  *   the supplied distances. No coordinates are available, so the relative neighborhood graph uses the
  *   dimension-free O(n^2) construction, neighbor queries scan matrix rows, and the lune connected components
  *   are found by the exact union-find.
@@ -69,8 +78,8 @@ class Reduced_rips {
  public:
   /** @brief Type used to store filtration / persistence values. */
   using Filtration_value = Filtration_value_;
-  /** @brief A persistence bar as a (birth, death) pair of distances. */
-  using Persistence_interval = std::pair<Filtration_value, Filtration_value>;
+  /** @brief A persistence bar as a `{birth, death}` array of distances (`bar[0]` birth, `bar[1]` death) */
+  using Persistence_interval = std::array<Filtration_value, 2>;
 
   /** @brief Strategy for the spatial neighbor queries (k-nearest and radius search). Applies to the
    * Euclidean point-cloud constructor only; the distance-matrix path always scans matrix rows.
@@ -82,6 +91,10 @@ class Reduced_rips {
    * - `automatic`: pick `kd_tree` for ambient dimension <= 3, `brute_force` otherwise.
    */
   enum class Search : std::uint8_t { automatic, kd_tree, brute_force };
+
+  /** @brief Constructs an empty diagram. Assign the result of a @ref from_points or @ref from_distance_matrix factory
+   * to populate it. */
+  Reduced_rips() = default;
 
   /** @brief Builds the degree-1 persistence from a range of points. The barcode is computed eagerly and then
    * returned by #persistence().
@@ -95,8 +108,7 @@ class Reduced_rips {
    * `sqrt(n)`.
    * @param[in] search Spatial-search strategy (see #Search); `automatic` by default.
    *
-   * @exception std::invalid_argument In debug mode, if points have differing dimension. Fewer than two points,
-   * or zero-dimensional points, is not an error: the barcode is simply empty.
+   * @exception std::invalid_argument In debug mode, if points have differing dimension.
    */
   template <typename PointRange>
   static Reduced_rips from_points(const PointRange& points, unsigned int num_neighbors = 0,
@@ -108,7 +120,7 @@ class Reduced_rips {
     rr.num_neighbors_ = num_neighbors;
     rr.search_ = search;
     rr.ingest_points(points);
-    if (rr.n_ >= 2) rr.compute();
+    if (rr.n_ >= 2) rr.compute_from_points();
     return rr;
   }
 
@@ -138,7 +150,7 @@ class Reduced_rips {
     rr.num_neighbors_ = num_neighbors;
     rr.search_ = search;
     rr.ingest_distance_matrix(matrix);
-    if (rr.n_ >= 2) rr.compute();
+    if (rr.n_ >= 2) rr.compute_from_matrix();
     return rr;
   }
 
@@ -158,9 +170,6 @@ class Reduced_rips {
   [[nodiscard]] std::size_t num_persistence_pairs() const { return num_persistence_pairs_; }
 
  private:
-  // Used only by the from_* factories, which fill the fields, ingest the input, and compute eagerly.
-  Reduced_rips() = default;
-
   [[nodiscard]] detail::Cloud cloud() const { return {coords_.data(), dim_, n_}; }
 
   // Reads a range of points into coords_ as a flat row-major buffer, setting dim_ and n_.
@@ -187,11 +196,10 @@ class Reduced_rips {
 
   // Reads a full or lower-triangular symmetric distance matrix into matrix_ as a flat n by n row-major buffer
   // of the supplied distances, kept as-is. Only the entries below the diagonal of each row are read, matrix[i][j]
-  // for j < i -- so the full and lower-triangular layouts are handled uniformly in a single forward pass per row;
+  // for j < i, so the full and lower-triangular layouts are handled uniformly in a single forward pass per row;
   // the upper triangle is mirrored and the diagonal is zero.
   template <typename DistanceMatrix>
   void ingest_distance_matrix(const DistanceMatrix& matrix) {
-    is_matrix_ = true;
     n_ = std::distance(std::begin(matrix), std::end(matrix));
     if (n_ < 2) return;  // fewer than two points: empty barcode
     matrix_.assign(n_ * n_, Filtration_value(0));
@@ -210,16 +218,18 @@ class Reduced_rips {
     }
   }
 
-  void compute() {
-    if (is_matrix_) {
-      Matrix_geometry<Filtration_value> geom(std::move(matrix_), n_);
-      compute_impl(geom);
-    } else {
-      detail::Cloud pm = cloud();
-      Euclidean_kd_tree kd_tree(pm, use_brute_force());
-      Euclidean_geometry<Filtration_value> geom(pm, kd_tree);
-      compute_impl(geom);
-    }
+  // Point-cloud path: build the kd-tree (or brute-force) geometry over the ingested coordinates and compute.
+  void compute_from_points() {
+    detail::Cloud pm = cloud();
+    Euclidean_kd_tree kd_tree(pm, use_brute_force());
+    Euclidean_geometry<Filtration_value> geom(pm, kd_tree);
+    compute_impl(geom);
+  }
+
+  // Distance-matrix path: build the matrix geometry over the ingested distances and compute.
+  void compute_from_matrix() {
+    Matrix_geometry<Filtration_value> geom(std::move(matrix_), n_);
+    compute_impl(geom);
   }
 
   template <class Geom>
@@ -231,7 +241,7 @@ class Reduced_rips {
     barcode_.reserve(bars.size());
     // The engine emits birth/death on the geometry's edge-length scale; to_distance maps each back to a real
     // distance (sqrt for the Euclidean policy, the identity for the matrix policy).
-    for (const auto& bar : bars) barcode_.emplace_back(Geom::to_distance(bar.first), Geom::to_distance(bar.second));
+    for (const auto& bar : bars) barcode_.push_back({Geom::to_distance(bar.first), Geom::to_distance(bar.second)});
     num_one_simplices_ = engine.committed_edges();
     num_two_simplices_ = engine.columns_formed();
     num_persistence_pairs_ = engine.deaths();
@@ -239,7 +249,6 @@ class Reduced_rips {
 
   std::vector<double> coords_;            // flat row-major point storage, n_ points x dim_ coordinates (cloud input)
   std::vector<Filtration_value> matrix_;  // flat n_ x n_ row-major distances (distance-matrix input)
-  bool is_matrix_ = false;                // selects the distance-matrix backend
   std::size_t dim_ = 0;
   std::size_t n_ = 0;
   unsigned int num_neighbors_ = 0;

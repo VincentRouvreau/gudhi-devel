@@ -1,6 +1,6 @@
 /*    This file is part of the Gudhi Library - https://gudhi.inria.fr/ - which is released under MIT.
  *    See file LICENSE or go to https://gudhi.inria.fr/licensing/ for full license details.
- *    Author(s):       Thomas Burnett, Musashi Koyama
+ *    Author(s):       Thomas Burnett
  *
  *    Copyright (C) 2026 Thomas Burnett, Musashi Koyama
  *
@@ -20,7 +20,7 @@ int main(int argc, char** argv) {
     std::cerr << "Usage: " << argv[0] << " <input.off> [num_neighbors=0]\n";
     return 1;
   }
-  unsigned num_neighbors = argc == 3 ? static_cast<unsigned>(std::stoul(argv[2])) : 0;
+  unsigned int num_neighbors = argc == 3 ? static_cast<unsigned int>(std::stoul(argv[2])) : 0;
 
   Gudhi::Points_off_reader<std::vector<double>> off_reader(argv[1]);
   if (!off_reader.is_valid()) {
@@ -29,6 +29,6 @@ int main(int argc, char** argv) {
   }
 
   auto ph1 = Gudhi::reduced_rips::Reduced_rips<>::from_points(off_reader.get_point_cloud(), num_neighbors);
-  for (const auto& bar : ph1.persistence()) std::cout << "1 " << bar.first << " " << bar.second << " \n";
+  for (const auto& bar : ph1.persistence()) std::cout << "1 " << bar[0] << " " << bar[1] << " \n";
   return 0;
 }

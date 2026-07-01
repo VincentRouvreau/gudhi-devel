@@ -11,6 +11,13 @@
  *    - YYYY/MM Author: Description of the modification
  */
 
+/**
+ * @file Relative_neighborhood_graph.h
+ * @author Thomas Burnett, Musashi Koyama
+ * @brief The relative-neighborhood-graph cycle rank, used as the reduction's early-stop target (the number of
+ * finite degree-1 bars), via a Delaunay triangulation in 2D/3D and a direct construction otherwise.
+ */
+
 #ifndef REDUCED_RIPS_RELATIVE_NEIGHBORHOOD_GRAPH_H_
 #define REDUCED_RIPS_RELATIVE_NEIGHBORHOOD_GRAPH_H_
 
@@ -30,16 +37,12 @@
 #include <CGAL/Triangulation_vertex_base_with_info_2.h>
 #include <CGAL/Triangulation_vertex_base_with_info_3.h>
 
-#include <gudhi/Reduced_rips/Cloud.h>
+#include <gudhi/Reduced_rips/Helpers.h>
 #include <gudhi/Reduced_rips/Euclidean_kd_tree.h>
 
 namespace Gudhi {
 
 namespace reduced_rips {
-
-using detail::Cloud;
-using detail::l2_dist_2;
-using detail::widen_radius;
 
 // ---- Relative neighborhood graph (RNG) cycle rank -----------------------------------------------------
 // total_death = the RNG cycle rank |E| - |V| + 1 (the RNG is connected): the number of finite H1 bars, which
@@ -57,7 +60,7 @@ using detail::widen_radius;
 
 // Deduplicated edges of the d-dimensional Delaunay triangulation, as pairs (first < second). 2D reads
 // them from triangulation faces, 3D from facets. Both are an Urquhart superset of the RNG.
-inline std::vector<std::pair<std::size_t, std::size_t>> delaunay_edges_2d(const Cloud& pm) {
+inline std::vector<std::pair<std::size_t, std::size_t>> delaunay_edges_2d(const detail::Cloud& pm) {
   using K = CGAL::Exact_predicates_inexact_constructions_kernel;
   using Vb = CGAL::Triangulation_vertex_base_with_info_2<std::size_t, K>;
   using Tds = CGAL::Triangulation_data_structure_2<Vb>;
@@ -77,7 +80,7 @@ inline std::vector<std::pair<std::size_t, std::size_t>> delaunay_edges_2d(const 
   return {edges.begin(), edges.end()};
 }
 
-inline std::vector<std::pair<std::size_t, std::size_t>> delaunay_edges_3d(const Cloud& pm) {
+inline std::vector<std::pair<std::size_t, std::size_t>> delaunay_edges_3d(const detail::Cloud& pm) {
   using K = CGAL::Exact_predicates_inexact_constructions_kernel;
   using Vb = CGAL::Triangulation_vertex_base_with_info_3<std::size_t, K>;
   using Cb = CGAL::Delaunay_triangulation_cell_base_3<K>;
@@ -107,21 +110,21 @@ inline std::vector<std::pair<std::size_t, std::size_t>> delaunay_edges_3d(const 
 // reduction drops, so counting them out keeps the rank exact. One ball query around an endpoint suffices,
 // since each candidate is re-tested against the other endpoint.
 template <class T, typename DelaunayEdges>
-std::size_t rng_cycle_rank_delaunay(const Cloud& pm, const Euclidean_kd_tree& kd_tree, DelaunayEdges delaunay_edges) {
+std::size_t rng_cycle_rank_delaunay(const detail::Cloud& pm, const Euclidean_kd_tree& kd_tree, DelaunayEdges delaunay_edges) {
   std::vector<std::pair<std::size_t, std::size_t>> possible_edges = delaunay_edges(pm);
   std::vector<char> seen(pm.n, 0);
   std::size_t kept = 0, vertices = 0;
   for (const auto& edge : possible_edges) {
     std::size_t a = edge.first, b = edge.second;
-    T r = l2_dist_2<T>(pm[a], pm[b], pm.dim);
+    T r = detail::l2_dist_2<T>(pm[a], pm[b], pm.dim);
     // widen_radius widens only the ball-query radius (so the strict test below sees every candidate); occupancy
     // is the open lune: a point strictly inside both endpoint balls. Boundary points do not remove the edge.
-    auto ball = kd_tree.points_in_squared_ball(pm[a], widen_radius(r));
+    auto ball = kd_tree.points_in_squared_ball(pm[a], detail::widen_radius(r));
     bool lune_occupied = std::any_of(ball.begin(), ball.end(), [&](const std::pair<std::size_t, T>& pr) {
       std::size_t k = pr.first;
       if (k == a || k == b) return false;
-      T dist_ka_sq = l2_dist_2<T>(pm[a], pm[k], pm.dim);
-      T dist_kb_sq = l2_dist_2<T>(pm[b], pm[k], pm.dim);
+      T dist_ka_sq = detail::l2_dist_2<T>(pm[a], pm[k], pm.dim);
+      T dist_kb_sq = detail::l2_dist_2<T>(pm[b], pm[k], pm.dim);
       return dist_ka_sq < r && dist_kb_sq < r;
     });
     if (!lune_occupied) {
@@ -136,7 +139,7 @@ std::size_t rng_cycle_rank_delaunay(const Cloud& pm, const Euclidean_kd_tree& kd
   return kept - vertices + 1;  // |E| - |V| + 1 for the connected RNG; >= 0, and 1 if there are no edges
 }
 
-// A candidate edge as (lo, hi, squared length), ordered by length then index for the set operations. Shared
+// A candidate edge as (lo, hi, length in the geometry's scale), ordered by length then index for the set operations. Shared
 // by the direct (general-dimension) and distance-matrix RNG supergraph builds. The length is in the scalar
 // type T supplied by the distance callable.
 template <class T>
@@ -153,7 +156,7 @@ struct Rng_edge {
 };
 
 // Phase 1 of the direct RNG construction: an O(n^2) supergraph of the RNG, returned sorted and deduped.
-// `dist` is a squared-distance callable (i, j) -> double; both the coordinate and distance-matrix paths
+// `dist` is a distance-like callable (i, j) to the geometry's ordering scale; both the coordinate and matrix paths
 // share this body and differ only in how they supply distances. e_i is a sorted vector, front() is the
 // current minimum, and the survivors of each pruning pass are compacted in place, preserving sorted order
 // with no per-iteration allocation. e_all is accumulated then deduped once at the end. An edge (i,j) can
@@ -192,20 +195,20 @@ auto rng_supergraph(std::size_t n, Dist dist) {
 // edges whose lune is non-empty; returns the cycle rank |E| - n + 1. Edge lengths are squared distances
 // throughout. No vertex merging here (unlike the Delaunay path), so |V| = n.
 template <class T>
-std::size_t rng_cycle_rank_general(const Cloud& pm, const Euclidean_kd_tree& kd_tree) {
-  auto e_all = rng_supergraph(pm.n, [&pm](std::size_t i, std::size_t j) { return l2_dist_2<T>(pm[i], pm[j], pm.dim); });
+std::size_t rng_cycle_rank_general(const detail::Cloud& pm, const Euclidean_kd_tree& kd_tree) {
+  auto e_all = rng_supergraph(pm.n, [&pm](std::size_t i, std::size_t j) { return detail::l2_dist_2<T>(pm[i], pm[j], pm.dim); });
 
   // Phase 2: eliminate edges whose open lune contains a point (strictly inside both endpoint balls). widen_radius
   // widens only the ball-query radius; boundary points do not remove the edge.
   std::size_t count = 0;
   for (const auto& edge : e_all) {
     std::size_t a = edge.i, b = edge.j;
-    auto ball = kd_tree.points_in_squared_ball(pm[a], widen_radius(edge.length));
+    auto ball = kd_tree.points_in_squared_ball(pm[a], detail::widen_radius(edge.length));
     bool lune_occupied = std::any_of(ball.begin(), ball.end(), [&](const std::pair<std::size_t, T>& pr) {
       std::size_t k = pr.first;
       if (k == a || k == b) return false;
-      T dist_ka_sq = l2_dist_2<T>(pm[a], pm[k], pm.dim);
-      T dist_kb_sq = l2_dist_2<T>(pm[b], pm[k], pm.dim);
+      T dist_ka_sq = detail::l2_dist_2<T>(pm[a], pm[k], pm.dim);
+      T dist_kb_sq = detail::l2_dist_2<T>(pm[b], pm[k], pm.dim);
       return dist_ka_sq < edge.length && dist_kb_sq < edge.length;
     });
     if (!lune_occupied) ++count;

@@ -11,6 +11,13 @@
  *    - YYYY/MM Author: Description of the modification
  */
 
+/**
+ * @file Persistence_engine.h
+ * @author Thomas Burnett, Musashi Koyama
+ * @brief The three-phase batched reduction that turns a geometry policy's candidate edges into the degree-1
+ * persistence barcode.
+ */
+
 #ifndef REDUCED_RIPS_PERSISTENCE_ENGINE_H_
 #define REDUCED_RIPS_PERSISTENCE_ENGINE_H_
 
@@ -23,7 +30,7 @@
 #include <utility>
 #include <vector>
 
-#include <gudhi/Reduced_rips/Cloud.h>
+#include <gudhi/Reduced_rips/Helpers.h>
 #include <gudhi/Reduced_rips/Lune_builder.h>
 
 #ifdef GUDHI_USE_TBB
@@ -33,9 +40,6 @@
 namespace Gudhi {
 
 namespace reduced_rips {
-
-using detail::Edge_map;
-using detail::pack_edge;
 
 // Computes the degree-1 persistence barcode for one geometry policy. Edges are processed in batches of three
 // phases: Phase A (pop_batch) pops a batch in strict filtration order, assigning each its 1-simplex id and
@@ -80,6 +84,22 @@ class Persistence_engine {
   [[nodiscard]] std::size_t deaths() const { return death_counter_; }
 
  private:
+  // Min-heap ordering for the candidate edges: shortest length first, ties broken by the (a, b) index
+  // pair. (While queued, Batch_edge::id carries the neighbor-list frontier position)
+  struct Heap_compare {
+    bool operator()(const Batch_edge<FV>& x, const Batch_edge<FV>& y) const {
+      if (x.r != y.r) return x.r > y.r;
+      if (x.a != y.a) return x.a > y.a;
+      return x.b > y.b;
+    }
+  };
+
+  // Min-heap of candidate edges, processed shortest-first.
+  using Edge_heap = std::priority_queue<Batch_edge<FV>, std::vector<Batch_edge<FV>>, Heap_compare>;
+
+  template <typename T>
+  using Edge_map = detail::Edge_map<std::size_t, T>;
+
   // Seed the heap with, per point i, the shortest edge to a higher-indexed neighbor.
   void seed_heap() {
     for (std::size_t i = 0; i < n_; ++i) {
@@ -103,7 +123,7 @@ class Persistence_engine {
 
       // Reuse that same slot for the 1-simplex id (== the number assigned so far), then record the edge.
       edge.id = birth_by_id_.size();
-      one_simp_to_idx_[pack_edge(edge.a, edge.b, n_)] = edge.id;  // a < b always (stored neighbors are > a)
+      one_simp_to_idx_[detail::pack_edge(edge.a, edge.b, n_)] = edge.id;  // a < b always (stored neighbors are > a)
       birth_by_id_.push_back(edge.r);  // r == dist(a, b) by construction (a < b); cached for the barcode
       batch.push_back(edge);           // Batch_edge is trivially copyable; no move
     }
@@ -150,16 +170,17 @@ class Persistence_engine {
     for (std::size_t c = 0; c < res.cols.size(); ++c) {
       column_counter_ += 1;
       std::vector<std::size_t>& column = res.cols[c];
-      if (reduce_column(column, symm_diff)) continue;  // reduced to empty: no pair
-      std::size_t pivot = column.back();
-      root_persistent_[pivot] = std::move(column);
-      // (pivot, column) is a persistent pair: birth = pivot-edge length, death = 2-simplex diameter (both in
-      // the geometry's edge-length scale). A zero-length bar is dropped.
-      FV birth = birth_by_id_[pivot];
-      FV death = res.deaths[c];
-      if (birth != death) {
-        barcode_.emplace_back(birth, death);
-        death_counter_ += 1;
+      if (!reduce_column(column, symm_diff)) {
+        std::size_t pivot = column.back();
+        root_persistent_[pivot] = std::move(column);
+        // (pivot, column) is a persistent pair: birth = pivot-edge length, death = 2-simplex diameter (both in
+        // the geometry's edge-length scale). A zero-length bar is dropped.
+        FV birth = birth_by_id_[pivot];
+        FV death = res.deaths[c];
+        if (birth != death) {
+          barcode_.emplace_back(birth, death);
+          death_counter_ += 1;
+        }
       }
     }
   }
@@ -189,26 +210,14 @@ class Persistence_engine {
         // {e0, e1, pivot} (pivot == the key) and add it in.
         const std::array<std::size_t, 3> apparent_col{it_a->second[0], it_a->second[1], pivot};
         xor_in(apparent_col.begin(), apparent_col.end());
-        continue;
+      } else {
+        auto it_p = root_persistent_.find(pivot);
+        if (it_p == root_persistent_.end()) return false;  // pivot free: the column is reduced
+        xor_in(it_p->second.begin(), it_p->second.end());
       }
-      auto it_p = root_persistent_.find(pivot);
-      if (it_p == root_persistent_.end()) return false;  // pivot free: the column is reduced
-      xor_in(it_p->second.begin(), it_p->second.end());
     }
     return true;  // column emptied: killed
   }
-
-  // Min-heap ordering for the candidate edges: shortest squared length first, ties broken by the (a, b) index
-  // pair. (While queued, Batch_edge::id carries the neighbor-list frontier position; the ordering ignores it.)
-  struct Heap_compare {
-    bool operator()(const Batch_edge<FV>& x, const Batch_edge<FV>& y) const {
-      if (x.r != y.r) return x.r > y.r;
-      if (x.a != y.a) return x.a > y.a;
-      return x.b > y.b;
-    }
-  };
-  // Min-heap of candidate edges, processed shortest-first.
-  using Edge_heap = std::priority_queue<Batch_edge<FV>, std::vector<Batch_edge<FV>>, Heap_compare>;
 
   Geom* geom_;  // non-owning, never null; the geometry policy outlives this engine
   std::size_t n_;
@@ -218,11 +227,11 @@ class Persistence_engine {
 
   Edge_heap heap_;
   std::vector<std::vector<std::size_t>> neighbors_;     // neighbors_[i] = nearest indices > i, ascending
-  Edge_map<std::size_t, std::size_t> one_simp_to_idx_;  // packed edge -> 1-simplex id
+  Edge_map<std::size_t> one_simp_to_idx_;               // packed edge -> 1-simplex id
   std::vector<FV> birth_by_id_;                         // id -> birth length (squared under the Euclidean policy)
-  Edge_map<std::size_t, std::array<std::size_t, 2>> root_apparent_;  // pivot -> its 2 lower edges
-  Edge_map<std::size_t, std::vector<std::size_t>> root_persistent_;  // pivot -> reduced column
-  std::vector<std::pair<FV, FV>> barcode_;                           // (birth, death) bars in the geometry's scale
+  Edge_map<std::array<std::size_t, 2>> root_apparent_;  // pivot -> its 2 lower edges
+  Edge_map<std::vector<std::size_t>> root_persistent_;  // pivot -> reduced column
+  std::vector<std::pair<FV, FV>> barcode_;              // (birth, death) bars in the geometry's scale
 
   std::size_t committed_edges_ = 0;  // edges actually reduced (diagnostic)
   std::size_t column_counter_ = 0;   // 2-simplex columns formed (diagnostic)

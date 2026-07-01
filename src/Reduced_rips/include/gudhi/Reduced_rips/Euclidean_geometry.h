@@ -1,0 +1,93 @@
+/*    This file is part of the Gudhi Library - https://gudhi.inria.fr/ - which is released under MIT.
+ *    See file LICENSE or go to https://gudhi.inria.fr/licensing/ for full license details.
+ *    Author(s):       Thomas Burnett, Musashi Koyama
+ *
+ *    Algorithm:       M. Koyama, F. Mémoli, V. Robins, K. Turner, "Computation of degree-1 persistent
+ *                     homology on larger point-clouds using the Reduced Vietoris-Rips filtration".
+ *
+ *    Copyright (C) 2026 Thomas Burnett, Musashi Koyama
+ *
+ *    Modification(s):
+ *    - YYYY/MM Author: Description of the modification
+ */
+
+/**
+ * @file Euclidean_geometry.h
+ * @author Thomas Burnett, Musashi Koyama
+ * @brief The Euclidean geometry policy: coordinates plus a kd-tree, working in squared distances, with the
+ * paper's lens-ball / wide-angle accelerations.
+ */
+
+#ifndef REDUCED_RIPS_EUCLIDEAN_GEOMETRY_H_
+#define REDUCED_RIPS_EUCLIDEAN_GEOMETRY_H_
+
+#include <cmath>
+#include <cstddef>
+#include <vector>
+
+#include <gudhi/Reduced_rips/Euclidean_kd_tree.h>
+#include <gudhi/Reduced_rips/Helpers.h>
+#include <gudhi/Reduced_rips/Lune_builder.h>
+#include <gudhi/Reduced_rips/Relative_neighborhood_graph.h>
+
+namespace Gudhi {
+
+namespace reduced_rips {
+
+// Geometry policy (a model of the geometry concept; see concept/Geometry.h) over a Euclidean point cloud. It
+// works in squared distances: the algorithm relies only on the *ordering* of dist, so dist returns d^2 and
+// to_distance is sqrt. Coordinates stay double, but every candidate is re-checked with l2_dist_2<T>, so the barcode
+// keeps T's precision.
+template <class T>
+class Euclidean_geometry {
+  using Cloud = detail::Cloud;
+
+ public:
+  using Filtration_value = T;
+  Euclidean_geometry(const Cloud& pm, const Euclidean_kd_tree& kd) : pm_(pm), kd_(&kd) {}
+  [[nodiscard]] std::size_t size() const { return pm_.n; }
+  // Ordering scale: the squared Euclidean distance.
+  [[nodiscard]] T dist(std::size_t i, std::size_t j) const { return detail::l2_dist_2<T>(pm_[i], pm_[j], pm_.dim); }
+  // Maps the squared ordering scale back to a true distance for the output barcode.
+  [[nodiscard]] static T to_distance(T squared) { return std::sqrt(squared); }
+  [[nodiscard]] std::vector<std::size_t> nearest(std::size_t i, std::size_t k) const {
+    return kd_->nearest_neighbors(pm_[i], k);
+  }
+  // The k nearest points to i restricted to index > i, ascending by distance (ties by index).
+  [[nodiscard]] std::vector<std::size_t> nearest_neighbors_above(std::size_t i, std::size_t k) const {
+    std::vector<std::size_t> result = nearest(i, k);
+    detail::keep_above(i, result);
+    return result;
+  }
+  [[nodiscard]] std::vector<std::size_t> neighbors_above(std::size_t i) const { return all_neighbors_above(i, pm_); }
+  // Early-stop target: the RNG cycle rank (the number of finite H1 bars), from the per-dimension routine.
+  [[nodiscard]] std::size_t rng_early_stop_target() const {
+    if (pm_.dim == 2) return rng_cycle_rank_delaunay<T>(pm_, *kd_, delaunay_edges_2d);
+    if (pm_.dim == 3) return rng_cycle_rank_delaunay<T>(pm_, *kd_, delaunay_edges_3d);
+    return rng_cycle_rank_general<T>(pm_, *kd_);
+  }
+  [[nodiscard]] Lune_result<T> lune(const Batch_edge<T>& e,
+                                    const detail::Edge_map<std::size_t, std::size_t>& one_simp_to_idx,
+                                    std::size_t n) const {
+    return Lune_builder<T>(e, one_simp_to_idx, n).build_euclidean(pm_, *kd_);
+  }
+
+ private:
+  // Indices > ver_idx sorted by squared distance from it (ties by ascending index). The brute all-neighbors
+  // fallback used to seed the heap when the k-nearest query returns nothing above ver_idx.
+  [[nodiscard]] static std::vector<std::size_t> all_neighbors_above(std::size_t ver_idx, const Cloud& pm) {
+    const std::size_t off = ver_idx + 1, count = pm.n - off;
+    std::vector<double> dist(count);  // ordering only, so double suffices regardless of the barcode type
+    for (std::size_t i = off; i < pm.n; ++i) dist[i - off] = detail::l2_dist_2<double>(pm[ver_idx], pm[i], pm.dim);
+    return detail::smallest_indices_by(off, count, count, [&dist, off](std::size_t i) { return dist[i - off]; });
+  }
+
+  Cloud pm_;                     // non-owning view; pointee outlives this
+  const Euclidean_kd_tree* kd_;  // non-owning, never null; kd-tree is move-only so stored by pointer
+};
+
+}  // namespace reduced_rips
+
+}  // namespace Gudhi
+
+#endif  // REDUCED_RIPS_EUCLIDEAN_GEOMETRY_H_

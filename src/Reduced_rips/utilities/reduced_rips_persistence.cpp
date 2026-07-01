@@ -8,18 +8,17 @@
  *    - YYYY/MM Author: Description of the modification
  */
 
+#include <fstream>
+#include <iostream>
+#include <string>
+#include <vector>
+
+#include <boost/program_options.hpp>
+
 #include <gudhi/Reduced_rips.h>
 #include <gudhi/Points_off_io.h>
 #include <gudhi/reader_utils.h>
 #include <gudhi/Clock.h>
-
-#include <boost/program_options.hpp>
-
-#include <fstream>
-#include <iostream>
-#include <memory>
-#include <string>
-#include <vector>
 
 namespace po = boost::program_options;
 
@@ -74,7 +73,7 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  std::unique_ptr<Reduced_rips> ph1;
+  Reduced_rips ph1;
   if (have_matrix) {
     auto distances = Gudhi::read_lower_triangular_matrix_from_csv_file<double>(matrix_file);
     if (distances.size() < 2) {
@@ -82,8 +81,7 @@ int main(int argc, char** argv) {
       return 1;
     }
     Gudhi::Clock clock("Reduced Vietoris-Rips degree-1 persistence");
-    ph1 = std::make_unique<Reduced_rips>(Reduced_rips::from_distance_matrix(distances, num_neighbors, method));
-    ph1->persistence();
+    ph1 = Reduced_rips::from_distance_matrix(distances, num_neighbors, method);
     clock.end();
     std::clog << clock;
   } else {
@@ -93,13 +91,12 @@ int main(int argc, char** argv) {
       return 1;
     }
     Gudhi::Clock clock("Reduced Vietoris-Rips degree-1 persistence");
-    ph1 = std::make_unique<Reduced_rips>(Reduced_rips::from_points(off_reader.get_point_cloud(), num_neighbors, method));
-    ph1->persistence();
+    ph1 = Reduced_rips::from_points(off_reader.get_point_cloud(), num_neighbors, method);
     clock.end();
     std::clog << clock;
   }
 
-  const auto& barcode = ph1->persistence();
+  const auto& barcode = ph1.persistence();
 
   std::ostream* out = &std::cout;
   std::ofstream ofs;
@@ -107,9 +104,9 @@ int main(int argc, char** argv) {
     ofs.open(output_file);
     out = &ofs;
   }
-  for (const auto& bar : barcode) *out << "1 " << bar.first << " " << bar.second << " \n";
+  for (const auto& bar : barcode) *out << "1 " << bar[0] << " " << bar[1] << " \n";
 
-  std::clog << "1-simplices: " << ph1->num_one_simplices() << ", 2-simplices: " << ph1->num_two_simplices()
-            << ", persistent pairs: " << ph1->num_persistence_pairs() << '\n';
+  std::clog << "1-simplices: " << ph1.num_one_simplices() << ", 2-simplices: " << ph1.num_two_simplices()
+            << ", persistent pairs: " << ph1.num_persistence_pairs() << '\n';
   return 0;
 }
