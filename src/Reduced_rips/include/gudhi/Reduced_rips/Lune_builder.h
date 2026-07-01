@@ -30,7 +30,6 @@
 #include <boost/pending/disjoint_sets.hpp>
 
 #include <gudhi/Reduced_rips/Helpers.h>
-#include <gudhi/Reduced_rips/Euclidean_kd_tree.h>
 
 namespace Gudhi {
 
@@ -97,7 +96,10 @@ class Lune_builder {
 
   // Euclidean front-end: gather the lune points from a midpoint ball query, apply the lens-ball fast path and
   // the wide-angle ("eye") single-component certificate, then defer the component analysis to the shared code.
-  [[nodiscard]] Lune_result<T> build_euclidean(const Cloud& pm, const Euclidean_kd_tree& kd_tree) const {
+  // The kd-tree is a template parameter (in practice Euclidean_kd_tree) so this header, which the CGAL-free
+  // distance-matrix path also uses, carries no CGAL includes.
+  template <class KdTree>
+  [[nodiscard]] Lune_result<T> build_euclidean(const Cloud& pm, const KdTree& kd_tree) const {
     const std::size_t a = a_, b = b_, dim = pm.dim;
     const T r = r_;
 

@@ -25,6 +25,7 @@
 #include <cstddef>
 #include <vector>
 
+#include <gudhi/Reduced_rips/Delaunay_edges.h>
 #include <gudhi/Reduced_rips/Euclidean_kd_tree.h>
 #include <gudhi/Reduced_rips/Helpers.h>
 #include <gudhi/Reduced_rips/Lune_builder.h>

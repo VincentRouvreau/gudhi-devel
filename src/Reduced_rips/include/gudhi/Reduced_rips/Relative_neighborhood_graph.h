@@ -24,21 +24,10 @@
 #include <algorithm>
 #include <cstddef>
 #include <type_traits>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
-#include <boost/container_hash/hash.hpp>
-
-#include <CGAL/Delaunay_triangulation_2.h>
-#include <CGAL/Delaunay_triangulation_3.h>
-#include <CGAL/Delaunay_triangulation_cell_base_3.h>
-#include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
-#include <CGAL/Triangulation_vertex_base_with_info_2.h>
-#include <CGAL/Triangulation_vertex_base_with_info_3.h>
-
 #include <gudhi/Reduced_rips/Helpers.h>
-#include <gudhi/Reduced_rips/Euclidean_kd_tree.h>
 
 namespace Gudhi {
 
@@ -58,59 +47,14 @@ namespace reduced_rips {
 // The RNG is computed with the fastest strategy for the ambient dimension (Delaunay-based in 2D/3D, direct
 // otherwise).
 
-// Deduplicated edges of the d-dimensional Delaunay triangulation, as pairs (first < second). 2D reads
-// them from triangulation faces, 3D from facets. Both are an Urquhart superset of the RNG.
-inline std::vector<std::pair<std::size_t, std::size_t>> delaunay_edges_2d(const detail::Cloud& pm) {
-  using K = CGAL::Exact_predicates_inexact_constructions_kernel;
-  using Vb = CGAL::Triangulation_vertex_base_with_info_2<std::size_t, K>;
-  using Tds = CGAL::Triangulation_data_structure_2<Vb>;
-  using Delaunay = CGAL::Delaunay_triangulation_2<K, Tds>;
-  using Point = K::Point_2;
-  std::vector<std::pair<Point, std::size_t>> pts;
-  pts.reserve(pm.size());
-  for (std::size_t k = 0; k < pm.size(); ++k) pts.emplace_back(Point(pm[k][0], pm[k][1]), k);
-  Delaunay t(pts.begin(), pts.end());
-  std::unordered_set<std::pair<std::size_t, std::size_t>, boost::hash<std::pair<std::size_t, std::size_t>>> edges;
-  for (auto it = t.finite_faces_begin(); it != t.finite_faces_end(); ++it) {
-    std::size_t i0 = it->vertex(0)->info(), i1 = it->vertex(1)->info(), i2 = it->vertex(2)->info();
-    edges.insert(std::minmax(i0, i1));
-    edges.insert(std::minmax(i0, i2));
-    edges.insert(std::minmax(i1, i2));
-  }
-  return {edges.begin(), edges.end()};
-}
-
-inline std::vector<std::pair<std::size_t, std::size_t>> delaunay_edges_3d(const detail::Cloud& pm) {
-  using K = CGAL::Exact_predicates_inexact_constructions_kernel;
-  using Vb = CGAL::Triangulation_vertex_base_with_info_3<std::size_t, K>;
-  using Cb = CGAL::Delaunay_triangulation_cell_base_3<K>;
-  using Tds = CGAL::Triangulation_data_structure_3<Vb, Cb>;
-  using Delaunay = CGAL::Delaunay_triangulation_3<K, Tds, CGAL::Fast_location>;
-  using Point = Delaunay::Point;
-  std::vector<std::pair<Point, std::size_t>> pts;
-  pts.reserve(pm.size());
-  for (std::size_t k = 0; k < pm.size(); ++k) pts.emplace_back(Point(pm[k][0], pm[k][1], pm[k][2]), k);
-  Delaunay t(pts.begin(), pts.end());
-  // The finite edge iterator visits each Delaunay edge exactly once, so we can emit
-  // edges directly instead of deduplicating facet edges through a hash set.
-  std::vector<std::pair<std::size_t, std::size_t>> edges;
-  edges.reserve(t.number_of_finite_edges());
-  for (auto it = t.finite_edges_begin(); it != t.finite_edges_end(); ++it) {
-    std::size_t a = it->first->vertex(it->second)->info();
-    std::size_t b = it->first->vertex(it->third)->info();
-    edges.emplace_back(std::minmax(a, b));
-  }
-  return edges;
-}
-
-// RNG cycle rank from the Delaunay edges (an Urquhart superset of the RNG): discard every edge whose open
+// RNG cycle rank from the Delaunay edges (an Urquhart superset of the RNG, see Delaunay_edges.h): discard every edge whose open
 // lune contains a point, then return |E| - |V| + 1. |V| is the number of *participating* vertices, counted
 // from the surviving edges rather than taken as n, because CGAL's 2D/3D Delaunay merges coincident input
 // points into one vertex; the n - |V| merged duplicates contribute only zero-persistence cycles, which the
 // reduction drops, so counting them out keeps the rank exact. One ball query around an endpoint suffices,
 // since each candidate is re-tested against the other endpoint.
-template <class T, typename DelaunayEdges>
-std::size_t rng_cycle_rank_delaunay(const detail::Cloud& pm, const Euclidean_kd_tree& kd_tree, DelaunayEdges delaunay_edges) {
+template <class T, class KdTree, typename DelaunayEdges>
+std::size_t rng_cycle_rank_delaunay(const detail::Cloud& pm, const KdTree& kd_tree, DelaunayEdges delaunay_edges) {
   std::vector<std::pair<std::size_t, std::size_t>> possible_edges = delaunay_edges(pm);
   std::vector<char> seen(pm.n, 0);
   std::size_t kept = 0, vertices = 0;
@@ -202,8 +146,8 @@ auto rng_supergraph(std::size_t n, Dist dist) {
 // Direct RNG construction for general dimension. Phase 1 builds an O(n^2) RNG superset, phase 2 prunes
 // edges whose lune is non-empty; returns the cycle rank |E| - n + 1. Edge lengths are squared distances
 // throughout. No vertex merging here (unlike the Delaunay path), so |V| = n.
-template <class T>
-std::size_t rng_cycle_rank_general(const detail::Cloud& pm, const Euclidean_kd_tree& kd_tree) {
+template <class T, class KdTree>
+std::size_t rng_cycle_rank_general(const detail::Cloud& pm, const KdTree& kd_tree) {
   auto e_all = rng_supergraph(pm.n, [&pm](std::size_t i, std::size_t j) { return detail::l2_dist_2<T>(pm[i], pm[j], pm.dim); });
 
   // Phase 2: eliminate edges whose open lune contains a point (strictly inside both endpoint balls). widen_radius
