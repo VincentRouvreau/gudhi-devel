@@ -52,6 +52,41 @@ BOOST_AUTO_TEST_CASE(boundary_point_on_loop_matches_full_rips) {
   BOOST_CHECK_EQUAL(count_prominent(reduced, 0.3), count_prominent(truth, 0.3));
 }
 
+BOOST_AUTO_TEST_CASE(rng_cycle_rank_paths_agree_on_boundary_ties) {
+  // A 3-4-5 configuration whose apex lies bit-exactly on a lune boundary: d(0,1) == d(0,2) == 5 with
+  // d(1,2) < 5, all representable in double. The strict open lune keeps a boundary-tied edge, so the true
+  // RNG has all three edges and cycle rank 1, on every path. The general/matrix supergraph build once broke
+  // the (0,1)/(0,2) tie by index and silently dropped an edge (rank 0), disagreeing with the 2D Delaunay
+  // path; the rank only drives the early stop, so this was invisible in barcodes.
+  std::vector<double> coords = {0.0, 0.0, 3.0, 4.0, 5.0, 0.0};
+  Gudhi::reduced_rips::detail::Cloud pm{coords.data(), 2, 3};
+  Gudhi::reduced_rips::Euclidean_kd_tree kd(pm, false);
+  BOOST_CHECK_EQUAL(
+      (Gudhi::reduced_rips::rng_cycle_rank_delaunay<double>(pm, kd, Gudhi::reduced_rips::delaunay_edges_2d)), 1u);
+  BOOST_CHECK_EQUAL((Gudhi::reduced_rips::rng_cycle_rank_general<double>(pm, kd)), 1u);
+
+  const double d12 = std::sqrt(20.0);
+  Gudhi::reduced_rips::Matrix_geometry<double> geom({0.0, 5.0, 5.0, 5.0, 0.0, d12, 5.0, d12, 0.0}, 3);
+  BOOST_CHECK_EQUAL(Gudhi::reduced_rips::rng_cycle_rank_matrix(geom), 1u);
+}
+
+BOOST_AUTO_TEST_CASE(integer_grid_ties_match_full_rips) {
+  // An integer grid is saturated with exactly tied distances, including across the kd-tree's k-th-neighbor
+  // boundary. The regression here is CGAL's arbitrary tie order (and tie-dependent k-subset) leaking into
+  // the engine's heap frontier, which resumes positionally in a refreshed neighbor list: a mismatched
+  // prefix skips one 1-simplex and doubles another, corrupting the filtration. Every unit square's loop is
+  // a genuine bar (born 1, filled by the diagonal at sqrt 2), so both search strategies must reproduce the
+  // full Vietoris-Rips ground truth exactly.
+  Cloud grid;
+  for (int x = 0; x < 5; ++x)
+    for (int y = 0; y < 5; ++y) grid.push_back({double(x), double(y)});
+  Bars truth = full_rips_h1(grid);
+  for (auto strategy : {Reduced_rips::Search::kd_tree, Reduced_rips::Search::brute_force}) {
+    Bars reduced = Reduced_rips::from_points(grid, 0, strategy).persistence();
+    BOOST_CHECK(bars_close(truth, reduced));
+  }
+}
+
 // ---- Degenerate and near-degenerate inputs -------------------------------------------------------------
 
 BOOST_AUTO_TEST_CASE(coincident_points_do_not_break_the_barcode) {

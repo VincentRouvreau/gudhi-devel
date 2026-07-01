@@ -141,7 +141,8 @@ class Reduced_rips {
    * @param[in] search Ignored (matrix neighbor queries always scan rows).
    *
    * @exception std::invalid_argument In debug mode, if a row is too short to supply its lower-triangle
-   * distances. Fewer than two points is not an error: the barcode is simply empty.
+   * distances, or if a distance is negative (or NaN). Fewer than two points is not an error: the barcode is
+   * simply empty.
    */
   template <typename DistanceMatrix>
   static Reduced_rips from_distance_matrix(const DistanceMatrix& matrix, unsigned int num_neighbors = 0,
@@ -179,6 +180,7 @@ class Reduced_rips {
     if (it == end) return;  // no points: empty barcode
     dim_ = std::distance(std::begin(*it), std::end(*it));
     if (dim_ == 0) return;  // zero-dimensional points: empty barcode
+    coords_.reserve(static_cast<std::size_t>(std::distance(it, end)) * dim_);  // forward range: multipass is fine
     for (; it != end; ++it, ++n_) {
       GUDHI_CHECK_code(std::size_t before = coords_.size());
       coords_.insert(coords_.end(), std::begin(*it), std::end(*it));
@@ -210,6 +212,8 @@ class Reduced_rips {
       const auto rend = std::end(row);
       for (; j < i && rit != rend; ++j, ++rit) {
         Filtration_value d = *rit;  // lower triangle: distance between i and j
+        GUDHI_CHECK(d >= Filtration_value(0),
+                    std::invalid_argument("Reduced_rips: distances must be non-negative"));
         matrix_[(i * n_) + j] = d;
         matrix_[(j * n_) + i] = d;
       }

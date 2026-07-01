@@ -53,7 +53,8 @@ class Euclidean_geometry {
   [[nodiscard]] std::vector<std::size_t> nearest(std::size_t i, std::size_t k) const {
     return kd_->nearest_neighbors(pm_[i], k);
   }
-  // The k nearest points to i restricted to index > i, ascending by distance (ties by index).
+  // The ~k nearest points to i restricted to index > i, ascending by distance (ties by index; full tie
+  // groups are included, so the list is always a prefix of the neighbors_above ordering).
   [[nodiscard]] std::vector<std::size_t> nearest_neighbors_above(std::size_t i, std::size_t k) const {
     std::vector<std::size_t> result = nearest(i, k);
     detail::keep_above(i, result);

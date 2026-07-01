@@ -32,8 +32,10 @@ struct Geometry {
    * barcode. May be a static member. */
   Filtration_value to_distance(Filtration_value ordering_value);
 
-  /** \brief Returns the up-to-k nearest points to i whose index is > i, ascending by distance (ties broken by
-   * ascending index). May return fewer than k points, or none. */
+  /** \brief Returns approximately the k nearest points to i whose index is > i, ascending by distance (ties
+   * broken by ascending index). May return fewer than k points (or none), or more when distances tie; the
+   * list must be a prefix of the `neighbors_above` ordering, as the reduction resumes positionally in that
+   * list after a refresh. */
   std::vector<std::size_t> nearest_neighbors_above(std::size_t i, std::size_t k);
 
   /** \brief Returns all points with index > i, ascending by distance from i (ties by ascending index). Used as

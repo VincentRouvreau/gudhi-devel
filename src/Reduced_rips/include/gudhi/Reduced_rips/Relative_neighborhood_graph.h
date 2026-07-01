@@ -123,9 +123,10 @@ std::size_t rng_cycle_rank_delaunay(const detail::Cloud& pm, const Euclidean_kd_
     bool lune_occupied = std::any_of(ball.begin(), ball.end(), [&](const std::pair<std::size_t, T>& pr) {
       std::size_t k = pr.first;
       if (k == a || k == b) return false;
-      T dist_ka_sq = detail::l2_dist_2<T>(pm[a], pm[k], pm.dim);
-      T dist_kb_sq = detail::l2_dist_2<T>(pm[b], pm[k], pm.dim);
-      return dist_ka_sq < r && dist_kb_sq < r;
+      // The ball query is centered at a, so pr.second already is d(k,a)^2 in T; testing it first spares
+      // the b-side distance for the candidates in the widened shell.
+      if (!(pr.second < r)) return false;
+      return detail::l2_dist_2<T>(pm[b], pm[k], pm.dim) < r;
     });
     if (!lune_occupied) {
       ++kept;
@@ -161,6 +162,11 @@ struct Rng_edge {
 // current minimum, and the survivors of each pruning pass are compacted in place, preserving sorted order
 // with no per-iteration allocation. e_all is accumulated then deduped once at the end. An edge (i,j) can
 // be emitted from both its endpoint passes, which the old std::set merged.
+//
+// An edge is eliminated only when a point lies *strictly* inside its open lune, mirroring the strict
+// occupancy test of the pruning phase below: eliminating on a boundary tie (equal distances broken by
+// index, as the Rng_edge ordering would) drops edges the strict open-lune RNG keeps, undercounting the
+// cycle rank and disagreeing with the 2D/3D Delaunay path on tied inputs.
 template <class Dist>
 auto rng_supergraph(std::size_t n, Dist dist) {
   using T = std::invoke_result_t<Dist, std::size_t, std::size_t>;
@@ -174,14 +180,16 @@ auto rng_supergraph(std::size_t n, Dist dist) {
     while (!e_i.empty()) {
       Rng_edge<T> min_edge = e_i.front();
       e_all.push_back(min_edge);
+      // Every entry of e_i has i as an endpoint, so `other` (min_edge's non-i endpoint) is loop-invariant.
+      const std::size_t other = min_edge.i == i ? min_edge.j : min_edge.i;
       std::size_t w = 0;
       for (std::size_t t = 1; t < e_i.size(); ++t) {
         const Rng_edge<T>& edge = e_i[t];
-        std::size_t other = (min_edge.i == edge.i || min_edge.i == edge.j) ? min_edge.j : min_edge.i;
-        std::size_t far = (edge.i == min_edge.i || edge.i == min_edge.j) ? edge.j : edge.i;
-        Rng_edge<T> edge_1(other, far, dist(other, far));
-        Rng_edge<T> edge_2(i, far, dist(i, far));
-        if (edge_2 < edge_1) e_i[w++] = edge;
+        const std::size_t far = edge.i == i ? edge.j : edge.i;
+        // `other` lies strictly inside the open lune of (i, far) iff both d(i, other) (== min_edge.length)
+        // and d(other, far) fall strictly below d(i, far) (== edge.length, already cached).
+        const bool strictly_dominated = min_edge.length < edge.length && dist(other, far) < edge.length;
+        if (!strictly_dominated) e_i[w++] = edge;
       }
       e_i.erase(e_i.begin() + static_cast<std::ptrdiff_t>(w), e_i.end());
     }
@@ -207,9 +215,9 @@ std::size_t rng_cycle_rank_general(const detail::Cloud& pm, const Euclidean_kd_t
     bool lune_occupied = std::any_of(ball.begin(), ball.end(), [&](const std::pair<std::size_t, T>& pr) {
       std::size_t k = pr.first;
       if (k == a || k == b) return false;
-      T dist_ka_sq = detail::l2_dist_2<T>(pm[a], pm[k], pm.dim);
-      T dist_kb_sq = detail::l2_dist_2<T>(pm[b], pm[k], pm.dim);
-      return dist_ka_sq < edge.length && dist_kb_sq < edge.length;
+      // pr.second is d(k,a)^2 (the query is centered at a); test it before computing the b side.
+      if (!(pr.second < edge.length)) return false;
+      return detail::l2_dist_2<T>(pm[b], pm[k], pm.dim) < edge.length;
     });
     if (!lune_occupied) ++count;
   }

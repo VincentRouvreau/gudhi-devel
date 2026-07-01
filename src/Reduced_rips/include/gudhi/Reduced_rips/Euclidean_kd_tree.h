@@ -51,18 +51,37 @@ class Euclidean_kd_tree {
     tree_.emplace(kd_points_);
   }
 
-  // Indices of the k nearest points to query, ascending by squared distance (ties by index). A query that
-  // is itself a Cloud point is returned as the nearest (distance 0); callers filter that out.
+  // Indices of at least the k nearest points to query (more when distances tie at the k-th place),
+  // ascending by squared distance with ties broken by index. This is the same (distance, index) order the
+  // exhaustive per-point scans use, and the returned list is a closed initial segment of it: the engine's
+  // heap frontier resumes positionally inside a refreshed full list, so this list must be an exact prefix
+  // of it. A query that is itself a Cloud point is returned as the nearest (distance 0); callers filter
+  // that out.
   std::vector<std::size_t> nearest_neighbors(const double* query, std::size_t k) const {
     if (!tree_) {
       std::vector<double> dist(pm_.n);
       for (std::size_t i = 0; i < pm_.n; ++i) dist[i] = detail::l2_dist_2<double>(pm_[i], query, pm_.dim);
       return detail::smallest_indices_by(0, pm_.n, std::min(k, pm_.n), [&dist](std::size_t x) { return dist[x]; });
     }
+    // CGAL's k-nearest search orders equal distances arbitrarily, and a tie across the k-th distance even
+    // makes the returned subset arbitrary. So use CGAL only to find the k-th distance, re-expressed in the
+    // canonical l2_dist_2 metric, and rebuild the answer as *every* point within it (widened ball query,
+    // then an exact <= cut): the full tie group is included and the order is deterministic.
     Kd_point center(query, query + pm_.dim);
-    std::vector<std::size_t> result;
+    double d_k = 0.0;
     for (auto nb : tree_->k_nearest_neighbors(center, static_cast<unsigned int>(k), true))
-      result.push_back(static_cast<std::size_t>(nb.first));
+      d_k = std::max(d_k, detail::l2_dist_2<double>(pm_[static_cast<std::size_t>(nb.first)], query, pm_.dim));
+    std::vector<std::pair<std::size_t, double>> ball = points_in_squared_ball(query, detail::widen_radius(d_k));
+    ball.erase(std::remove_if(ball.begin(), ball.end(),
+                              [d_k](const std::pair<std::size_t, double>& pr) { return pr.second > d_k; }),
+               ball.end());
+    std::sort(ball.begin(), ball.end(),
+              [](const std::pair<std::size_t, double>& x, const std::pair<std::size_t, double>& y) {
+                return x.second != y.second ? x.second < y.second : x.first < y.first;
+              });
+    std::vector<std::size_t> result;
+    result.reserve(ball.size());
+    for (const auto& pr : ball) result.push_back(pr.first);
     return result;
   }
 

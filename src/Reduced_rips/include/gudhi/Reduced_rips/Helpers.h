@@ -42,12 +42,16 @@ namespace detail {
 
 // Shared primitives for the point-cloud view, the squared-distance metric, and index sorting.
 
-// Widens a squared search radius by a few ULP of T so a point lying on the search boundary is still
-// returned by the kd-tree radius search. The algorithm re-tests every candidate afterwards. The slack is
-// proportional to the radius.
+// Widens a squared search radius by a few ULP so a point lying on the search boundary is still returned
+// by the kd-tree radius search. The algorithm re-tests every candidate afterwards. The slack is
+// proportional to the radius, and never narrower than double's epsilon: the kd-tree searches in double, so
+// a slack expressed in a more precise T (e.g. long double) would round away in the conversion and boundary
+// points could be missed.
 template <class T>
 [[nodiscard]] constexpr T widen_radius(T squared_radius) {
-  return squared_radius * (T(1) + (T(8) * std::numeric_limits<T>::epsilon()));
+  constexpr long double eps_t = std::numeric_limits<T>::epsilon();
+  constexpr long double eps_d = std::numeric_limits<double>::epsilon();
+  return squared_radius * (T(1) + (T(8) * static_cast<T>(eps_t > eps_d ? eps_t : eps_d)));
 }
 
 // sqrt(3) as a compile-time literal.
@@ -88,7 +92,10 @@ template <class Key>
                                                            Key key) {
   std::vector<std::size_t> result(count);
   std::iota(result.begin(), result.end(), first);
-  auto less = [&key](std::size_t x, std::size_t y) { return key(x) != key(y) ? key(x) < key(y) : x < y; };
+  auto less = [&key](std::size_t x, std::size_t y) {
+    const auto kx = key(x), ky = key(y);
+    return kx != ky ? kx < ky : x < y;
+  };
   if (k >= count) {
     std::sort(result.begin(), result.end(), less);
   } else {
