@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <type_traits>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -37,8 +38,8 @@ namespace Gudhi {
 namespace reduced_rips {
 
 using detail::Cloud;
-using detail::epsilon;
 using detail::l2_dist_2;
+using detail::widen_radius;
 
 // ---- Relative neighborhood graph (RNG) cycle rank -----------------------------------------------------
 // total_death = the RNG cycle rank |E| - |V| + 1 (the RNG is connected): the number of finite H1 bars, which
@@ -105,22 +106,22 @@ inline std::vector<std::pair<std::size_t, std::size_t>> delaunay_edges_3d(const 
 // points into one vertex; the n - |V| merged duplicates contribute only zero-persistence cycles, which the
 // reduction drops, so counting them out keeps the rank exact. One ball query around an endpoint suffices,
 // since each candidate is re-tested against the other endpoint.
-template <typename DelaunayEdges>
+template <class T, typename DelaunayEdges>
 std::size_t rng_cycle_rank_delaunay(const Cloud& pm, const Euclidean_kd_tree& kd_tree, DelaunayEdges delaunay_edges) {
   std::vector<std::pair<std::size_t, std::size_t>> possible_edges = delaunay_edges(pm);
   std::vector<char> seen(pm.n, 0);
   std::size_t kept = 0, vertices = 0;
   for (const auto& edge : possible_edges) {
     std::size_t a = edge.first, b = edge.second;
-    double r = l2_dist_2(pm[a], pm[b], pm.dim);
-    // epsilon widens only the ball-query radius (so the strict test below sees every candidate); occupancy is
-    // the open lune: a point strictly inside both endpoint balls. Boundary points do not remove the edge.
-    auto ball = kd_tree.points_in_squared_ball(pm[a], r + epsilon);
-    bool lune_occupied = std::any_of(ball.begin(), ball.end(), [&](const std::pair<std::size_t, double>& pr) {
+    T r = l2_dist_2<T>(pm[a], pm[b], pm.dim);
+    // widen_radius widens only the ball-query radius (so the strict test below sees every candidate); occupancy
+    // is the open lune: a point strictly inside both endpoint balls. Boundary points do not remove the edge.
+    auto ball = kd_tree.points_in_squared_ball(pm[a], widen_radius(r));
+    bool lune_occupied = std::any_of(ball.begin(), ball.end(), [&](const std::pair<std::size_t, T>& pr) {
       std::size_t k = pr.first;
       if (k == a || k == b) return false;
-      double dist_ka_sq = l2_dist_2(pm[a], pm[k], pm.dim);
-      double dist_kb_sq = l2_dist_2(pm[b], pm[k], pm.dim);
+      T dist_ka_sq = l2_dist_2<T>(pm[a], pm[k], pm.dim);
+      T dist_kb_sq = l2_dist_2<T>(pm[b], pm[k], pm.dim);
       return dist_ka_sq < r && dist_kb_sq < r;
     });
     if (!lune_occupied) {
@@ -136,11 +137,13 @@ std::size_t rng_cycle_rank_delaunay(const Cloud& pm, const Euclidean_kd_tree& kd
 }
 
 // A candidate edge as (lo, hi, squared length), ordered by length then index for the set operations. Shared
-// by the direct (general-dimension) and distance-matrix RNG supergraph builds.
+// by the direct (general-dimension) and distance-matrix RNG supergraph builds. The length is in the scalar
+// type T supplied by the distance callable.
+template <class T>
 struct Rng_edge {
   std::size_t i, j;
-  double length;
-  Rng_edge(std::size_t a, std::size_t b, double len) : i(std::min(a, b)), j(std::max(a, b)), length(len) {}
+  T length;
+  Rng_edge(std::size_t a, std::size_t b, T len) : i(std::min(a, b)), j(std::max(a, b)), length(len) {}
   bool operator<(const Rng_edge& o) const {
     if (length != o.length) return length < o.length;
     if (i != o.i) return i < o.i;
@@ -156,24 +159,25 @@ struct Rng_edge {
 // with no per-iteration allocation. e_all is accumulated then deduped once at the end. An edge (i,j) can
 // be emitted from both its endpoint passes, which the old std::set merged.
 template <class Dist>
-std::vector<Rng_edge> rng_supergraph(std::size_t n, Dist dist) {
-  std::vector<Rng_edge> e_all;
+auto rng_supergraph(std::size_t n, Dist dist) {
+  using T = std::invoke_result_t<Dist, std::size_t, std::size_t>;
+  std::vector<Rng_edge<T>> e_all;
   for (std::size_t i = 0; i < n; ++i) {
-    std::vector<Rng_edge> e_i;
+    std::vector<Rng_edge<T>> e_i;
     e_i.reserve(n - 1);
     for (std::size_t j = 0; j < n; ++j)
       if (i != j) e_i.emplace_back(i, j, dist(i, j));
     std::sort(e_i.begin(), e_i.end());
     while (!e_i.empty()) {
-      Rng_edge min_edge = e_i.front();
+      Rng_edge<T> min_edge = e_i.front();
       e_all.push_back(min_edge);
       std::size_t w = 0;
       for (std::size_t t = 1; t < e_i.size(); ++t) {
-        const Rng_edge& edge = e_i[t];
+        const Rng_edge<T>& edge = e_i[t];
         std::size_t other = (min_edge.i == edge.i || min_edge.i == edge.j) ? min_edge.j : min_edge.i;
         std::size_t far = (edge.i == min_edge.i || edge.i == min_edge.j) ? edge.j : edge.i;
-        Rng_edge edge_1(other, far, dist(other, far));
-        Rng_edge edge_2(i, far, dist(i, far));
+        Rng_edge<T> edge_1(other, far, dist(other, far));
+        Rng_edge<T> edge_2(i, far, dist(i, far));
         if (edge_2 < edge_1) e_i[w++] = edge;
       }
       e_i.erase(e_i.begin() + static_cast<std::ptrdiff_t>(w), e_i.end());
@@ -187,21 +191,21 @@ std::vector<Rng_edge> rng_supergraph(std::size_t n, Dist dist) {
 // Direct RNG construction for general dimension. Phase 1 builds an O(n^2) RNG superset, phase 2 prunes
 // edges whose lune is non-empty; returns the cycle rank |E| - n + 1. Edge lengths are squared distances
 // throughout. No vertex merging here (unlike the Delaunay path), so |V| = n.
-inline std::size_t rng_cycle_rank_general(const Cloud& pm, const Euclidean_kd_tree& kd_tree) {
-  std::vector<Rng_edge> e_all =
-      rng_supergraph(pm.n, [&pm](std::size_t i, std::size_t j) { return l2_dist_2(pm[i], pm[j], pm.dim); });
+template <class T>
+std::size_t rng_cycle_rank_general(const Cloud& pm, const Euclidean_kd_tree& kd_tree) {
+  auto e_all = rng_supergraph(pm.n, [&pm](std::size_t i, std::size_t j) { return l2_dist_2<T>(pm[i], pm[j], pm.dim); });
 
-  // Phase 2: eliminate edges whose open lune contains a point (strictly inside both endpoint balls). epsilon
+  // Phase 2: eliminate edges whose open lune contains a point (strictly inside both endpoint balls). widen_radius
   // widens only the ball-query radius; boundary points do not remove the edge.
   std::size_t count = 0;
   for (const auto& edge : e_all) {
     std::size_t a = edge.i, b = edge.j;
-    auto ball = kd_tree.points_in_squared_ball(pm[a], edge.length + epsilon);
-    bool lune_occupied = std::any_of(ball.begin(), ball.end(), [&](const std::pair<std::size_t, double>& pr) {
+    auto ball = kd_tree.points_in_squared_ball(pm[a], widen_radius(edge.length));
+    bool lune_occupied = std::any_of(ball.begin(), ball.end(), [&](const std::pair<std::size_t, T>& pr) {
       std::size_t k = pr.first;
       if (k == a || k == b) return false;
-      double dist_ka_sq = l2_dist_2(pm[a], pm[k], pm.dim);
-      double dist_kb_sq = l2_dist_2(pm[b], pm[k], pm.dim);
+      T dist_ka_sq = l2_dist_2<T>(pm[a], pm[k], pm.dim);
+      T dist_kb_sq = l2_dist_2<T>(pm[b], pm[k], pm.dim);
       return dist_ka_sq < edge.length && dist_kb_sq < edge.length;
     });
     if (!lune_occupied) ++count;
@@ -215,7 +219,7 @@ inline std::size_t rng_cycle_rank_general(const Cloud& pm, const Euclidean_kd_tr
 template <class Geom>
 std::size_t rng_cycle_rank_matrix(const Geom& g) {
   std::size_t n = g.size();
-  std::vector<Rng_edge> e_all = rng_supergraph(n, [&g](std::size_t i, std::size_t j) { return g.dist(i, j); });
+  auto e_all = rng_supergraph(n, [&g](std::size_t i, std::size_t j) { return g.dist(i, j); });
 
   // Occupancy is the open lune: a point strictly inside both endpoint balls.
   std::size_t kept = 0;

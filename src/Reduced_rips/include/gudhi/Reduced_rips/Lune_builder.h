@@ -31,11 +31,11 @@ namespace reduced_rips {
 
 using detail::Cloud;
 using detail::Edge_map;
-using detail::epsilon;
 using detail::in_lune;
 using detail::l2_dist_2;
 using detail::lens_ball_factor;
 using detail::pack_edge;
+using detail::widen_radius;
 
 // ---- Per-edge "lune" computation --------------------------------------------------------------------------
 // For a candidate edge (a,b) of squared length r, this determines the 2-simplices it contributes: either one
@@ -45,9 +45,10 @@ using detail::pack_edge;
 // `id` transiently holds the neighbor-list frontier position `t`. When the edge is popped into a batch that
 // slot is overwritten with the assigned 1-simplex id (see Persistence_engine::pop_batch), so by the time the
 // lune sees it `id` is the 1-simplex id.
+template <class T>
 struct Batch_edge {
   std::size_t a, b;  // endpoints, a < b
-  double r;          // squared length of (a,b)
+  T r;               // squared length of (a,b), in the geometry's scale
   std::size_t id;    // 1-simplex id (heap frontier position t while queued); also the eye-sampling RNG seed
 };
 
@@ -56,13 +57,14 @@ struct Batch_edge {
 //   - 0 columns: the lune contributes no 2-simplex (empty);
 //   - 1 column:  a single apparent 2-simplex, filed directly under its own pivot (no reduction, no bar);
 //   - >1 column: one boundary column per lune component, each reduced.
+template <class T>
 struct Lune_result {
   std::vector<std::vector<std::size_t>> cols;  // boundary column(s), each an ascending list of edge ids
-  std::vector<double> deaths;                  // squared 2-simplex diameter for each column in `cols`
+  std::vector<T> deaths;                       // squared 2-simplex diameter for each column in `cols`
 
   Lune_result() = default;  // empty: no 2-simplex
   // A single 2-simplex from its ascending 3-edge boundary column and squared diameter.
-  Lune_result(std::vector<std::size_t> column, double death) {
+  Lune_result(std::vector<std::size_t> column, T death) {
     cols.push_back(std::move(column));
     deaths.push_back(death);
   }
@@ -77,30 +79,31 @@ struct Lune_result {
 // (build_euclidean / build_matrix) gather the lune points and, for the Euclidean geometry, may apply the
 // lens/eye certificates of the reference paper. The work that does not depend on coordinates (the connected
 // components of the lune points thresholded at r, and the boundary columns they yield) is shared by both.
+template <class T>
 class Lune_builder {
  public:
-  Lune_builder(const Batch_edge& e, const Edge_map<std::size_t, std::size_t>& one_simp_to_idx, std::size_t n)
+  Lune_builder(const Batch_edge<T>& e, const Edge_map<std::size_t, std::size_t>& one_simp_to_idx, std::size_t n)
       : a_(e.a), b_(e.b), r_(e.r), id_(e.id), one_simp_to_idx_(&one_simp_to_idx), n_(n) {}
 
   // Euclidean front-end: gather the lune points from a midpoint ball query, apply the lens-ball fast path and
   // the wide-angle ("eye") single-component certificate, then defer the component analysis to the shared code.
-  [[nodiscard]] Lune_result build_euclidean(const Cloud& pm, const Euclidean_kd_tree& kd_tree) const {
+  [[nodiscard]] Lune_result<T> build_euclidean(const Cloud& pm, const Euclidean_kd_tree& kd_tree) const {
     const std::size_t a = a_, b = b_, dim = pm.dim;
-    const double r = r_;
+    const T r = r_;
 
     // A zero-length edge (coincident endpoints) bounds no 2-simplex of positive diameter, so its lune is empty.
-    if (r == 0.0) return Lune_result{};
+    if (r == T(0)) return Lune_result<T>{};
 
     // Midpoint of (a,b): center of the candidate ball query.
     thread_local std::vector<double> mid_point;
     mid_point.resize(dim);
     for (std::size_t i = 0; i < dim; ++i) mid_point[i] = (pm[a][i] + pm[b][i]) / 2.0;
-    std::vector<std::pair<std::size_t, double>> ball_mid =
-        kd_tree.points_in_squared_ball(mid_point.data(), (0.75 * r) + epsilon);
+    std::vector<std::pair<std::size_t, T>> ball_mid =
+        kd_tree.points_in_squared_ball(mid_point.data(), widen_radius(T(0.75) * r));
 
     // Fast path: a candidate inside the (inscribed) lens ball certifies the lune is a single component.
-    auto lens = std::find_if(ball_mid.begin(), ball_mid.end(), [&](const std::pair<std::size_t, double>& pr) {
-      return pr.second <= lens_ball_factor * r && both_edges_id(pr.first);
+    auto lens = std::find_if(ball_mid.begin(), ball_mid.end(), [&](const std::pair<std::size_t, T>& pr) {
+      return pr.second <= lens_ball_factor<T> * r && both_edges_id(pr.first);
     });
     if (lens != ball_mid.end()) return single(lens->first);
 
@@ -110,12 +113,12 @@ class Lune_builder {
     for (const auto& pr : ball_mid) {
       std::size_t k = pr.first;
       if (k == a) continue;
-      double dist_ka_sq = l2_dist_2(pm[a], pm[k], dim);
-      double dist_kb_sq = l2_dist_2(pm[b], pm[k], dim);
+      T dist_ka_sq = l2_dist_2<T>(pm[a], pm[k], dim);
+      T dist_kb_sq = l2_dist_2<T>(pm[b], pm[k], dim);
       if (in_lune(dist_ka_sq, dist_kb_sq, r, a, b, k) && both_edges_id(k)) r_ab.push_back(k);
     }
     std::sort(r_ab.begin(), r_ab.end());
-    if (r_ab.empty()) return Lune_result{};
+    if (r_ab.empty()) return Lune_result<T>{};
 
     // Heuristic (only worth sampling with more than two lune points): a wide-angle ("eye") point certifies a
     // single component without union-find. The seed is the edge id (id_), so the sampling is deterministic and
@@ -141,31 +144,32 @@ class Lune_builder {
     }
 
     return from_lune_points(
-        r_ab, [&pm, dim](std::size_t i, std::size_t j) { return l2_dist_2(pm[i], pm[j], dim); }, single_component_hint);
+        r_ab, [&pm, dim](std::size_t i, std::size_t j) { return l2_dist_2<T>(pm[i], pm[j], dim); },
+        single_component_hint);
   }
 
   // Matrix front-end: with no coordinates there is no midpoint, hence none of the Euclidean shortcuts.
   // Candidates are gathered from the row of endpoint a (the lune is contained in the closed ball of radius r
   // about a), filtered exactly by in_lune, and the components are always found by the exact union-find.
   template <class Geom>
-  [[nodiscard]] Lune_result build_matrix(const Geom& g) const {
+  [[nodiscard]] Lune_result<T> build_matrix(const Geom& g) const {
     const std::size_t a = a_, b = b_, np = g.size();
-    const double r = r_;
+    const T r = r_;
 
     // A zero-length edge (coincident endpoints) bounds no 2-simplex of positive diameter, so its lune is empty.
-    if (r == 0.0) return Lune_result{};
+    if (r == T(0)) return Lune_result<T>{};
 
     // Lune points of (a,b): scan a's row (lune is a subset of the closed ball of radius r about a), keeping
     // those that pass the exact in_lune test against b. k increases, so r_ab is already ascending in index.
     std::vector<std::size_t> r_ab;
     for (std::size_t k = 0; k < np; ++k) {
       if (k == a || k == b) continue;
-      double dist_ka = g.dist(a, k);
+      T dist_ka = g.dist(a, k);
       if (dist_ka > r) continue;
-      double dist_kb = g.dist(b, k);
+      T dist_kb = g.dist(b, k);
       if (in_lune(dist_ka, dist_kb, r, a, b, k)) r_ab.push_back(k);
     }
-    if (r_ab.empty()) return Lune_result{};
+    if (r_ab.empty()) return Lune_result<T>{};
 
     return from_lune_points(
         r_ab, [&g](std::size_t i, std::size_t j) { return g.dist(i, j); }, /*single_component_hint=*/false);
@@ -179,14 +183,14 @@ class Lune_builder {
 
   // A single 2-simplex (a, b, c): its boundary column paired with the squared diameter r (c lies in the
   // closed lune, so (a,b) is the longest edge and r is the death).
-  [[nodiscard]] Lune_result single(std::size_t c) const { return {column_of(c), r_}; }
+  [[nodiscard]] Lune_result<T> single(std::size_t c) const { return {column_of(c), r_}; }
 
   // Reduce the lune points r_ab (ascending, non-empty) to the final Lune_result. `dist` is a squared-distance
   // callable (i, j) -> double; `single_component_hint` lets the Euclidean eye certificate skip the union-find
   // when it has already certified that the lune points form a single component.
   template <class Dist>
-  [[nodiscard]] Lune_result from_lune_points(const std::vector<std::size_t>& r_ab, Dist dist,
-                                             bool single_component_hint) const {
+  [[nodiscard]] Lune_result<T> from_lune_points(const std::vector<std::size_t>& r_ab, Dist dist,
+                                                bool single_component_hint) const {
     std::size_t n_rab = r_ab.size();
     if (n_rab == 1 || single_component_hint) return single(r_ab[0]);
 
@@ -203,7 +207,7 @@ class Lune_builder {
 
     // Multiple components: one boundary column per component, each dying at the squared diameter r (each
     // representative lies in the closed lune of (a,b)).
-    Lune_result res;
+    Lune_result<T> res;
     res.cols.reserve(reps.size());
     res.deaths.reserve(reps.size());
     for (std::size_t rep : reps) {
@@ -265,8 +269,8 @@ class Lune_builder {
   }
 
   std::size_t a_, b_;
-  double r_;
-  std::size_t id_;  // 1-simplex id of (a,b); seeds the eye-sampling RNG
+  T r_;
+  std::size_t id_;                                             // 1-simplex id of (a,b); seeds the eye-sampling RNG
   const Edge_map<std::size_t, std::size_t>* one_simp_to_idx_;  // non-owning, never null; outlives this
   std::size_t n_;
 };

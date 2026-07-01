@@ -44,18 +44,22 @@ using detail::l2_dist_2;
 // the *ordering* of the dist values, so each policy is free to pick whichever scale it computes most cheaply
 // and exactly -- dist is named for that role, not for a fixed unit. Two policies implement it.
 // Euclidean_geometry (coordinates + kd-tree) keeps the paper's lens-ball / wide-angle accelerations and works
-// in squared distances (dist returns d^2, to_distance is sqrt). Matrix_geometry (a bare symmetric distance
-// matrix) has no coordinates, so it gathers candidates by scanning a matrix row and always runs the exact
-// union-find. It carries the supplied distances unchanged (dist returns d, to_distance is the identity).
+// in squared distances (dist returns d^2, to_distance is sqrt). Coordinates stay double and CGAL searches in
+// double, but each candidate CGAL returns is re-checked with l2_dist_2<T>, so the barcode keeps T's precision.
+// Matrix_geometry (a bare symmetric distance matrix) has no coordinates, so it gathers candidates by scanning
+// a matrix row and always runs the exact union-find; it carries the supplied distances unchanged (dist returns
+// d, to_distance is the identity).
 
+template <class T>
 class Euclidean_geometry {
  public:
+  using Filtration_value = T;
   Euclidean_geometry(const Cloud& pm, const Euclidean_kd_tree& kd) : pm_(pm), kd_(&kd) {}
   [[nodiscard]] std::size_t size() const { return pm_.n; }
   // Ordering scale: the squared Euclidean distance.
-  [[nodiscard]] double dist(std::size_t i, std::size_t j) const { return l2_dist_2(pm_[i], pm_[j], pm_.dim); }
+  [[nodiscard]] T dist(std::size_t i, std::size_t j) const { return l2_dist_2<T>(pm_[i], pm_[j], pm_.dim); }
   // Maps a squared distance back to the true distance for the output barcode.
-  [[nodiscard]] static double to_distance(double squared) { return std::sqrt(squared); }
+  [[nodiscard]] static T to_distance(T squared) { return std::sqrt(squared); }
   [[nodiscard]] std::vector<std::size_t> nearest(std::size_t i, std::size_t k) const {
     return kd_->nearest_neighbors(pm_[i], k);
   }
@@ -68,13 +72,13 @@ class Euclidean_geometry {
   [[nodiscard]] std::vector<std::size_t> neighbors_above(std::size_t i) const { return find_all_neighbors(i, pm_); }
   // Early-stop target: the RNG cycle rank (the number of finite H1 bars), from the per-dimension routine.
   [[nodiscard]] std::size_t rng_early_stop_target() const {
-    if (pm_.dim == 2) return rng_cycle_rank_delaunay(pm_, *kd_, delaunay_edges_2d);
-    if (pm_.dim == 3) return rng_cycle_rank_delaunay(pm_, *kd_, delaunay_edges_3d);
-    return rng_cycle_rank_general(pm_, *kd_);
+    if (pm_.dim == 2) return rng_cycle_rank_delaunay<T>(pm_, *kd_, delaunay_edges_2d);
+    if (pm_.dim == 3) return rng_cycle_rank_delaunay<T>(pm_, *kd_, delaunay_edges_3d);
+    return rng_cycle_rank_general<T>(pm_, *kd_);
   }
-  [[nodiscard]] Lune_result lune(const Batch_edge& e, const Edge_map<std::size_t, std::size_t>& one_simp_to_idx,
-                                 std::size_t n) const {
-    return Lune_builder(e, one_simp_to_idx, n).build_euclidean(pm_, *kd_);
+  [[nodiscard]] Lune_result<T> lune(const Batch_edge<T>& e, const Edge_map<std::size_t, std::size_t>& one_simp_to_idx,
+                                    std::size_t n) const {
+    return Lune_builder<T>(e, one_simp_to_idx, n).build_euclidean(pm_, *kd_);
   }
 
  private:
@@ -82,21 +86,23 @@ class Euclidean_geometry {
   const Euclidean_kd_tree* kd_;  // non-owning, never null; kd-tree is move-only so stored by pointer
 };
 
-// Dense symmetric matrix of distances, n by n row-major. Unlike the Euclidean policy this keeps the supplied
-// distances as-is rather than squaring them: with no coordinates every value is used only for ordering and as
-// the barcode birth/death, so squaring would round-trip through sqrt at output and needlessly lose precision.
+// Dense symmetric matrix of distances, n by n row-major. Unlike the Euclidean policy it keeps the supplied
+// distances as-is rather than squaring them: with no coordinates each value is used only for ordering and as
+// the barcode birth/death, so squaring would only round-trip through sqrt at output and lose precision.
+template <class T>
 class Matrix_geometry {
  public:
-  Matrix_geometry(std::vector<double> distances, std::size_t n) : dist_(std::move(distances)), n_(n) {}
+  using Filtration_value = T;
+  Matrix_geometry(std::vector<T> distances, std::size_t n) : dist_(std::move(distances)), n_(n) {}
   [[nodiscard]] std::size_t size() const { return n_; }
   // Ordering scale: the raw distance; comparisons and the barcode use it directly.
-  [[nodiscard]] double dist(std::size_t i, std::size_t j) const { return dist_[(i * n_) + j]; }
+  [[nodiscard]] T dist(std::size_t i, std::size_t j) const { return dist_[(i * n_) + j]; }
   // The value already is the distance, so mapping it back to an output distance is the identity.
-  [[nodiscard]] static double to_distance(double distance) { return distance; }
+  [[nodiscard]] static T to_distance(T distance) { return distance; }
 
   // k nearest points to i (including i itself at distance 0), ascending by distance then index.
   [[nodiscard]] std::vector<std::size_t> nearest(std::size_t i, std::size_t k) const {
-    const double* row = &dist_[i * n_];
+    const T* row = &dist_[i * n_];
     k = std::min(k, n_);
     // Sort indices directly, with the matrix row as the distance lookup.
     std::vector<std::size_t> result(n_);
@@ -116,7 +122,7 @@ class Matrix_geometry {
 
   // Indices > i, ascending by distance from i (ties by index).
   [[nodiscard]] std::vector<std::size_t> neighbors_above(std::size_t i) const {
-    const double* row = &dist_[i * n_];
+    const T* row = &dist_[i * n_];
     std::vector<std::size_t> result(n_ - i - 1);
     std::iota(result.begin(), result.end(), i + 1);
     std::sort(result.begin(), result.end(),
@@ -126,13 +132,13 @@ class Matrix_geometry {
 
   // Early-stop target: the exact RNG cycle rank.
   [[nodiscard]] std::size_t rng_early_stop_target() const { return rng_cycle_rank_matrix(*this); }
-  [[nodiscard]] Lune_result lune(const Batch_edge& e, const Edge_map<std::size_t, std::size_t>& one_simp_to_idx,
-                                 std::size_t n) const {
-    return Lune_builder(e, one_simp_to_idx, n).build_matrix(*this);
+  [[nodiscard]] Lune_result<T> lune(const Batch_edge<T>& e, const Edge_map<std::size_t, std::size_t>& one_simp_to_idx,
+                                    std::size_t n) const {
+    return Lune_builder<T>(e, one_simp_to_idx, n).build_matrix(*this);
   }
 
  private:
-  std::vector<double> dist_;
+  std::vector<T> dist_;
   std::size_t n_;
 };
 

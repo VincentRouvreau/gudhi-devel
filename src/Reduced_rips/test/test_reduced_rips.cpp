@@ -26,6 +26,7 @@
 #include <limits>
 #include <random>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -271,6 +272,65 @@ BOOST_AUTO_TEST_CASE(non_metric_dissimilarity_is_accepted) {
   Bars truth = full_rips_h1_from_matrix(full);
   Bars reduced = Reduced_rips::from_distance_matrix(full).persistence();
   BOOST_CHECK(bars_close(truth, reduced));
+}
+
+// ---- Scalar (Filtration_value) type --------------------------------------------------------------------
+
+// Re-express a Filtration_value-typed barcode as the double-valued Bars the comparison helpers consume.
+template <class FV>
+static Bars to_double_bars(const std::vector<std::pair<FV, FV>>& b) {
+  Bars out;
+  out.reserve(b.size());
+  for (const auto& x : b) out.emplace_back(static_cast<double>(x.first), static_cast<double>(x.second));
+  return out;
+}
+
+// The reduction is templated on Filtration_value: distances, edge lengths, lune deaths and the barcode are all
+// carried in that type. A given instantiation must recover the same degree-1 barcode as the double ground
+// truth, to that type's precision, on both the point-cloud and the distance-matrix paths.
+template <class FV>
+static void check_scalar_type(const char* tag, double tol) {
+  using RR = Gudhi::reduced_rips::Reduced_rips<FV>;
+  static_assert(std::is_same_v<typename RR::Filtration_value, FV>, "Reduced_rips<FV>::Filtration_value must be FV");
+  static_assert(std::is_same_v<typename RR::Persistence_interval, std::pair<FV, FV>>,
+                "the barcode must be pairs of FV, with no widening to double");
+  BOOST_TEST_CONTEXT(tag) {
+    auto pts = circle(40, 2);
+    Bars truth = full_rips_h1(pts);
+
+    std::vector<std::pair<FV, FV>> from_points = RR::from_points(pts).persistence();  // copy out of the temporary
+    std::vector<std::pair<FV, FV>> from_matrix = RR::from_distance_matrix(full_distance_matrix(pts)).persistence();
+
+    BOOST_CHECK(bars_close(truth, to_double_bars(from_points), tol));
+    BOOST_CHECK(bars_close(truth, to_double_bars(from_matrix), tol));
+  }
+}
+
+BOOST_AUTO_TEST_CASE(filtration_value_scalar_types) {
+  // float carries ~7 significant digits (squared then square-rooted), so it needs a looser tolerance than the
+  // wider types; all three must still recover the loop.
+  check_scalar_type<float>("float", 1e-3);
+  check_scalar_type<double>("double", 1e-6);
+  check_scalar_type<long double>("long double", 1e-9);
+}
+
+BOOST_AUTO_TEST_CASE(integer_distance_matrix) {
+  // The matrix geometry carries the supplied dissimilarities verbatim -- no squaring, no square root -- so an
+  // integer Filtration_value keeps the whole reduction in exact integer arithmetic. A 4-cycle with edge length
+  // 2 and diagonals 3 (a scaled square) has a single H1 loop: born when the four length-2 edges close the cycle,
+  // dying when a diagonal triangle fills it, giving the exact bar (2, 3).
+  using RR = Gudhi::reduced_rips::Reduced_rips<int>;
+  static_assert(std::is_same_v<RR::Filtration_value, int>);
+  std::vector<std::vector<int>> lower = {
+      {},         // point 0
+      {2},        // d(1,0)
+      {3, 2},     // d(2,0), d(2,1)
+      {2, 3, 2},  // d(3,0), d(3,1), d(3,2)
+  };
+  std::vector<std::pair<int, int>> bc = RR::from_distance_matrix(lower).persistence();
+  BOOST_REQUIRE_EQUAL(bc.size(), 1U);
+  BOOST_CHECK_EQUAL(bc.front().first, 2);   // exact integer birth
+  BOOST_CHECK_EQUAL(bc.front().second, 3);  // exact integer death
 }
 
 // ---- Points exactly on lune boundaries -----------------------------------------------------------------

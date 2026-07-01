@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <limits>
 #include <numeric>
 #include <vector>
 
@@ -35,14 +36,19 @@ namespace detail {
 // Shared primitives for the point-cloud view, the squared-distance metric, the edge/2-simplex
 // encoding, the lune-membership test, and the heap ordering.
 
-// Tolerance added to squared search radii so a point lying on the search boundary is still
-// returned by the kd-tree radius search. The algorithm re-tests every candidate afterwards.
-constexpr double epsilon = 1e-14;
+// Widens a squared search radius by a few ULP of T so a point lying on the search boundary is still
+// returned by the kd-tree radius search. The algorithm re-tests every candidate afterwards. The slack is
+// proportional to the radius.
+template <class T>
+[[nodiscard]] constexpr T widen_radius(T squared_radius) {
+  return squared_radius * (T(1) + (T(8) * std::numeric_limits<T>::epsilon()));
+}
 
 // (0.5 * (2 - sqrt(3)))^2 = (7 - 4*sqrt(3))/4: squared-radius factor of the lens-inscribed ball
 // (Lemma 3.5 of the reference paper). sqrt(3) written as a literal so the value is a compile-time
 // constant (a non-empty lens-inscribed ball certifies the lune has a single connected component).
-constexpr double lens_ball_factor = 0.25 * (2.0 - 1.7320508075688772) * (2.0 - 1.7320508075688772);
+template <class T>
+inline constexpr T lens_ball_factor = T(0.25) * (T(2) - T(1.7320508075688772)) * (T(2) - T(1.7320508075688772));
 
 // Flat contiguous point cloud: n points of `dim` coordinates packed row-major in one buffer. point i is
 // the pointer `data + i*dim`.
@@ -53,11 +59,13 @@ struct Cloud {
   [[nodiscard]] std::size_t size() const { return n; }
 };
 
-// Squared Euclidean distance between two `dim`-coordinate points.
-inline double l2_dist_2(const double* a, const double* b, std::size_t dim) {
-  double sq_norm = 0.0;
+// Squared Euclidean distance between two `dim`-coordinate points. Coordinates are stored as double, but the
+// sum of squares is accumulated in T (the filtration type) so its precision reaches the barcode.
+template <class T>
+[[nodiscard]] T l2_dist_2(const double* a, const double* b, std::size_t dim) {
+  T sq_norm = T(0);
   for (std::size_t i = 0; i < dim; ++i) {
-    double diff = a[i] - b[i];
+    T diff = static_cast<T>(a[i]) - static_cast<T>(b[i]);
     sq_norm += diff * diff;
   }
   return sq_norm;
@@ -68,7 +76,8 @@ inline std::vector<std::size_t> find_all_neighbors(std::size_t ver_idx, const Cl
   std::size_t number_of_idx = pm.n - ver_idx - 1;
   const std::size_t off = ver_idx + 1;
   std::vector<double> dist(number_of_idx);
-  for (std::size_t i = off; i < pm.n; ++i) dist[i - off] = l2_dist_2(pm[ver_idx], pm[i], pm.dim);
+  // Ordering only, so double suffices regardless of the barcode type.
+  for (std::size_t i = off; i < pm.n; ++i) dist[i - off] = l2_dist_2<double>(pm[ver_idx], pm[i], pm.dim);
   // Sort the absolute indices directly, looking distances up by index.
   std::vector<std::size_t> result(number_of_idx);
   std::iota(result.begin(), result.end(), off);
@@ -101,7 +110,8 @@ inline bool sorted_pair_less(std::size_t x, std::size_t y, std::size_t p, std::s
 // where a point sitting exactly on a boundary is admitted only when the index tie-break assigns it to this
 // edge. dist_ka and dist_kb are the distances from k to endpoints a and b (the paper's d(x,y) and d(x,z)) and
 // thresh is the edge length (the paper's r).
-inline bool in_lune(double dist_ka, double dist_kb, double thresh, std::size_t a, std::size_t b, std::size_t k) {
+template <class T>
+inline bool in_lune(T dist_ka, T dist_kb, T thresh, std::size_t a, std::size_t b, std::size_t k) {
   if (dist_ka < thresh && dist_kb < thresh) return true;
   if (dist_ka == thresh && dist_kb < thresh) return sorted_pair_less(a, k, a, b);
   if (dist_ka < thresh && dist_kb == thresh) return sorted_pair_less(b, k, a, b);

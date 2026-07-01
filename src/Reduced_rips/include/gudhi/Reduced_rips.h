@@ -17,6 +17,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <iterator>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -57,11 +58,11 @@ namespace reduced_rips {
  *
  * The reduced filtration is exact for any symmetric matrix of non-negative dissimilarities.
  *
- * @tparam Filtration_value_ Arithmetic type used to represent the birth/death values of the output barcode
- * (`double` by default). This controls only the representation of the returned persistence values; all
- * internal geometry and distance arithmetic is carried out in `double` regardless, because the reduction
- * relies on exact comparisons of edge lengths (squared, in the Euclidean geometry) that a lower-precision type
- * would perturb.
+ * @tparam Filtration_value_ Arithmetic type used for the distance/filtration arithmetic and the birth/death
+ * values of the output barcode (`double` by default). Point coordinates are still stored as `double`, and
+ * the Euclidean path's spatial acceleration (the CGAL kd-tree and 2D/3D Delaunay) searches in `double`; but
+ * every candidate it returns is re-tested with an exact distance in `Filtration_value_`, so the filtration
+ * values themselves carry this type's precision.
  */
 template <typename Filtration_value_ = double>
 class Reduced_rips {
@@ -100,6 +101,9 @@ class Reduced_rips {
   template <typename PointRange>
   static Reduced_rips from_points(const PointRange& points, unsigned int num_neighbors = 0,
                                   Search search = Search::automatic) {
+    static_assert(std::is_floating_point_v<Filtration_value>,
+                  "Reduced_rips::from_points requires a floating-point Filtration_value. Use from_distance_matrix "
+                  "for exact scalar types.");
     Reduced_rips rr;
     rr.num_neighbors_ = num_neighbors;
     rr.search_ = search;
@@ -190,14 +194,14 @@ class Reduced_rips {
     is_matrix_ = true;
     n_ = std::distance(std::begin(matrix), std::end(matrix));
     if (n_ < 2) return;  // fewer than two points: empty barcode
-    matrix_.assign(n_ * n_, 0.0);
+    matrix_.assign(n_ * n_, Filtration_value(0));
     std::size_t i = 0;
     for (const auto& row : matrix) {
       std::size_t j = 0;
       auto rit = std::begin(row);
       const auto rend = std::end(row);
       for (; j < i && rit != rend; ++j, ++rit) {
-        double d = *rit;  // lower triangle: distance between i and j
+        Filtration_value d = *rit;  // lower triangle: distance between i and j
         matrix_[(i * n_) + j] = d;
         matrix_[(j * n_) + i] = d;
       }
@@ -208,36 +212,34 @@ class Reduced_rips {
 
   void compute() {
     if (is_matrix_) {
-      Matrix_geometry geom(std::move(matrix_), n_);
+      Matrix_geometry<Filtration_value> geom(std::move(matrix_), n_);
       compute_impl(geom);
     } else {
       detail::Cloud pm = cloud();
       Euclidean_kd_tree kd_tree(pm, use_brute_force());
-      Euclidean_geometry geom(pm, kd_tree);
+      Euclidean_geometry<Filtration_value> geom(pm, kd_tree);
       compute_impl(geom);
     }
   }
-  
+
   template <class Geom>
   void compute_impl(Geom& geom) {
     Persistence_engine<Geom> engine(geom, num_neighbors_);
     engine.run();
 
-    const std::vector<std::pair<double, double>>& bars = engine.barcode();
+    const auto& bars = engine.barcode();
     barcode_.reserve(bars.size());
-    // The engine emits birth/death in the geometry's edge-length scale. Each geometry maps a value back to the
-    // true distance (sqrt for the Euclidean policy) before we cast it.
-    for (const auto& bar : bars)
-      barcode_.emplace_back(static_cast<Filtration_value>(Geom::to_distance(bar.first)),
-                            static_cast<Filtration_value>(Geom::to_distance(bar.second)));
+    // The engine emits birth/death on the geometry's edge-length scale; to_distance maps each back to a real
+    // distance (sqrt for the Euclidean policy, the identity for the matrix policy).
+    for (const auto& bar : bars) barcode_.emplace_back(Geom::to_distance(bar.first), Geom::to_distance(bar.second));
     num_one_simplices_ = engine.committed_edges();
     num_two_simplices_ = engine.columns_formed();
     num_persistence_pairs_ = engine.deaths();
   }
 
-  std::vector<double> coords_;  // flat row-major point storage, n_ points x dim_ coordinates (cloud input)
-  std::vector<double> matrix_;  // flat n_ x n_ row-major distances (distance-matrix input)
-  bool is_matrix_ = false;         // selects the distance-matrix backend
+  std::vector<double> coords_;            // flat row-major point storage, n_ points x dim_ coordinates (cloud input)
+  std::vector<Filtration_value> matrix_;  // flat n_ x n_ row-major distances (distance-matrix input)
+  bool is_matrix_ = false;                // selects the distance-matrix backend
   std::size_t dim_ = 0;
   std::size_t n_ = 0;
   unsigned int num_neighbors_ = 0;

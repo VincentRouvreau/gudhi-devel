@@ -51,7 +51,7 @@ class Euclidean_kd_tree {
   std::vector<std::size_t> nearest_neighbors(const double* query, std::size_t k) const {
     if (brute_force_) {
       std::vector<double> dist(pm_.n);
-      for (std::size_t i = 0; i < pm_.n; ++i) dist[i] = l2_dist_2(pm_[i], query, pm_.dim);
+      for (std::size_t i = 0; i < pm_.n; ++i) dist[i] = l2_dist_2<double>(pm_[i], query, pm_.dim);
       k = std::min(k, pm_.n);
       std::vector<std::size_t> result(pm_.n);
       std::iota(result.begin(), result.end(), std::size_t{0});
@@ -68,21 +68,25 @@ class Euclidean_kd_tree {
     return result;
   }
 
-  // All points within the given squared radius of query, as (index, squared distance) pairs.
-  std::vector<std::pair<std::size_t, double>> points_in_squared_ball(const double* query, double squared_radius) const {
-    std::vector<std::pair<std::size_t, double>> result;
+  // All points within the given squared radius of query, as (index, squared distance) pairs. The radius and the
+  // returned squared distances are in the scalar type T; the CGAL tree searches in double, so the radius is
+  // narrowed to double for the query and each survivor's distance is recomputed in T afterwards.
+  template <class T>
+  std::vector<std::pair<std::size_t, T>> points_in_squared_ball(const double* query, T squared_radius) const {
+    std::vector<std::pair<std::size_t, T>> result;
     if (brute_force_) {
       for (std::size_t i = 0; i < pm_.n; ++i) {
-        double d = l2_dist_2(pm_[i], query, pm_.dim);
+        T d = l2_dist_2<T>(pm_[i], query, pm_.dim);
         if (d <= squared_radius) result.emplace_back(i, d);
       }
       return result;
     }
     Kd_point center(query, query + pm_.dim);
     std::vector<std::size_t> found;
-    tree_->all_near_neighbors2(center, squared_radius, squared_radius, std::back_inserter(found));
+    const auto radius = static_cast<double>(squared_radius);
+    tree_->all_near_neighbors2(center, radius, radius, std::back_inserter(found));
     result.reserve(found.size());
-    for (std::size_t idx : found) result.emplace_back(idx, l2_dist_2(pm_[idx], query, pm_.dim));
+    for (std::size_t idx : found) result.emplace_back(idx, l2_dist_2<T>(pm_[idx], query, pm_.dim));
     return result;
   }
 
