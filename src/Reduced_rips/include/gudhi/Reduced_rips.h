@@ -14,7 +14,6 @@
 #ifndef REDUCED_RIPS_H_
 #define REDUCED_RIPS_H_
 
-#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <iterator>
@@ -61,7 +60,8 @@ namespace reduced_rips {
  * @tparam Filtration_value_ Arithmetic type used to represent the birth/death values of the output barcode
  * (`double` by default). This controls only the representation of the returned persistence values; all
  * internal geometry and distance arithmetic is carried out in `double` regardless, because the reduction
- * relies on exact comparisons of squared edge lengths that a lower-precision type would perturb.
+ * relies on exact comparisons of edge lengths (squared, in the Euclidean geometry) that a lower-precision type
+ * would perturb.
  */
 template <typename Filtration_value_ = double>
 class Reduced_rips {
@@ -181,27 +181,25 @@ class Reduced_rips {
     return dim_ >= 4;
   }
 
-  // Reads a full or lower-triangular symmetric distance matrix into matrix_sq_ as a flat n by n row-major
-  // buffer of squared distances (the squared-length convention used throughout). Only the entries below the
-  // diagonal of each row are read -- matrix[i][j] for j < i -- so the full and lower-triangular layouts are
-  // handled uniformly in a single forward pass per row; the upper triangle is mirrored and the diagonal is
-  // zero. Squaring preserves the edge order (entries are non-negative), and true distances are recovered by
-  // sqrt at barcode output. Fewer than two rows leaves matrix_sq_ empty (the barcode stays empty).
+  // Reads a full or lower-triangular symmetric distance matrix into matrix_ as a flat n by n row-major buffer
+  // of the supplied distances, kept as-is. Only the entries below the diagonal of each row are read, matrix[i][j]
+  // for j < i -- so the full and lower-triangular layouts are handled uniformly in a single forward pass per row;
+  // the upper triangle is mirrored and the diagonal is zero.
   template <typename DistanceMatrix>
   void ingest_distance_matrix(const DistanceMatrix& matrix) {
     is_matrix_ = true;
     n_ = std::distance(std::begin(matrix), std::end(matrix));
     if (n_ < 2) return;  // fewer than two points: empty barcode
-    matrix_sq_.assign(n_ * n_, 0.0);
+    matrix_.assign(n_ * n_, 0.0);
     std::size_t i = 0;
     for (const auto& row : matrix) {
       std::size_t j = 0;
       auto rit = std::begin(row);
       const auto rend = std::end(row);
       for (; j < i && rit != rend; ++j, ++rit) {
-        double d2 = (*rit) * (*rit);  // lower triangle: distance between i and j, squared
-        matrix_sq_[(i * n_) + j] = d2;
-        matrix_sq_[(j * n_) + i] = d2;
+        double d = *rit;  // lower triangle: distance between i and j
+        matrix_[(i * n_) + j] = d;
+        matrix_[(j * n_) + i] = d;
       }
       GUDHI_CHECK(j >= i, std::invalid_argument("Reduced_rips: distance matrix row is too short"));
       ++i;
@@ -210,7 +208,7 @@ class Reduced_rips {
 
   void compute() {
     if (is_matrix_) {
-      Matrix_geometry geom(std::move(matrix_sq_), n_);
+      Matrix_geometry geom(std::move(matrix_), n_);
       compute_impl(geom);
     } else {
       detail::Cloud pm = cloud();
@@ -225,19 +223,20 @@ class Reduced_rips {
     Persistence_engine<Geom> engine(geom, num_neighbors_);
     engine.run();
 
-    const std::vector<std::pair<double, double>>& barcode_squared = engine.barcode_squared();
-    barcode_.reserve(barcode_squared.size());
-    // Distances are recovered by sqrt of the squared birth/death and cast to the output Filtration_value.
-    for (const auto& bar : barcode_squared)
-      barcode_.emplace_back(static_cast<Filtration_value>(std::sqrt(bar.first)),
-                            static_cast<Filtration_value>(std::sqrt(bar.second)));
+    const std::vector<std::pair<double, double>>& bars = engine.barcode();
+    barcode_.reserve(bars.size());
+    // The engine emits birth/death in the geometry's edge-length scale. Each geometry maps a value back to the
+    // true distance (sqrt for the Euclidean policy) before we cast it.
+    for (const auto& bar : bars)
+      barcode_.emplace_back(static_cast<Filtration_value>(Geom::to_distance(bar.first)),
+                            static_cast<Filtration_value>(Geom::to_distance(bar.second)));
     num_one_simplices_ = engine.committed_edges();
     num_two_simplices_ = engine.columns_formed();
     num_persistence_pairs_ = engine.deaths();
   }
 
-  std::vector<double> coords_;     // flat row-major point storage, n_ points x dim_ coordinates (cloud input)
-  std::vector<double> matrix_sq_;  // flat n_ x n_ row-major squared distances (distance-matrix input)
+  std::vector<double> coords_;  // flat row-major point storage, n_ points x dim_ coordinates (cloud input)
+  std::vector<double> matrix_;  // flat n_ x n_ row-major distances (distance-matrix input)
   bool is_matrix_ = false;         // selects the distance-matrix backend
   std::size_t dim_ = 0;
   std::size_t n_ = 0;

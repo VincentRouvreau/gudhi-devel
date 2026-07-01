@@ -215,7 +215,7 @@ inline std::size_t rng_cycle_rank_general(const Cloud& pm, const Euclidean_kd_tr
 template <class Geom>
 std::size_t rng_cycle_rank_matrix(const Geom& g) {
   std::size_t n = g.size();
-  std::vector<Rng_edge> e_all = rng_supergraph(n, [&g](std::size_t i, std::size_t j) { return g.dist2(i, j); });
+  std::vector<Rng_edge> e_all = rng_supergraph(n, [&g](std::size_t i, std::size_t j) { return g.dist(i, j); });
 
   // Occupancy is the open lune: a point strictly inside both endpoint balls.
   std::size_t kept = 0;
@@ -224,7 +224,7 @@ std::size_t rng_cycle_rank_matrix(const Geom& g) {
     bool occupied = false;
     for (std::size_t k = 0; k < n && !occupied; ++k) {
       if (k == a || k == b) continue;
-      if (g.dist2(a, k) < edge.length && g.dist2(b, k) < edge.length) occupied = true;
+      if (g.dist(a, k) < edge.length && g.dist(b, k) < edge.length) occupied = true;
     }
     if (!occupied) ++kept;
   }

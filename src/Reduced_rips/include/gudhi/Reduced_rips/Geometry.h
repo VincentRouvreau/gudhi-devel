@@ -15,6 +15,7 @@
 #define REDUCED_RIPS_GEOMETRY_H_
 
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <numeric>
 #include <utility>
@@ -37,17 +38,24 @@ using detail::l2_dist_2;
 
 // ---- Geometry policies --------------------------------------------------------------------------------
 // The computation core (Reduced_rips::compute_impl) is written once against a geometry policy answering purely
-// metric queries: the squared distance between two points, the k nearest points, the higher-indexed
-// neighbors in ascending order, the relative-neighborhood-graph edge count, and the per-edge lune
-// computation. Two policies implement it. Euclidean_geometry (coordinates + kd-tree) keeps the paper's
-// lens-ball / wide-angle accelerations. Matrix_geometry (a bare symmetric distance matrix) has no
-// coordinates, so it gathers candidates by scanning a matrix row and always runs the exact union-find.
+// metric queries: the inter-point distance on the policy's own scale (dist), a mapping from that scale back to
+// a true output distance (to_distance), the k nearest points, the higher-indexed neighbors in ascending order,
+// the relative-neighborhood-graph edge count, and the per-edge lune computation. The reduction relies only on
+// the *ordering* of the dist values, so each policy is free to pick whichever scale it computes most cheaply
+// and exactly -- dist is named for that role, not for a fixed unit. Two policies implement it.
+// Euclidean_geometry (coordinates + kd-tree) keeps the paper's lens-ball / wide-angle accelerations and works
+// in squared distances (dist returns d^2, to_distance is sqrt). Matrix_geometry (a bare symmetric distance
+// matrix) has no coordinates, so it gathers candidates by scanning a matrix row and always runs the exact
+// union-find. It carries the supplied distances unchanged (dist returns d, to_distance is the identity).
 
 class Euclidean_geometry {
  public:
   Euclidean_geometry(const Cloud& pm, const Euclidean_kd_tree& kd) : pm_(pm), kd_(&kd) {}
   [[nodiscard]] std::size_t size() const { return pm_.n; }
-  [[nodiscard]] double dist2(std::size_t i, std::size_t j) const { return l2_dist_2(pm_[i], pm_[j], pm_.dim); }
+  // Ordering scale: the squared Euclidean distance.
+  [[nodiscard]] double dist(std::size_t i, std::size_t j) const { return l2_dist_2(pm_[i], pm_[j], pm_.dim); }
+  // Maps a squared distance back to the true distance for the output barcode.
+  [[nodiscard]] static double to_distance(double squared) { return std::sqrt(squared); }
   [[nodiscard]] std::vector<std::size_t> nearest(std::size_t i, std::size_t k) const {
     return kd_->nearest_neighbors(pm_[i], k);
   }
@@ -74,16 +82,21 @@ class Euclidean_geometry {
   const Euclidean_kd_tree* kd_;  // non-owning, never null; kd-tree is move-only so stored by pointer
 };
 
-// Dense symmetric matrix of squared distances, n by n row-major.
+// Dense symmetric matrix of distances, n by n row-major. Unlike the Euclidean policy this keeps the supplied
+// distances as-is rather than squaring them: with no coordinates every value is used only for ordering and as
+// the barcode birth/death, so squaring would round-trip through sqrt at output and needlessly lose precision.
 class Matrix_geometry {
  public:
-  Matrix_geometry(std::vector<double> squared, std::size_t n) : d2_(std::move(squared)), n_(n) {}
+  Matrix_geometry(std::vector<double> distances, std::size_t n) : dist_(std::move(distances)), n_(n) {}
   [[nodiscard]] std::size_t size() const { return n_; }
-  [[nodiscard]] double dist2(std::size_t i, std::size_t j) const { return d2_[(i * n_) + j]; }
+  // Ordering scale: the raw distance; comparisons and the barcode use it directly.
+  [[nodiscard]] double dist(std::size_t i, std::size_t j) const { return dist_[(i * n_) + j]; }
+  // The value already is the distance, so mapping it back to an output distance is the identity.
+  [[nodiscard]] static double to_distance(double distance) { return distance; }
 
-  // k nearest points to i (including i itself at distance 0), ascending by squared distance then index.
+  // k nearest points to i (including i itself at distance 0), ascending by distance then index.
   [[nodiscard]] std::vector<std::size_t> nearest(std::size_t i, std::size_t k) const {
-    const double* row = &d2_[i * n_];
+    const double* row = &dist_[i * n_];
     k = std::min(k, n_);
     // Sort indices directly, with the matrix row as the distance lookup.
     std::vector<std::size_t> result(n_);
@@ -94,16 +107,16 @@ class Matrix_geometry {
     return result;
   }
 
-  // The k nearest points to i restricted to index > i, ascending by squared distance (ties by index).
+  // The k nearest points to i restricted to index > i, ascending by distance (ties by index).
   [[nodiscard]] std::vector<std::size_t> nearest_neighbors_above(std::size_t i, std::size_t k) const {
     std::vector<std::size_t> result = nearest(i, k);
     keep_above(i, result);
     return result;
   }
 
-  // Indices > i, ascending by squared distance from i (ties by index).
+  // Indices > i, ascending by distance from i (ties by index).
   [[nodiscard]] std::vector<std::size_t> neighbors_above(std::size_t i) const {
-    const double* row = &d2_[i * n_];
+    const double* row = &dist_[i * n_];
     std::vector<std::size_t> result(n_ - i - 1);
     std::iota(result.begin(), result.end(), i + 1);
     std::sort(result.begin(), result.end(),
@@ -119,7 +132,7 @@ class Matrix_geometry {
   }
 
  private:
-  std::vector<double> d2_;
+  std::vector<double> dist_;
   std::size_t n_;
 };
 

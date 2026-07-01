@@ -41,7 +41,7 @@ using detail::pack_edge;
 // phases: Phase A (pop_batch) pops a batch in strict filtration order, assigning each its 1-simplex id and
 // advancing the heap frontier one pop at a time; Phase B (evaluate_lunes) computes each edge's lune
 // independently, reading only immutable state; Phase C (apply_result) reduces the resulting columns in order.
-// After run(), the squared barcode and diagnostic counts are read back out.
+// After run(), the barcode (in the geometry's edge-length scale) and diagnostic counts are read back out.
 template <class Geom>
 class Persistence_engine {
  public:
@@ -67,10 +67,11 @@ class Persistence_engine {
     }
   }
 
-  // The (birth^2, death^2) bars, in computed order: ascending by death (each bar dies at the squared diameter
-  // of the 2-simplex that fills its cycle, and edges are processed shortest-first, so deaths are emitted
-  // non-decreasing).
-  const std::vector<std::pair<double, double>>& barcode_squared() const { return barcode_squared_; }
+  // The (birth, death) bars in the geometry's edge-length scale (squared distances under the Euclidean policy,
+  // raw distances under the matrix policy), in computed order: ascending by death (each bar dies at the
+  // diameter of the 2-simplex that fills its cycle, and edges are processed shortest-first, so deaths are
+  // emitted non-decreasing). The caller maps each value back to a distance via the geometry's to_distance.
+  const std::vector<std::pair<double, double>>& barcode() const { return barcode_; }
   [[nodiscard]] std::size_t committed_edges() const { return committed_edges_; }
   [[nodiscard]] std::size_t columns_formed() const { return column_counter_; }
   [[nodiscard]] std::size_t deaths() const { return death_counter_; }
@@ -82,7 +83,7 @@ class Persistence_engine {
       neighbors_[i] = geom_->nearest_neighbors_above(i, num_neighbors_);
       // The k-nearest query may return no higher-indexed point; fall back to the full above-list.
       if (neighbors_[i].empty() && i != n_ - 1) neighbors_[i] = geom_->neighbors_above(i);
-      if (!neighbors_[i].empty()) heap_.push({i, neighbors_[i][0], geom_->dist2(i, neighbors_[i][0]), 0});
+      if (!neighbors_[i].empty()) heap_.push({i, neighbors_[i][0], geom_->dist(i, neighbors_[i][0]), 0});
     }
   }
 
@@ -98,9 +99,9 @@ class Persistence_engine {
       advance_frontier(edge.a, edge.id);
 
       // Reuse that same slot for the 1-simplex id (== the number assigned so far), then record the edge.
-      edge.id = birth_sq_by_id_.size();
+      edge.id = birth_by_id_.size();
       one_simp_to_idx_[pack_edge(edge.a, edge.b, n_)] = edge.id;  // a < b always (stored neighbors are > a)
-      birth_sq_by_id_.push_back(edge.r);  // r == dist2(a, b) by construction (a < b); cached for the barcode
+      birth_by_id_.push_back(edge.r);  // r == dist(a, b) by construction (a < b); cached for the barcode
       batch.push_back(edge);  // Batch_edge is trivially copyable; no move
     }
     return !batch.empty();
@@ -118,7 +119,7 @@ class Persistence_engine {
       }
     }
     std::size_t b_next = neighbors_[a][t + 1];
-    heap_.push({a, b_next, geom_->dist2(a, b_next), t + 1});
+    heap_.push({a, b_next, geom_->dist(a, b_next), t + 1});
   }
 
   // Phase B: compute each edge's lune independently (in parallel under TBB), reading only immutable state.
@@ -149,12 +150,12 @@ class Persistence_engine {
       if (reduce_column(column, symm_diff)) continue;  // reduced to empty: no pair
       std::size_t pivot = column.back();
       root_persistent_[pivot] = std::move(column);
-      // (pivot, column) is a persistent pair: birth = squared pivot-edge length, death = squared 2-simplex
-      // diameter. A zero-length bar is dropped.
-      double birth_sq = birth_sq_by_id_[pivot];
-      double death_sq = res.deaths[c];
-      if (birth_sq != death_sq) {
-        barcode_squared_.emplace_back(birth_sq, death_sq);
+      // (pivot, column) is a persistent pair: birth = pivot-edge length, death = 2-simplex diameter (both in
+      // the geometry's edge-length scale). A zero-length bar is dropped.
+      double birth = birth_by_id_[pivot];
+      double death = res.deaths[c];
+      if (birth != death) {
+        barcode_.emplace_back(birth, death);
         death_counter_ += 1;
       }
     }
@@ -215,10 +216,10 @@ class Persistence_engine {
   Edge_heap heap_;
   std::vector<std::vector<std::size_t>> neighbors_;               // neighbors_[i] = nearest indices > i, ascending
   Edge_map<std::size_t, std::size_t> one_simp_to_idx_;  // packed edge -> 1-simplex id
-  std::vector<double> birth_sq_by_id_;                  // id -> squared birth length
+  std::vector<double> birth_by_id_;                     // id -> birth length (squared under the Euclidean policy)
   Edge_map<std::size_t, std::array<std::size_t, 2>> root_apparent_;  // pivot -> its 2 lower edges
   Edge_map<std::size_t, std::vector<std::size_t>> root_persistent_;  // pivot -> reduced column
-  std::vector<std::pair<double, double>> barcode_squared_;                     // (birth^2, death^2) bars
+  std::vector<std::pair<double, double>> barcode_;                  // (birth, death) bars in the geometry's scale
 
   std::size_t committed_edges_ = 0;  // edges actually reduced (diagnostic)
   std::size_t column_counter_ = 0;   // 2-simplex columns formed (diagnostic)

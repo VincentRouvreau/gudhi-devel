@@ -160,15 +160,15 @@ class Lune_builder {
     std::vector<std::size_t> r_ab;
     for (std::size_t k = 0; k < np; ++k) {
       if (k == a || k == b) continue;
-      double dist_ka_sq = g.dist2(a, k);
-      if (dist_ka_sq > r) continue;
-      double dist_kb_sq = g.dist2(b, k);
-      if (in_lune(dist_ka_sq, dist_kb_sq, r, a, b, k)) r_ab.push_back(k);
+      double dist_ka = g.dist(a, k);
+      if (dist_ka > r) continue;
+      double dist_kb = g.dist(b, k);
+      if (in_lune(dist_ka, dist_kb, r, a, b, k)) r_ab.push_back(k);
     }
     if (r_ab.empty()) return Lune_result{};
 
     return from_lune_points(
-        r_ab, [&g](std::size_t i, std::size_t j) { return g.dist2(i, j); }, /*single_component_hint=*/false);
+        r_ab, [&g](std::size_t i, std::size_t j) { return g.dist(i, j); }, /*single_component_hint=*/false);
   }
 
  private:

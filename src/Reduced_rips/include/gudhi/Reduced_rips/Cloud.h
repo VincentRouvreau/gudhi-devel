@@ -97,15 +97,15 @@ inline bool sorted_pair_less(std::size_t x, std::size_t y, std::size_t p, std::s
   return xlo != plo ? xlo < plo : xhi < phi;
 }
 
-// True if a point k lies in the lune of edge (a,b) at squared threshold `thresh`: within `thresh` of both
-// endpoints, where a point sitting exactly on a boundary is admitted only when the index tie-break assigns
-// it to this edge. dist_ka_sq and dist_kb_sq are the squared distances from k to endpoints a and b
-// (the paper's d(x,y)^2 and d(x,z)^2); thresh is the squared edge length (the paper's r^2).
-inline bool in_lune(double dist_ka_sq, double dist_kb_sq, double thresh, std::size_t a, std::size_t b, std::size_t k) {
-  if (dist_ka_sq < thresh && dist_kb_sq < thresh) return true;
-  if (dist_ka_sq == thresh && dist_kb_sq < thresh) return sorted_pair_less(a, k, a, b);
-  if (dist_ka_sq < thresh && dist_kb_sq == thresh) return sorted_pair_less(b, k, a, b);
-  if (dist_ka_sq == thresh && dist_kb_sq == thresh) return sorted_pair_less(a, k, a, b) && sorted_pair_less(b, k, a, b);
+// True if a point k lies in the lune of edge (a,b) at threshold `thresh`: within `thresh` of both endpoints,
+// where a point sitting exactly on a boundary is admitted only when the index tie-break assigns it to this
+// edge. dist_ka and dist_kb are the distances from k to endpoints a and b (the paper's d(x,y) and d(x,z)) and
+// thresh is the edge length (the paper's r).
+inline bool in_lune(double dist_ka, double dist_kb, double thresh, std::size_t a, std::size_t b, std::size_t k) {
+  if (dist_ka < thresh && dist_kb < thresh) return true;
+  if (dist_ka == thresh && dist_kb < thresh) return sorted_pair_less(a, k, a, b);
+  if (dist_ka < thresh && dist_kb == thresh) return sorted_pair_less(b, k, a, b);
+  if (dist_ka == thresh && dist_kb == thresh) return sorted_pair_less(a, k, a, b) && sorted_pair_less(b, k, a, b);
   return false;
 }
 
