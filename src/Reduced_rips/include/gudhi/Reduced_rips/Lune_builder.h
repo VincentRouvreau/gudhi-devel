@@ -282,7 +282,7 @@ class Lune_builder {
   // Boundary column of the 2-simplex (a, b, c): the ids of its three edges, sorted ascending so the pivot is
   // the last element. a_ < b_ by construction, so the three edges are (a_,b_) and the two (min,max) pairs with
   // c, formed without sorting the vertices. The three ids are distinct, so a fixed min/max network orders them
-  // branch-free (no std::sort) -- and without assuming which edge is longest, so length ties are harmless.
+  // branch-free (no std::sort), without assuming which edge is longest, so length ties are harmless.
   [[nodiscard]] std::vector<std::size_t> column_of(std::size_t c) const {
     const std::size_t id_ab = one_simp_to_idx_->at(detail::pack_edge(a_, b_, n_));
     const std::size_t id_ac = one_simp_to_idx_->at(detail::pack_edge(std::min(a_, c), std::max(a_, c), n_));

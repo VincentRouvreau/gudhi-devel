@@ -48,7 +48,7 @@ BOOST_AUTO_TEST_CASE(filtration_value_scalar_types) {
 }
 
 BOOST_AUTO_TEST_CASE(integer_distance_matrix) {
-  // The matrix geometry carries the supplied dissimilarities verbatim -- no squaring, no square root -- so an
+  // The matrix geometry carries the supplied dissimilarities verbatim (no squaring, no square root), so an
   // integer Filtration_value keeps the whole reduction in exact integer arithmetic. A 4-cycle with edge length
   // 2 and diagonals 3 (a scaled square) has a single H1 loop: born when the four length-2 edges close the cycle,
   // dying when a diagonal triangle fills it, giving the exact bar (2, 3).

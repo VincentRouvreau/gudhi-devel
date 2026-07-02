@@ -31,7 +31,7 @@
 #include <vector>
 
 using Reduced_rips = Gudhi::reduced_rips::Reduced_rips<>;
-// A barcode as an array of {birth, death} pairs of doubles -- the shape Reduced_rips<>::persistence() returns.
+// A barcode as an array of {birth, death} pairs of doubles: the shape Reduced_rips<>::persistence() returns.
 using Bars = std::vector<std::array<double, 2>>;
 using Cloud = std::vector<std::vector<double>>;
 

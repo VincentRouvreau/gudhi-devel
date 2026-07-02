@@ -42,7 +42,7 @@ namespace reduced_rips {
 // (strict `<` on both endpoint distances); a point exactly on the boundary does NOT remove the edge. This is
 // deliberately different from the lune-occupancy test inside the reduction (in_lune, in Lune_builder), whose
 // lexical tie-break assigns boundary points to 2-simplices for the homology algorithm and must NOT decide RNG
-// membership -- using in_lune here would over-eliminate boundary edges and undercount. Do not "unify" them.
+// membership: using in_lune here would over-eliminate boundary edges and undercount. Do not "unify" them.
 //
 // The RNG is computed with the fastest strategy for the ambient dimension (Delaunay-based in 2D/3D, direct
 // otherwise).

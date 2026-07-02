@@ -85,7 +85,7 @@ class Reduced_rips {
    * Euclidean point-cloud constructor only; the distance-matrix path always scans matrix rows.
    *
    * - `kd_tree`: a CGAL Epick_d kd-tree. Its reach depends on the *ambient* dimension; the right choice in
-   *   low dimension and for very large clouds the tree can prune well.
+   *   low dimension, where the tree can prune well.
    * - `brute_force`: a flat O(n) scan per query. No traversal overhead, and faster than the kd-tree once its
    *   pruning collapses in high ambient dimension, at the cost of O(n^2) total search work.
    * - `automatic`: pick `kd_tree` for ambient dimension <= 3, `brute_force` otherwise.
@@ -104,8 +104,8 @@ class Reduced_rips {
    * is read once; nothing is retained by reference.
    *
    * @param[in] points Range of points, as above.
-   * @param[in] num_neighbors Initial kd-tree neighbor budget per point. Pass 0 (the default) to use
-   * `sqrt(n)`.
+   * @param[in] num_neighbors Initial neighbor budget per point for the heap seeding. Pass 0 (the default) to
+   * use `sqrt(n)`.
    * @param[in] search Spatial-search strategy (see #Search); `automatic` by default.
    *
    * @exception std::invalid_argument In debug mode, if points have differing dimension.

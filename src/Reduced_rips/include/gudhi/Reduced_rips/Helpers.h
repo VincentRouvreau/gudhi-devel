@@ -105,6 +105,41 @@ template <class Key>
   return result;
 }
 
+// The nearest indices in [first, first+count) within an approximate `budget`, ascending by `key` with ties
+// broken by index: a deterministic prefix of that ordering. Returns every index whose key is strictly below
+// the (budget+1)-th smallest key: exactly `budget` indices when that boundary key is unique, fewer under ties
+// (the whole tie group at the boundary is dropped, never split). This is the frontier contract the persistence
+// engine relies on: a valid prefix of the full neighbor ordering, backstopped by the full list when short.
+template <class Key>
+[[nodiscard]] std::vector<std::size_t> nearest_within_budget(std::size_t first, std::size_t count,
+                                                             std::size_t budget, Key key) {
+  std::vector<std::size_t> result(count);
+  std::iota(result.begin(), result.end(), first);
+  if (count == 0) return result;
+  auto less = [&key](std::size_t x, std::size_t y) {
+    const auto kx = key(x), ky = key(y);
+    return kx != ky ? kx < ky : x < y;
+  };
+  const std::size_t m = std::min(budget + 1, count);  // consider the m nearest; the m-th key is the drop boundary
+  std::nth_element(result.begin(), result.begin() + static_cast<std::ptrdiff_t>(m - 1), result.end(), less);
+  const auto boundary = key(result[m - 1]);
+  result.resize(m);
+  result.erase(std::remove_if(result.begin(), result.end(), [&key, boundary](std::size_t x) { return !(key(x) < boundary); }),
+               result.end());
+  std::sort(result.begin(), result.end(), less);
+  return result;
+}
+
+// The neighbor budget to spend searching only the points above index i, sized so the result count matches (in
+// expectation) the "budget nearest others, then keep those above i" technique. The budget candidates have indices
+// spatially unrelated to i, so a fraction (n-1-i)/(n-1) of them are expected to land above i. The count therefore
+// shrinks as i rises: budget at i == 0 down to 0 at the last point. Rounded to nearest.
+[[nodiscard]] inline std::size_t above_budget(std::size_t budget, std::size_t i, std::size_t n) {
+  if (budget == 0 || n <= 1) return 0;
+  const std::size_t above = n - 1 - i;              // candidate points with index above i
+  return ((budget * above) + ((n - 1) / 2)) / (n - 1);
+}
+
 // Drop the entries <= i from `v` in place, preserving the order of the kept (above-i) indices.
 inline void keep_above(std::size_t i, std::vector<std::size_t>& v) {
   v.erase(std::remove_if(v.begin(), v.end(), [i](std::size_t nb) { return nb <= i; }), v.end());

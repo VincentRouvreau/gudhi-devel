@@ -47,18 +47,15 @@ class Matrix_geometry {
   // The value already is the distance, so mapping it back to an output distance is the identity.
   [[nodiscard]] static T to_distance(T distance) { return distance; }
 
-  // k nearest points to i (including i itself at distance 0), ascending by distance then index. The matrix
-  // row is the distance lookup.
-  [[nodiscard]] std::vector<std::size_t> nearest(std::size_t i, std::size_t k) const {
+  // The nearest points to i restricted to index > i, ascending by distance (ties by index). Searches the above-i
+  // tail of the matrix row directly under a budget scaled so the count is roughly what it would have been if we
+  // had computed all nearest `budget' points, and then trimmed just to those above `i', (see detail::above_budget and
+  // detail::nearest_within_budget).
+  [[nodiscard]] std::vector<std::size_t> nearest_neighbors_above(std::size_t i, std::size_t budget) const {
     const T* row = &dist_[i * n_];
-    return detail::smallest_indices_by(0, n_, std::min(k, n_), [row](std::size_t x) { return row[x]; });
-  }
-
-  // The k nearest points to i restricted to index > i, ascending by distance (ties by index).
-  [[nodiscard]] std::vector<std::size_t> nearest_neighbors_above(std::size_t i, std::size_t k) const {
-    std::vector<std::size_t> result = nearest(i, k);
-    detail::keep_above(i, result);
-    return result;
+    const std::size_t off = i + 1, count = n_ - off;
+    return detail::nearest_within_budget(off, count, detail::above_budget(budget, i, n_),
+                                         [row](std::size_t x) { return row[x]; });
   }
 
   // Indices > i, ascending by distance from i (ties by index).

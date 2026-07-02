@@ -51,13 +51,16 @@ class Euclidean_geometry {
   [[nodiscard]] T dist(std::size_t i, std::size_t j) const { return detail::l2_dist_2<T>(pm_[i], pm_[j], pm_.dim); }
   // Maps the squared ordering scale back to a true distance for the output barcode.
   [[nodiscard]] static T to_distance(T squared) { return std::sqrt(squared); }
-  [[nodiscard]] std::vector<std::size_t> nearest(std::size_t i, std::size_t k) const {
-    return kd_->nearest_neighbors(pm_[i], k);
+  [[nodiscard]] std::vector<std::size_t> nearest(std::size_t i, std::size_t budget) const {
+    return kd_->nearest_neighbors(pm_[i], budget);
   }
-  // The ~k nearest points to i restricted to index > i, ascending by distance (ties by index; full tie
-  // groups are included, so the list is always a prefix of the neighbors_above ordering).
-  [[nodiscard]] std::vector<std::size_t> nearest_neighbors_above(std::size_t i, std::size_t k) const {
-    std::vector<std::size_t> result = nearest(i, k);
+  // The nearest points to i restricted to index > i, ascending by distance (ties by index; a boundary tie group
+  // is dropped rather than split, so the list is always a prefix of the neighbors_above ordering). The count
+  // shrinks as i rises. Brute-force mode searches the above-i tail directly under a scaled budget. The kd-tree
+  // can't bound a spatial query by index, so it searches globally and trims.
+  [[nodiscard]] std::vector<std::size_t> nearest_neighbors_above(std::size_t i, std::size_t budget) const {
+    if (kd_->brute_force()) return brute_nearest_above(i, detail::above_budget(budget, i, pm_.n));
+    std::vector<std::size_t> result = nearest(i, budget + 1);
     detail::keep_above(i, result);
     return result;
   }
@@ -75,6 +78,15 @@ class Euclidean_geometry {
   }
 
  private:
+  // Brute-force: the `budget` nearest points above i, distances computed only for the above-i tail. Used when the
+  // kd-tree is disengaged. The budget is already scaled by the caller (detail::above_budget).
+  [[nodiscard]] std::vector<std::size_t> brute_nearest_above(std::size_t i, std::size_t budget) const {
+    const std::size_t off = i + 1, count = pm_.n - off;
+    std::vector<double> dist(count);  // ordering only, so double suffices regardless of the barcode type
+    for (std::size_t j = off; j < pm_.n; ++j) dist[j - off] = detail::l2_dist_2<double>(pm_[i], pm_[j], pm_.dim);
+    return detail::nearest_within_budget(off, count, budget, [&dist, off](std::size_t j) { return dist[j - off]; });
+  }
+
   // Indices > ver_idx sorted by squared distance from it (ties by ascending index). The brute all-neighbors
   // fallback used to seed the heap when the k-nearest query returns nothing above ver_idx.
   [[nodiscard]] static std::vector<std::size_t> all_neighbors_above(std::size_t ver_idx, const Cloud& pm) {

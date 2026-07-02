@@ -51,37 +51,46 @@ class Euclidean_kd_tree {
     tree_.emplace(kd_points_);
   }
 
-  // Indices of at least the k nearest points to query (more when distances tie at the k-th place),
-  // ascending by squared distance with ties broken by index. This is the same (distance, index) order the
-  // exhaustive per-point scans use, and the returned list is a closed initial segment of it: the engine's
-  // heap frontier resumes positionally inside a refreshed full list, so this list must be an exact prefix
-  // of it. A query that is itself a Cloud point is returned as the nearest (distance 0); callers filter
-  // that out.
-  std::vector<std::size_t> nearest_neighbors(const double* query, std::size_t k) const {
+  // True when queries fall back to a flat scan (no kd-tree). The tree can't restrict a spatial query by point
+  // index, so index-bounded searches take a different path in brute-force mode.
+  [[nodiscard]] bool brute_force() const { return !tree_; }
+
+  // The nearest points to query within an approximate `budget`, ascending by squared distance with ties broken
+  // by index. This is the same (distance, index) order the exhaustive per-point scans use, and the returned list
+  // is an initial segment of it: the engine's heap frontier resumes positionally inside a refreshed full list, so
+  // this list must be an exact prefix of it. Exactly `budget` in the common tie-free case, fewer when a tie
+  // straddles the boundary (the whole boundary tie group is dropped). The engine backstops a short list with the
+  // full neighbor list. A query that is itself a Cloud point is returned as the nearest (distance 0). Callers
+  // filter that out.
+  std::vector<std::size_t> nearest_neighbors(const double* query, std::size_t budget) const {
     if (!tree_) {
       std::vector<double> dist(pm_.n);
       for (std::size_t i = 0; i < pm_.n; ++i) dist[i] = detail::l2_dist_2<double>(pm_[i], query, pm_.dim);
-      return detail::smallest_indices_by(0, pm_.n, std::min(k, pm_.n), [&dist](std::size_t x) { return dist[x]; });
+      return detail::nearest_within_budget(0, pm_.n, budget, [&dist](std::size_t x) { return dist[x]; });
     }
-    // CGAL's k-nearest search orders equal distances arbitrarily, and a tie across the k-th distance even
-    // makes the returned subset arbitrary. So use CGAL only to find the k-th distance, re-expressed in the
-    // canonical l2_dist_2 metric, and rebuild the answer as *every* point within it (widened ball query,
-    // then an exact <= cut): the full tie group is included and the order is deterministic.
+    // CGAL's k-nearest search orders equal distances arbitrarily, so its raw top-k is not the canonical
+    // (distance, index) prefix. Ask for one extra point and drop the whole tie group at the farthest distance:
+    // every point strictly nearer than the (budget+1)-th is unambiguously among the nearest whatever order CGAL
+    // used, so what remains is a deterministic prefix of the l2_dist_2 ordering (exactly budget unless ties shorten
+    // it). This mirrors the nearest_within_budget rule used by the brute-force and matrix paths.
     Kd_point center(query, query + pm_.dim);
-    double d_k = 0.0;
-    for (auto nb : tree_->k_nearest_neighbors(center, static_cast<unsigned int>(k), true))
-      d_k = std::max(d_k, detail::l2_dist_2<double>(pm_[static_cast<std::size_t>(nb.first)], query, pm_.dim));
-    std::vector<std::pair<std::size_t, double>> ball = points_in_squared_ball(query, detail::widen_radius(d_k));
-    ball.erase(std::remove_if(ball.begin(), ball.end(),
-                              [d_k](const std::pair<std::size_t, double>& pr) { return pr.second > d_k; }),
-               ball.end());
-    std::sort(ball.begin(), ball.end(),
+    std::vector<std::pair<std::size_t, double>> near;
+    double d_max = 0.0;
+    for (auto nb : tree_->k_nearest_neighbors(center, static_cast<unsigned int>(budget + 1), true)) {
+      auto d = detail::l2_dist_2<double>(pm_[static_cast<std::size_t>(nb.first)], query, pm_.dim);
+      near.emplace_back(static_cast<std::size_t>(nb.first), d);
+      d_max = std::max(d_max, d);
+    }
+    near.erase(std::remove_if(near.begin(), near.end(),
+                              [d_max](const std::pair<std::size_t, double>& pr) { return pr.second >= d_max; }),
+               near.end());
+    std::sort(near.begin(), near.end(),
               [](const std::pair<std::size_t, double>& x, const std::pair<std::size_t, double>& y) {
                 return x.second != y.second ? x.second < y.second : x.first < y.first;
               });
     std::vector<std::size_t> result;
-    result.reserve(ball.size());
-    for (const auto& pr : ball) result.push_back(pr.first);
+    result.reserve(near.size());
+    for (const auto& pr : near) result.push_back(pr.first);
     return result;
   }
 
