@@ -5,7 +5,7 @@
  *    Copyright (C) 2026 Thomas Burnett, Musashi Koyama
  *
  *    Modification(s):
- *    - YYYY/MM Author: Description of the modification
+ *      - YYYY/MM Author: Description of the modification
  */
 
 #include <algorithm>
@@ -31,6 +31,7 @@ int main(int argc, char** argv) {
   std::string output_file;
   unsigned num_neighbors = 0;
   std::string search = "auto";
+  double min_persistence = 0.0;
 
   po::options_description visible("Allowed options");
   visible.add_options()("help,h", "produce help message")(
@@ -41,7 +42,9 @@ int main(int argc, char** argv) {
       "num-neighbors,k", po::value<unsigned>(&num_neighbors)->default_value(0),
       "initial neighbor budget per point (0 = sqrt(n))")(
       "search,s", po::value<std::string>(&search)->default_value("auto"),
-      "spatial search strategy for the point-cloud input: auto | kd | brute (ignored for a distance matrix)");
+      "spatial search strategy for the point-cloud input: auto | kd | brute (ignored for a distance matrix)")(
+      "min-persistence,m", po::value<double>(&min_persistence)->default_value(0.0),
+      "minimal lifetime (death - birth) of a bar to be recorded (the computation never emits zero-length bars)");
 
   po::options_description hidden("Hidden options");
   hidden.add_options()("input-file", po::value<std::string>(&off_file), "input OFF point-cloud file");
@@ -55,6 +58,8 @@ int main(int argc, char** argv) {
   po::notify(vm);
 
   bool have_matrix = !matrix_file.empty();
+  if (have_matrix && vm.count("input-file") != 0U)
+    std::cerr << "Warning: both a distance matrix (-d) and an OFF file were given; the OFF file is ignored.\n";
   if ((vm.count("help") != 0U) || (!have_matrix && (vm.count("input-file") == 0U))) {
     std::cout << "Usage: " << argv[0] << " [options] <input OFF file>\n";
     std::cout << "   or: " << argv[0] << " [options] -d <distance matrix CSV>\n\n";
@@ -108,7 +113,9 @@ int main(int argc, char** argv) {
     ofs.open(output_file);
     out = &ofs;
   }
-  for (const auto& bar : barcode) *out << "1 " << bar[0] << " " << bar[1] << " \n";
+  // One bar per line in the GUDHI utilities convention `p dim birth death`. Coefficients are Z/2Z, so p = 2.
+  for (const auto& bar : barcode)
+    if (bar[1] - bar[0] > min_persistence) *out << "2 1 " << bar[0] << " " << bar[1] << "\n";
 
   std::clog << "1-simplices: " << ph1.num_one_simplices() << ", 2-simplices: " << ph1.num_two_simplices()
             << ", persistent pairs: " << ph1.num_persistence_pairs() << '\n';

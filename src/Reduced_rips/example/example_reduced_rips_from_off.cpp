@@ -5,7 +5,7 @@
  *    Copyright (C) 2026 Thomas Burnett, Musashi Koyama
  *
  *    Modification(s):
- *    - YYYY/MM Author: Description of the modification
+ *      - YYYY/MM Author: Description of the modification
  */
 
 #include <gudhi/Reduced_rips.h>
@@ -29,6 +29,7 @@ int main(int argc, char** argv) {
   }
 
   auto ph1 = Gudhi::reduced_rips::Reduced_rips<>::from_points(off_reader.get_point_cloud(), num_neighbors);
-  for (const auto& bar : ph1.persistence()) std::cout << "1 " << bar[0] << " " << bar[1] << " \n";
+  std::cout << "Degree-1 barcode (birth death):\n";
+  for (const auto& bar : ph1.persistence()) std::cout << bar[0] << ' ' << bar[1] << '\n';
   return 0;
 }

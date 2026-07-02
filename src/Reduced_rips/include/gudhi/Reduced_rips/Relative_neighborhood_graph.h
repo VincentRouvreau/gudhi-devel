@@ -2,13 +2,10 @@
  *    See file LICENSE or go to https://gudhi.inria.fr/licensing/ for full license details.
  *    Author(s):       Thomas Burnett, Musashi Koyama
  *
- *    Algorithm:       M. Koyama, F. Mémoli, V. Robins, K. Turner, "Computation of degree-1 persistent
- *                     homology on larger point-clouds using the Reduced Vietoris-Rips filtration".
- *
  *    Copyright (C) 2026 Thomas Burnett, Musashi Koyama
  *
  *    Modification(s):
- *    - YYYY/MM Author: Description of the modification
+ *      - YYYY/MM Author: Description of the modification
  */
 
 /**
@@ -64,7 +61,7 @@ std::size_t rng_cycle_rank_delaunay(const detail::Cloud& pm, const KdTree& kd_tr
     // widen_radius widens only the ball-query radius (so the strict test below sees every candidate); occupancy
     // is the open lune: a point strictly inside both endpoint balls. Boundary points do not remove the edge.
     auto ball = kd_tree.points_in_squared_ball(pm[a], detail::widen_radius(r));
-    bool lune_occupied = std::any_of(ball.begin(), ball.end(), [&](const std::pair<std::size_t, T>& pr) {
+    bool lune_occupied = std::any_of(ball.begin(), ball.end(), [&](const auto& pr) {
       std::size_t k = pr.first;
       if (k == a || k == b) return false;
       // The ball query is centered at a, so pr.second already is d(k,a)^2 in T; testing it first spares
@@ -81,7 +78,8 @@ std::size_t rng_cycle_rank_delaunay(const detail::Cloud& pm, const KdTree& kd_tr
         }
     }
   }
-  return kept - vertices + 1;  // |E| - |V| + 1 for the connected RNG; >= 0, and 1 if there are no edges
+  if (kept == 0) return 0;     // all points coincident: one merged vertex, no edges, rank 0
+  return kept - vertices + 1;  // |E| - |V| + 1 for the connected RNG; >= 0
 }
 
 // A candidate edge as (lo, hi, length in the geometry's scale), ordered by length then index for the set operations. Shared
@@ -156,7 +154,7 @@ std::size_t rng_cycle_rank_general(const detail::Cloud& pm, const KdTree& kd_tre
   for (const auto& edge : e_all) {
     std::size_t a = edge.i, b = edge.j;
     auto ball = kd_tree.points_in_squared_ball(pm[a], detail::widen_radius(edge.length));
-    bool lune_occupied = std::any_of(ball.begin(), ball.end(), [&](const std::pair<std::size_t, T>& pr) {
+    bool lune_occupied = std::any_of(ball.begin(), ball.end(), [&](const auto& pr) {
       std::size_t k = pr.first;
       if (k == a || k == b) return false;
       // pr.second is d(k,a)^2 (the query is centered at a); test it before computing the b side.

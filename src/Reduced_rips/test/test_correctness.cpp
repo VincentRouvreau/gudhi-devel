@@ -5,7 +5,7 @@
  *    Copyright (C) 2026 Thomas Burnett, Musashi Koyama
  *
  *    Modification(s):
- *    - YYYY/MM Author: Description of the modification
+ *      - YYYY/MM Author: Description of the modification
  */
 
 #define BOOST_TEST_DYN_LINK
@@ -59,6 +59,7 @@ BOOST_AUTO_TEST_CASE(circle_has_one_dominant_loop) {
     BOOST_TEST_CONTEXT("dim=" << dim) {
       Bars bc = Reduced_rips::from_points(circle(60, dim)).persistence();
       // Exactly one prominent loop, and it dies past 1.5 (near the unit circle's diameter of 2).
+      BOOST_REQUIRE(!bc.empty());  // max_element below dereferences the range
       BOOST_CHECK_EQUAL(count_prominent(bc, 0.5), 1u);
       auto loop = *std::max_element(bc.begin(), bc.end(), [](const std::array<double, 2>& a,
                                                              const std::array<double, 2>& b) {

@@ -5,7 +5,7 @@
  *    Copyright (C) 2026 Thomas Burnett, Musashi Koyama
  *
  *    Modification(s):
- *    - YYYY/MM Author: Description of the modification
+ *      - YYYY/MM Author: Description of the modification
  */
 
 // Shared point-cloud generators, barcode helpers and the full-Vietoris-Rips ground-truth pipeline for the
@@ -45,6 +45,8 @@ using Persistent_cohomology = Gudhi::persistent_cohomology::Persistent_cohomolog
 
 // ---- Point-cloud generators ----------------------------------------------------------------------------
 
+inline constexpr double pi = 3.14159265358979323846;
+
 // n points evenly sampled on the unit circle in dimension `dim` (padded with zeros). Degree-1 PH of such
 // a sample has exactly one prominent class (the loop), born around the sampling spacing and dying near the
 // circle diameter.
@@ -52,7 +54,7 @@ inline Cloud circle(unsigned n, std::size_t dim = 2) {
   Cloud pts;
   for (unsigned i = 0; i < n; ++i) {
     std::vector<double> p(dim, 0.0);
-    double theta = 2.0 * M_PI * i / n;
+    double theta = 2.0 * pi * i / n;
     p[0] = std::cos(theta);
     p[1] = std::sin(theta);
     pts.push_back(std::move(p));
@@ -74,10 +76,10 @@ inline Cloud two_circles(unsigned n) {
 inline Cloud torus(unsigned nu, unsigned nv, double R = 2.0, double r = 0.7) {
   Cloud pts;
   for (unsigned i = 0; i < nu; ++i) {
-    double u = 2.0 * M_PI * i / nu;
+    double u = 2.0 * pi * i / nu;
     for (unsigned j = 0; j < nv; ++j) {
-      double v = 2.0 * M_PI * j / nv;
-      pts.push_back({(R + r * std::cos(v)) * std::cos(u), (R + r * std::cos(v)) * std::sin(u), r * std::sin(v)});
+      double v = 2.0 * pi * j / nv;
+      pts.push_back({(R + (r * std::cos(v))) * std::cos(u), (R + (r * std::cos(v))) * std::sin(u), r * std::sin(v)});
     }
   }
   return pts;

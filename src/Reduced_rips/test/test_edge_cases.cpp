@@ -5,7 +5,7 @@
  *    Copyright (C) 2026 Thomas Burnett, Musashi Koyama
  *
  *    Modification(s):
- *    - YYYY/MM Author: Description of the modification
+ *      - YYYY/MM Author: Description of the modification
  */
 
 #define BOOST_TEST_DYN_LINK
@@ -60,7 +60,7 @@ BOOST_AUTO_TEST_CASE(rng_cycle_rank_paths_agree_on_boundary_ties) {
   // path; the rank only drives the early stop, so this was invisible in barcodes.
   std::vector<double> coords = {0.0, 0.0, 3.0, 4.0, 5.0, 0.0};
   Gudhi::reduced_rips::detail::Cloud pm{coords.data(), 2, 3};
-  Gudhi::reduced_rips::Euclidean_kd_tree kd(pm, false);
+  Gudhi::reduced_rips::Euclidean_kd_tree<> kd(pm, false);
   BOOST_CHECK_EQUAL(
       (Gudhi::reduced_rips::rng_cycle_rank_delaunay<double>(pm, kd, Gudhi::reduced_rips::delaunay_edges_2d)), 1u);
   BOOST_CHECK_EQUAL((Gudhi::reduced_rips::rng_cycle_rank_general<double>(pm, kd)), 1u);
@@ -101,6 +101,7 @@ BOOST_AUTO_TEST_CASE(coincident_points_do_not_break_the_barcode) {
 
       auto from_clean = Reduced_rips::from_points(clean);
       auto from_dup = Reduced_rips::from_points(dup);
+      BOOST_REQUIRE(!from_clean.persistence().empty());  // the circle has H1; equal-but-empty is a failure
       BOOST_CHECK(bars_close(from_clean.persistence(), from_dup.persistence()));
 
       // The distance-matrix backend must agree on the same coincident-point input.
@@ -187,6 +188,32 @@ BOOST_AUTO_TEST_CASE(too_few_points_give_an_empty_barcode) {
 
   std::vector<std::vector<double>> one_row = {{}};
   BOOST_CHECK(Reduced_rips::from_distance_matrix(one_row).persistence().empty());
+}
+
+BOOST_AUTO_TEST_CASE(degenerate_geometries_give_empty_barcodes) {
+  // Collinear 2D points: the Delaunay triangulation is one-dimensional (edges but no faces), the RNG is the
+  // path graph, and H1 is empty. Exercises the finite-edge extraction on a degenerate triangulation, where a
+  // face-based extraction would find nothing and inflate the early-stop target.
+  Cloud line;
+  for (int i = 0; i < 20; ++i) line.push_back({double(i), 0.0});
+  BOOST_CHECK(Reduced_rips::from_points(line).persistence().empty());
+
+  // All points coincident: the Delaunay triangulation merges them into one vertex with no edges (cycle rank 0).
+  Cloud same(10, {1.0, 2.0});
+  BOOST_CHECK(Reduced_rips::from_points(same).persistence().empty());
+
+  // Two points and a (scalene) triangle never carry H1.
+  BOOST_CHECK(Reduced_rips::from_points(Cloud{{0.0, 0.0}, {1.0, 0.0}}).persistence().empty());
+  BOOST_CHECK(Reduced_rips::from_points(Cloud{{0.0, 0.0}, {3.0, 0.0}, {3.0, 4.0}}).persistence().empty());
+}
+
+BOOST_AUTO_TEST_CASE(neighbor_budget_larger_than_n_is_clamped) {
+  // A seed budget far beyond the point count must clamp to the available neighbors, not fail or change bars.
+  auto pts = circle(12, 2);
+  Bars budget_default = Reduced_rips::from_points(pts).persistence();
+  Bars oversized = Reduced_rips::from_points(pts, 100).persistence();
+  BOOST_REQUIRE(!budget_default.empty());
+  BOOST_CHECK(bars_close(budget_default, oversized));
 }
 
 // The dimension-consistency check uses GUDHI_CHECK, which throws only in debug mode (GUDHI_DEBUG), so this is

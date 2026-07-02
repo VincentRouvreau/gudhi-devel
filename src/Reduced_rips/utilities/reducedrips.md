@@ -15,9 +15,9 @@ This program computes the degree-1 (i.e. *H<sub>1</sub>*) Vietoris-Rips persiste
 
 The output diagram contains one bar per line, written with the convention:
 
-`dim birth death`
+`p dim birth death`
 
-where `dim` is the degree of the homological feature (always `1` here), and `birth` and `death` are respectively its birth and death values. Coefficients are fixed to the field *Z/2Z*.
+where `p` is the characteristic of the coefficient field (always `2` here, as coefficients are fixed to *Z/2Z*), `dim` is the degree of the homological feature (always `1` here), and `birth` and `death` are respectively its birth and death values.
 
 **Usage**
 
@@ -34,6 +34,7 @@ or
 * `-o [ --output-file ]` Name of file in which the persistence diagram is written. Default print in standard output.
 * `-k [ --num-neighbors ]` (default = 0) Initial neighbor budget per point used to seed the computation. `0` means use `sqrt(n)`, which is a sensible default; the budget grows automatically when a point needs more neighbors, so this only tunes the starting allocation.
 * `-s [ --search ]` (default = auto) Spatial search strategy for the point-cloud input, one of `auto | kd | brute`. `kd` uses a kd-tree for neighbor queries (best in low dimension); `brute` uses O(n^2) brute-force search (can win in higher dimension, where kd-trees degrade); `auto` picks per the ambient dimension of the cloud. Ignored when a distance matrix is given (matrix queries always scan rows).
+* `-m [ --min-persistence ]` (default = 0) Minimal lifetime (`death - birth`) of a bar to be recorded.
 
 **Output**
 
