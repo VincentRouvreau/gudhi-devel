@@ -57,7 +57,8 @@ class Persistence_engine {
         n_(geom.size()),
         num_neighbors_(num_neighbors == 0 ? static_cast<std::size_t>(std::sqrt(double(n_))) : num_neighbors),
         total_death_(geom_->rng_early_stop_target()),
-        neighbors_(n_) {}
+        neighbors_(n_),
+        budget_(n_, num_neighbors_) {}
 
   void run() {
     seed_heap();
@@ -100,14 +101,22 @@ class Persistence_engine {
   template <typename T>
   using Edge_map = detail::Edge_map<std::size_t, T>;
 
-  // Seed the heap with, per point i, the shortest edge to a higher-indexed neighbor.
+  // Seed the heap with, per point i, the shortest edge to a higher-indexed neighbor. The per-point neighbor
+  // lists are independent and dominate the cost, so they are computed in parallel. The heap pushes are then done in a
+  // serial pass.
   void seed_heap() {
-    for (std::size_t i = 0; i < n_; ++i) {
+    auto fill_one = [&](std::size_t i) {
       neighbors_[i] = geom_->nearest_neighbors_above(i, num_neighbors_);
-      // The k-nearest query may return no higher-indexed point; fall back to the full above-list.
-      if (neighbors_[i].empty() && i != n_ - 1) neighbors_[i] = geom_->neighbors_above(i);
+      // The k-nearest query may return no higher-indexed point, if so, grow the budget until it does (or i is last).
+      if (neighbors_[i].empty() && i != n_ - 1) ensure_neighbors(i, 1);
+    };
+#ifdef GUDHI_USE_TBB
+    tbb::parallel_for(std::size_t{0}, n_, fill_one);
+#else
+    for (std::size_t i = 0; i < n_; ++i) fill_one(i);
+#endif
+    for (std::size_t i = 0; i < n_; ++i)
       if (!neighbors_[i].empty()) heap_.push({i, neighbors_[i][0], geom_->dist(i, neighbors_[i][0]), 0});
-    }
   }
 
   // Phase A: pop up to batch_cap_ edges in filtration order, assign each its 1-simplex id, and advance the
@@ -130,20 +139,39 @@ class Persistence_engine {
     return !batch.empty();
   }
 
-  // Push a's next-shortest higher-indexed edge back onto the heap, refreshing a's neighbor list if exhausted.
+  // Push a's next-shortest higher-indexed edge back onto the heap, growing a's neighbor list if the frontier
+  // has caught up with it.
   void advance_frontier(std::size_t a, std::size_t t) {
-    if (t + 2 > neighbors_[a].size()) {
-      neighbors_[a] = geom_->neighbors_above(a);
-      if (neighbors_[a].size() < t + 2) {
-        // Vertex a has no higher-indexed neighbor left, so no heap entry sourced at a remains and neighbors[a]
-        // is never read again.
-        neighbors_[a].clear();
-        return;
-      }
+    if (t + 2 > neighbors_[a].size() && !ensure_neighbors(a, t + 2)) {
+      // Vertex a has no higher-indexed neighbor left, so no heap entry sourced at a remains and neighbors_[a]
+      // is never read again, so release its buffer.
+      free_neighbors(a);
+      return;
     }
     std::size_t b_next = neighbors_[a][t + 1];
     heap_.push({a, b_next, geom_->dist(a, b_next), t + 1});
   }
+
+  // Grow neighbors_[a] to hold at least min_count above-a neighbors when the heap frontier outruns the seed
+  // prefetch. The budget doubles geometrically and the geometry returns just that many nearest above-a points,
+  // so we never materialize and keep the whole O(n) above-list per point. Each larger budget returns a longer
+  // prefix of the same above-a ordering, so the frontier's positional resume into neighbors_[a] stays valid.
+  // Stops once the prefix is long enough or the budget already covers every point above a. Returns whether min_count
+  // was reached.
+  bool ensure_neighbors(std::size_t a, std::size_t min_count) {
+    const std::size_t above = n_ - 1 - a;                 // number of points with index > a (the tail length)
+    const std::size_t need = std::min(min_count, above);  // can't have more than `above` neighbors above a
+    if (neighbors_[a].size() >= need) return neighbors_[a].size() >= min_count;
+    // Grow the brute prefix. Double the budget. The current list may be short even when budget_[a] is large,
+    // because the seed's k-nearest prefetch counts differently.
+    budget_[a] = std::min(std::max(budget_[a] * 2, need), above);
+    neighbors_[a] = geom_->neighbors_above(a, budget_[a]);
+    return neighbors_[a].size() >= min_count;
+  }
+
+  // Release a's neighbor buffer once it is exhausted. clear() alone would keep the capacity allocated for the rest of
+  // the run, so swap with an empty vector to return the memory.
+  void free_neighbors(std::size_t a) { std::vector<std::size_t>().swap(neighbors_[a]); }
 
   // Phase B: compute each edge's lune independently (in parallel under TBB), reading only immutable state.
   void evaluate_lunes(const std::vector<Batch_edge<FV>>& batch, std::vector<Lune_result<FV>>& results) {
@@ -227,6 +255,7 @@ class Persistence_engine {
 
   Edge_heap heap_;
   std::vector<std::vector<std::size_t>> neighbors_;     // neighbors_[i] = nearest indices > i, ascending
+  std::vector<std::size_t> budget_;                     // budget_[i] = current neighbor-query budget for point i
   Edge_map<std::size_t> one_simp_to_idx_;               // packed edge -> 1-simplex id
   std::vector<FV> birth_by_id_;                         // id -> birth length (squared under the Euclidean policy)
   Edge_map<std::array<std::size_t, 2>> root_apparent_;  // pivot -> its 2 lower edges

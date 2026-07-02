@@ -58,11 +58,12 @@ class Matrix_geometry {
                                          [row](std::size_t x) { return row[x]; });
   }
 
-  // Indices > i, ascending by distance from i (ties by index).
-  [[nodiscard]] std::vector<std::size_t> neighbors_above(std::size_t i) const {
+  // The k nearest indices > i, ascending by distance from i (ties by index): a prefix of the full above-i
+  // ordering, grown on demand by the engine with a doubling k. When k >= the above-i count it is the full list.
+  [[nodiscard]] std::vector<std::size_t> neighbors_above(std::size_t i, std::size_t k) const {
     const T* row = &dist_[i * n_];
     const std::size_t count = n_ - i - 1;
-    return detail::smallest_indices_by(i + 1, count, count, [row](std::size_t x) { return row[x]; });
+    return detail::smallest_indices_by(i + 1, count, k, [row](std::size_t x) { return row[x]; });
   }
 
   // Early-stop target: the exact RNG cycle rank.

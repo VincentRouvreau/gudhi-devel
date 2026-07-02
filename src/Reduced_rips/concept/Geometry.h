@@ -38,9 +38,11 @@ struct Geometry {
    * list after a refresh. */
   std::vector<std::size_t> nearest_neighbors_above(std::size_t i, std::size_t k);
 
-  /** \brief Returns all points with index > i, ascending by distance from i (ties by ascending index). Used as
-   * the exhaustive fallback when `nearest_neighbors_above` returns nothing above i. */
-  std::vector<std::size_t> neighbors_above(std::size_t i);
+  /** \brief Returns the k nearest points with index > i, ascending by distance from i (ties by ascending
+   * index): a prefix of the full above-i ordering. When k reaches the above-i count it is the whole tail. The
+   * engine grows this on demand (with a doubling k) when the heap frontier outruns the `nearest_neighbors_above`
+   * prefetch, so the returned prefixes for increasing k must be consistent (each a prefix of the next). */
+  std::vector<std::size_t> neighbors_above(std::size_t i, std::size_t k);
 
   /** \brief Returns the relative-neighborhood-graph cycle rank: the number of finite degree-1 bars. This serves
    * as the early-stop target. */

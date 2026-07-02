@@ -64,7 +64,17 @@ class Euclidean_geometry {
     detail::keep_above(i, result);
     return result;
   }
-  [[nodiscard]] std::vector<std::size_t> neighbors_above(std::size_t i) const { return all_neighbors_above(i, pm_); }
+  // The k nearest points to i with index > i, ascending by squared distance (ties by index): a prefix of the
+  // full above-i ordering, computed by a direct brute scan of the above-i tail (not the kd-tree). The engine
+  // grows this on demand with a doubling k when the heap frontier outruns the k-nearest prefetch; a brute
+  // partial-sort of the tail is far cheaper here than repeated large kd k-nearest queries, and storing only k
+  // (rather than the whole tail) keeps peak memory bounded. When k >= the above-i count it is the full list.
+  [[nodiscard]] std::vector<std::size_t> neighbors_above(std::size_t i, std::size_t k) const {
+    const std::size_t off = i + 1, count = pm_.n - off;
+    std::vector<double> dist(count);  // ordering only, so double suffices regardless of the barcode type
+    for (std::size_t j = off; j < pm_.n; ++j) dist[j - off] = detail::l2_dist_2<double>(pm_[i], pm_[j], pm_.dim);
+    return detail::smallest_indices_by(off, count, k, [&dist, off](std::size_t j) { return dist[j - off]; });
+  }
   // Early-stop target: the RNG cycle rank (the number of finite H1 bars), from the per-dimension routine.
   [[nodiscard]] std::size_t rng_early_stop_target() const {
     if (pm_.dim == 2) return rng_cycle_rank_delaunay<T>(pm_, *kd_, delaunay_edges_2d);
@@ -85,15 +95,6 @@ class Euclidean_geometry {
     std::vector<double> dist(count);  // ordering only, so double suffices regardless of the barcode type
     for (std::size_t j = off; j < pm_.n; ++j) dist[j - off] = detail::l2_dist_2<double>(pm_[i], pm_[j], pm_.dim);
     return detail::nearest_within_budget(off, count, budget, [&dist, off](std::size_t j) { return dist[j - off]; });
-  }
-
-  // Indices > ver_idx sorted by squared distance from it (ties by ascending index). The brute all-neighbors
-  // fallback used to seed the heap when the k-nearest query returns nothing above ver_idx.
-  [[nodiscard]] static std::vector<std::size_t> all_neighbors_above(std::size_t ver_idx, const Cloud& pm) {
-    const std::size_t off = ver_idx + 1, count = pm.n - off;
-    std::vector<double> dist(count);  // ordering only, so double suffices regardless of the barcode type
-    for (std::size_t i = off; i < pm.n; ++i) dist[i - off] = detail::l2_dist_2<double>(pm[ver_idx], pm[i], pm.dim);
-    return detail::smallest_indices_by(off, count, count, [&dist, off](std::size_t i) { return dist[i - off]; });
   }
 
   Cloud pm_;                     // non-owning view; pointee outlives this
