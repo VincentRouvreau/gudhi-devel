@@ -2,13 +2,10 @@
  *    See file LICENSE or go to https://gudhi.inria.fr/licensing/ for full license details.
  *    Author(s):       Thomas Burnett, Musashi Koyama
  *
- *    Algorithm:       M. Koyama, F. Mémoli, V. Robins, K. Turner, "Computation of degree-1 persistent
- *                     homology on larger point-clouds using the Reduced Vietoris-Rips filtration".
- *
  *    Copyright (C) 2026 Thomas Burnett, Musashi Koyama
  *
  *    Modification(s):
- *    - YYYY/MM Author: Description of the modification
+ *      - YYYY/MM Author: Description of the modification
  */
 
 /**
@@ -87,12 +84,12 @@ template <class T>
 // ascending by `key` with ties broken by ascending index. When k >= count the whole range is sorted; otherwise
 // only the k smallest are ordered (via partial_sort) and the result is truncated to k. `key(i)` maps an index
 // to its (cheap-to-read) sort key. This is the one place the module sorts indices by a distance-like key.
-template <class Key>
-[[nodiscard]] std::vector<std::size_t> smallest_indices_by(std::size_t first, std::size_t count, std::size_t k,
-                                                           Key key) {
-  std::vector<std::size_t> result(count);
-  std::iota(result.begin(), result.end(), first);
-  auto less = [&key](std::size_t x, std::size_t y) {
+template <class Index, class Key>
+[[nodiscard]] std::vector<Index> smallest_indices_by(std::size_t first, std::size_t count, std::size_t k,
+                                                     Key key) {
+  std::vector<Index> result(count);
+  std::iota(result.begin(), result.end(), static_cast<Index>(first));
+  auto less = [&key](Index x, Index y) {
     const auto kx = key(x), ky = key(y);
     return kx != ky ? kx < ky : x < y;
   };
@@ -110,13 +107,13 @@ template <class Key>
 // the (budget+1)-th smallest key: exactly `budget` indices when that boundary key is unique, fewer under ties
 // (the whole tie group at the boundary is dropped, never split). This is the frontier contract the persistence
 // engine relies on: a valid prefix of the full neighbor ordering, backstopped by the full list when short.
-template <class Key>
-[[nodiscard]] std::vector<std::size_t> nearest_within_budget(std::size_t first, std::size_t count,
-                                                             std::size_t budget, Key key) {
-  std::vector<std::size_t> result(count);
-  std::iota(result.begin(), result.end(), first);
+template <class Index, class Key>
+[[nodiscard]] std::vector<Index> nearest_within_budget(std::size_t first, std::size_t count,
+                                                       std::size_t budget, Key key) {
+  std::vector<Index> result(count);
+  std::iota(result.begin(), result.end(), static_cast<Index>(first));
   if (count == 0) return result;
-  auto less = [&key](std::size_t x, std::size_t y) {
+  auto less = [&key](Index x, Index y) {
     const auto kx = key(x), ky = key(y);
     return kx != ky ? kx < ky : x < y;
   };
@@ -124,7 +121,7 @@ template <class Key>
   std::nth_element(result.begin(), result.begin() + static_cast<std::ptrdiff_t>(m - 1), result.end(), less);
   const auto boundary = key(result[m - 1]);
   result.resize(m);
-  result.erase(std::remove_if(result.begin(), result.end(), [&key, boundary](std::size_t x) { return !(key(x) < boundary); }),
+  result.erase(std::remove_if(result.begin(), result.end(), [&key, boundary](Index x) { return !(key(x) < boundary); }),
                result.end());
   std::sort(result.begin(), result.end(), less);
   return result;
@@ -141,8 +138,9 @@ template <class Key>
 }
 
 // Drop the entries <= i from `v` in place, preserving the order of the kept (above-i) indices.
-inline void keep_above(std::size_t i, std::vector<std::size_t>& v) {
-  v.erase(std::remove_if(v.begin(), v.end(), [i](std::size_t nb) { return nb <= i; }), v.end());
+template <class Index>
+inline void keep_above(std::size_t i, std::vector<Index>& v) {
+  v.erase(std::remove_if(v.begin(), v.end(), [i](Index nb) { return nb <= i; }), v.end());
 }
 
 // Open-addressing hash map used for the packed-edge lookup tables. boost::unordered_flat_map (Boost >= 1.81)

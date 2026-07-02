@@ -2,13 +2,10 @@
  *    See file LICENSE or go to https://gudhi.inria.fr/licensing/ for full license details.
  *    Author(s):       Thomas Burnett, Musashi Koyama
  *
- *    Algorithm:       M. Koyama, F. Mémoli, V. Robins, K. Turner, "Computation of degree-1 persistent
- *                     homology on larger point-clouds using the Reduced Vietoris-Rips filtration".
- *
  *    Copyright (C) 2026 Thomas Burnett, Musashi Koyama
  *
  *    Modification(s):
- *    - YYYY/MM Author: Description of the modification
+ *      - YYYY/MM Author: Description of the modification
  */
 
 /**
@@ -72,12 +69,20 @@ namespace reduced_rips {
  * the Euclidean path's spatial acceleration (the CGAL kd-tree and 2D/3D Delaunay) searches in `double`; but
  * every candidate it returns is re-tested with an exact distance in `Filtration_value_`, so the filtration
  * values themselves carry this type's precision.
+ *
+ * @tparam Index_ Unsigned integer type used internally to store point indices and 1-simplex ids (`std::uint32_t`
+ * by default). It must be wide enough to number the 1-simplices, which can far exceed the point count (the worst case
+ * is n(n-1)/2). The default allows ~4.29 billion of them while halving the reduction's neighbor lists and columns
+ * versus a 64-bit index; the factories throw `std::invalid_argument` if the point count itself does not fit, and the
+ * computation throws `std::overflow_error` in the event that the processed edges outgrow it.
  */
-template <typename Filtration_value_ = double>
+template <typename Filtration_value_ = double, typename Index_ = std::uint32_t>
 class Reduced_rips {
  public:
   /** @brief Type used to store filtration / persistence values. */
   using Filtration_value = Filtration_value_;
+  /** @brief Unsigned integer type used to store point indices and 1-simplex ids internally. */
+  using Index = Index_;
   /** @brief A persistence bar as a `{birth, death}` array of distances (`bar[0]` birth, `bar[1]` death) */
   using Persistence_interval = std::array<Filtration_value, 2>;
 
@@ -141,8 +146,7 @@ class Reduced_rips {
    * @param[in] search Ignored (matrix neighbor queries always scan rows).
    *
    * @exception std::invalid_argument In debug mode, if a row is too short to supply its lower-triangle
-   * distances, or if a distance is negative (or NaN). Fewer than two points is not an error: the barcode is
-   * simply empty.
+   * distances, or if a distance is negative (or NaN).
    */
   template <typename DistanceMatrix>
   static Reduced_rips from_distance_matrix(const DistanceMatrix& matrix, unsigned int num_neighbors = 0,
@@ -163,7 +167,7 @@ class Reduced_rips {
   /** @brief Ambient dimension of the input points, or 0 for the distance-matrix input (no coordinates). */
   [[nodiscard]] std::size_t dimension() const { return dim_; }
 
-  /** @brief Number of distinct 1-simplices popped from the reduction heap (diagnostic). */
+  /** @brief Number of distinct 1-simplices whose lune was evaluated and applied (diagnostic). */
   [[nodiscard]] std::size_t num_one_simplices() const { return num_one_simplices_; }
   /** @brief Number of 2-simplex columns formed during the reduction (diagnostic). */
   [[nodiscard]] std::size_t num_two_simplices() const { return num_two_simplices_; }
@@ -179,7 +183,7 @@ class Reduced_rips {
     auto it = std::begin(points), end = std::end(points);
     if (it == end) return;  // no points: empty barcode
     dim_ = std::distance(std::begin(*it), std::end(*it));
-    if (dim_ == 0) return;  // zero-dimensional points: empty barcode
+    if (dim_ == 0) return;                                                     // zero-dimensional points: empty barcode
     coords_.reserve(static_cast<std::size_t>(std::distance(it, end)) * dim_);  // forward range: multipass is fine
     for (; it != end; ++it, ++n_) {
       GUDHI_CHECK_code(std::size_t before = coords_.size());
@@ -212,8 +216,7 @@ class Reduced_rips {
       const auto rend = std::end(row);
       for (; j < i && rit != rend; ++j, ++rit) {
         Filtration_value d = *rit;  // lower triangle: distance between i and j
-        GUDHI_CHECK(d >= Filtration_value(0),
-                    std::invalid_argument("Reduced_rips: distances must be non-negative"));
+        GUDHI_CHECK(d >= Filtration_value(0), std::invalid_argument("Reduced_rips: distances must be non-negative"));
         matrix_[(i * n_) + j] = d;
         matrix_[(j * n_) + i] = d;
       }
@@ -225,14 +228,14 @@ class Reduced_rips {
   // Point-cloud path: build the kd-tree (or brute-force) geometry over the ingested coordinates and compute.
   void compute_from_points() {
     detail::Cloud pm = cloud();
-    Euclidean_kd_tree kd_tree(pm, use_brute_force());
-    Euclidean_geometry<Filtration_value> geom(pm, kd_tree);
+    Euclidean_kd_tree<Index> kd_tree(pm, use_brute_force());
+    Euclidean_geometry<Filtration_value, Index> geom(pm, kd_tree);
     compute_impl(geom);
   }
 
   // Distance-matrix path: build the matrix geometry over the ingested distances and compute.
   void compute_from_matrix() {
-    Matrix_geometry<Filtration_value> geom(std::move(matrix_), n_);
+    Matrix_geometry<Filtration_value, Index> geom(std::move(matrix_), n_);
     compute_impl(geom);
   }
 

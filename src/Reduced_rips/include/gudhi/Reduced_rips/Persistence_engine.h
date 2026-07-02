@@ -2,13 +2,10 @@
  *    See file LICENSE or go to https://gudhi.inria.fr/licensing/ for full license details.
  *    Author(s):       Thomas Burnett, Musashi Koyama
  *
- *    Algorithm:       M. Koyama, F. Mémoli, V. Robins, K. Turner, "Computation of degree-1 persistent
- *                     homology on larger point-clouds using the Reduced Vietoris-Rips filtration".
- *
  *    Copyright (C) 2026 Thomas Burnett, Musashi Koyama
  *
  *    Modification(s):
- *    - YYYY/MM Author: Description of the modification
+ *      - YYYY/MM Author: Description of the modification
  */
 
 /**
@@ -26,7 +23,9 @@
 #include <cmath>
 #include <cstddef>
 #include <iterator>
+#include <limits>
 #include <queue>
+#include <stdexcept>
 #include <utility>
 #include <vector>
 
@@ -51,6 +50,10 @@ class Persistence_engine {
  public:
   // The scalar type the geometry works in; births, deaths and the barcode are all in it.
   using FV = typename Geom::Filtration_value;
+  // The geometry's stored-index type (point indices and edge ids); std::uint32_t by default. Narrow, to keep
+  // the neighbor lists and reduced columns compact. Edge ids count committed 1-simplices, which can far exceed
+  // the point count, so pop_batch throws once they no longer fit.
+  using Index = typename Geom::Index;
 
   Persistence_engine(Geom& geom, unsigned int num_neighbors)
       : geom_(&geom),
@@ -58,13 +61,16 @@ class Persistence_engine {
         num_neighbors_(num_neighbors == 0 ? static_cast<std::size_t>(std::sqrt(double(n_))) : num_neighbors),
         total_death_(geom_->rng_early_stop_target()),
         neighbors_(n_),
-        budget_(n_, num_neighbors_) {}
+        budget_(n_, num_neighbors_) {
+    if (n_ != 0 && n_ - 1 > static_cast<std::size_t>(std::numeric_limits<Index>::max()))
+      throw std::invalid_argument("Reduced_rips: the point count does not fit the Index type");
+  }
 
   void run() {
     seed_heap();
-    std::vector<Batch_edge<FV>> batch;
-    std::vector<Lune_result<FV>> results;
-    std::vector<std::size_t> symm_diff;  // reduction scratch, reused across columns to amortize its allocation
+    std::vector<Batch_edge<FV, Index>> batch;
+    std::vector<Lune_result<FV, Index>> results;
+    std::vector<Index> symm_diff;  // reduction scratch, reused across columns to amortize its allocation
     while (death_counter_ < total_death_ && pop_batch(batch)) {
       results.resize(batch.size());
       evaluate_lunes(batch, results);
@@ -88,7 +94,7 @@ class Persistence_engine {
   // Min-heap ordering for the candidate edges: shortest length first, ties broken by the (a, b) index
   // pair. (While queued, Batch_edge::id carries the neighbor-list frontier position)
   struct Heap_compare {
-    bool operator()(const Batch_edge<FV>& x, const Batch_edge<FV>& y) const {
+    bool operator()(const Batch_edge<FV, Index>& x, const Batch_edge<FV, Index>& y) const {
       if (x.r != y.r) return x.r > y.r;
       if (x.a != y.a) return x.a > y.a;
       return x.b > y.b;
@@ -96,7 +102,7 @@ class Persistence_engine {
   };
 
   // Min-heap of candidate edges, processed shortest-first.
-  using Edge_heap = std::priority_queue<Batch_edge<FV>, std::vector<Batch_edge<FV>>, Heap_compare>;
+  using Edge_heap = std::priority_queue<Batch_edge<FV, Index>, std::vector<Batch_edge<FV, Index>>, Heap_compare>;
 
   template <typename T>
   using Edge_map = detail::Edge_map<std::size_t, T>;
@@ -116,22 +122,27 @@ class Persistence_engine {
     for (std::size_t i = 0; i < n_; ++i) fill_one(i);
 #endif
     for (std::size_t i = 0; i < n_; ++i)
-      if (!neighbors_[i].empty()) heap_.push({i, neighbors_[i][0], geom_->dist(i, neighbors_[i][0]), 0});
+      if (!neighbors_[i].empty())
+        heap_.push({static_cast<Index>(i), neighbors_[i][0], geom_->dist(i, neighbors_[i][0]), 0});
   }
 
   // Phase A: pop up to batch_cap_ edges in filtration order, assign each its 1-simplex id, and advance the
   // heap frontier behind each pop. Returns false once the heap is exhausted and nothing was popped.
-  bool pop_batch(std::vector<Batch_edge<FV>>& batch) {
+  bool pop_batch(std::vector<Batch_edge<FV, Index>>& batch) {
     batch.clear();
     while (batch.size() < batch_cap_ && !heap_.empty()) {
-      Batch_edge<FV> edge = heap_.top();  // edge.id currently holds the neighbor-list frontier position t
+      Batch_edge<FV, Index> edge = heap_.top();  // edge.id currently holds the neighbor-list frontier position t
       heap_.pop();
 
       // Advance a's heap frontier first, while edge.id still carries the frontier position t.
       advance_frontier(edge.a, edge.id);
 
       // Reuse that same slot for the 1-simplex id (== the number assigned so far), then record the edge.
-      edge.id = birth_by_id_.size();
+      // Ids count committed edges, not points, so they can outgrow Index long before n does. A wrapped id
+      // would silently corrupt the edge table, so refuse instead.
+      if (birth_by_id_.size() > std::numeric_limits<Index>::max())
+        throw std::overflow_error("Reduced_rips: the number of processed edges no longer fits the Index type");
+      edge.id = static_cast<Index>(birth_by_id_.size());
       one_simp_to_idx_[detail::pack_edge(edge.a, edge.b, n_)] = edge.id;  // a < b always (stored neighbors are > a)
       birth_by_id_.push_back(edge.r);  // r == dist(a, b) by construction (a < b); cached for the barcode
       batch.push_back(edge);           // Batch_edge is trivially copyable; no move
@@ -148,8 +159,8 @@ class Persistence_engine {
       free_neighbors(a);
       return;
     }
-    std::size_t b_next = neighbors_[a][t + 1];
-    heap_.push({a, b_next, geom_->dist(a, b_next), t + 1});
+    Index b_next = neighbors_[a][t + 1];
+    heap_.push({static_cast<Index>(a), b_next, geom_->dist(a, b_next), static_cast<Index>(t + 1)});
   }
 
   // Grow neighbors_[a] to hold at least min_count above-a neighbors when the heap frontier outruns the seed
@@ -171,10 +182,10 @@ class Persistence_engine {
 
   // Release a's neighbor buffer once it is exhausted. clear() alone would keep the capacity allocated for the rest of
   // the run, so swap with an empty vector to return the memory.
-  void free_neighbors(std::size_t a) { std::vector<std::size_t>().swap(neighbors_[a]); }
+  void free_neighbors(std::size_t a) { std::vector<Index>().swap(neighbors_[a]); }
 
   // Phase B: compute each edge's lune independently (in parallel under TBB), reading only immutable state.
-  void evaluate_lunes(const std::vector<Batch_edge<FV>>& batch, std::vector<Lune_result<FV>>& results) {
+  void evaluate_lunes(const std::vector<Batch_edge<FV, Index>>& batch, std::vector<Lune_result<FV, Index>>& results) {
     auto eval_one = [&](std::size_t i) { results[i] = geom_->lune(batch[i], one_simp_to_idx_, n_); };
 #ifdef GUDHI_USE_TBB
     tbb::parallel_for(std::size_t{0}, batch.size(), eval_one);
@@ -184,25 +195,29 @@ class Persistence_engine {
   }
 
   // Phase C, one edge: file its boundary column(s) into the reduced complex and record any persistent pair.
-  void apply_result(Lune_result<FV>& res, std::vector<std::size_t>& symm_diff) {
+  void apply_result(Lune_result<FV, Index>& res, std::vector<Index>& symm_diff) {
     if (res.is_apparent()) {
       // A single column is an apparent 2-simplex: file its boundary directly under its own pivot (the longest
       // edge, == the current candidate edge), with no reduction and no recorded bar (birth == death). The
       // column is the 3 ascending edge ids {v0, v1, v2} with the pivot v2 == the map key.
       column_counter_ += 1;
-      const std::vector<std::size_t>& v = res.cols[0];
+      const std::vector<Index>& v = res.cols[0];
       root_apparent_[v[2]] = {v[0], v[1]};
       return;
     }
     // Zero columns: the lune contributed nothing. More than one: reduce one column per lune component.
     for (std::size_t c = 0; c < res.cols.size(); ++c) {
       column_counter_ += 1;
-      std::vector<std::size_t>& column = res.cols[c];
+      std::vector<Index>& column = res.cols[c];
       if (!reduce_column(column, symm_diff)) {
-        std::size_t pivot = column.back();
+        Index pivot = column.back();
         root_persistent_[pivot] = std::move(column);
         // (pivot, column) is a persistent pair: birth = pivot-edge length, death = 2-simplex diameter (both in
-        // the geometry's edge-length scale). A zero-length bar is dropped.
+        // the geometry's edge-length scale). A zero-length pair is dropped and does not count toward the early
+        // stop. Most zero-length pairs are bookkeeping rather than deaths of RNG cycles, and
+        // counting them would end the run early with bars missing. The trade-off is that on inputs with exact
+        // ties, where a genuine cycle dies at its birth value, the target may never be reached and the run
+        // ends by heap exhaustion instead. The result will still be correct, but we lose the early stop benefit.
         FV birth = birth_by_id_[pivot];
         FV death = res.deaths[c];
         if (birth != death) {
@@ -218,7 +233,7 @@ class Persistence_engine {
   // (apparent first, then persistent); the symmetric difference of two ascending columns is itself ascending,
   // so the new pivot is just its back element. Returns true if the column reduced to empty. `symm_diff` is
   // reusable scratch.
-  bool reduce_column(std::vector<std::size_t>& column, std::vector<std::size_t>& symm_diff) {
+  bool reduce_column(std::vector<Index>& column, std::vector<Index>& symm_diff) {
     // Add the colliding column [first, last) into `column` over Z/2 (using symmetric difference), reusing symm_diff
     // as scratch. The symmetric difference of two ascending columns is itself ascending, so the new pivot is
     // just the back element after the swap.
@@ -231,12 +246,12 @@ class Persistence_engine {
     // empties (killed) or its pivot is free (reduced). A single hashed find() locates the colliding column,
     // apparent first then persistent.
     while (!column.empty()) {
-      std::size_t pivot = column.back();
+      Index pivot = column.back();
       auto it_a = root_apparent_.find(pivot);
       if (it_a != root_apparent_.end()) {
         // An apparent entry stores only its two lower edges; rebuild the full ascending 3-edge boundary
         // {e0, e1, pivot} (pivot == the key) and add it in.
-        const std::array<std::size_t, 3> apparent_col{it_a->second[0], it_a->second[1], pivot};
+        const std::array<Index, 3> apparent_col{it_a->second[0], it_a->second[1], pivot};
         xor_in(apparent_col.begin(), apparent_col.end());
       } else {
         auto it_p = root_persistent_.find(pivot);
@@ -254,13 +269,13 @@ class Persistence_engine {
   static constexpr std::size_t batch_cap_ = 4096;
 
   Edge_heap heap_;
-  std::vector<std::vector<std::size_t>> neighbors_;     // neighbors_[i] = nearest indices > i, ascending
-  std::vector<std::size_t> budget_;                     // budget_[i] = current neighbor-query budget for point i
-  Edge_map<std::size_t> one_simp_to_idx_;               // packed edge -> 1-simplex id
-  std::vector<FV> birth_by_id_;                         // id -> birth length (squared under the Euclidean policy)
-  Edge_map<std::array<std::size_t, 2>> root_apparent_;  // pivot -> its 2 lower edges
-  Edge_map<std::vector<std::size_t>> root_persistent_;  // pivot -> reduced column
-  std::vector<std::pair<FV, FV>> barcode_;              // (birth, death) bars in the geometry's scale
+  std::vector<std::vector<Index>> neighbors_;      // neighbors_[i] = nearest indices > i, ascending
+  std::vector<std::size_t> budget_;                // budget_[i] = current neighbor-query budget for point i
+  Edge_map<Index> one_simp_to_idx_;                // packed edge -> 1-simplex id
+  std::vector<FV> birth_by_id_;                    // id -> birth length (squared under the Euclidean policy)
+  Edge_map<std::array<Index, 2>> root_apparent_;   // pivot -> its 2 lower edges
+  Edge_map<std::vector<Index>> root_persistent_;   // pivot -> reduced column
+  std::vector<std::pair<FV, FV>> barcode_;         // (birth, death) bars in the geometry's scale
 
   std::size_t committed_edges_ = 0;  // edges actually reduced (diagnostic)
   std::size_t column_counter_ = 0;   // 2-simplex columns formed (diagnostic)

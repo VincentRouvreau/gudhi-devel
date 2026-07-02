@@ -5,7 +5,7 @@
  *    Copyright (C) 2026 Thomas Burnett, Musashi Koyama
  *
  *    Modification(s):
- *    - YYYY/MM Author: Description of the modification
+ *      - YYYY/MM Author: Description of the modification
  */
 
 #ifndef DOC_REDUCED_RIPS_INTRO_REDUCED_RIPS_H_
@@ -23,10 +23,10 @@ namespace reduced_rips {
  *
  * @section reducedripsdefinition Definition
  *
- * This module computes the degree-1 (i.e. @f$H_1@f$) Vietoris-Rips persistent homology of a point cloud or a
- * distance matrix, without ever building the full Vietoris-Rips complex. It implements the <em>Reduced
- * Vietoris-Rips filtration</em> of Koyama, M&eacute;moli, Robins and Turner @cite
- * koyama2026computationdegree1persistenthomology.
+ * This module computes the degree-1 (i.e. @f$H_1@f$) Vietoris-Rips persistent homology, with coefficients in
+ * @f$\mathbb{Z}/2\mathbb{Z}@f$, of a point cloud or a distance matrix, without ever building the full
+ * Vietoris-Rips complex. It implements the <em>Reduced Vietoris-Rips filtration</em> of Koyama, M&eacute;moli,
+ * Robins and Turner @cite koyama2026computationdegree1persistenthomology.
  *
  * The @f$H_1@f$ barcode of the Vietoris-Rips filtration is determined by a small part of the complex, and the
  * reduction builds only that part:
@@ -45,6 +45,10 @@ namespace reduced_rips {
  *
  * @image html "reduced_rips_lune.png" "The lune of an edge (a,b), which contains two connected components"
  *
+ * Each connected component of a non-empty lune corresponds to one 2-simplex boundary column for the reduction, so
+ * the edge pictured above contributes two columns. An edge with an empty lune belongs to the RNG and can only
+ * give birth to a cycle.
+ *
  * @section reducedripsinput Input
  *
  * Two inputs are accepted:
@@ -54,10 +58,22 @@ namespace reduced_rips {
  * - an <b>arbitrary symmetric distance matrix</b> (@ref Gudhi::reduced_rips::Reduced_rips::from_distance_matrix),
  *   for which the same reduction is driven purely by the supplied distances.
  *
+ * Both factories take an optional initial per-point neighbor budget. The default of @f$\sqrt{n}@f$ (the
+ * reference paper's choice) grows automatically whenever a point needs more neighbors, so it only tunes the
+ * starting allocation.
+ *
+ * The class is templated on its `Filtration_value` type: `from_points` requires a floating-point type
+ * (`double` by default), while `from_distance_matrix` accepts any arithmetic type, including exact integer
+ * distances, and then computes the barcode exactly in that type.
+ *
  *
  * @section reducedripsscope Scope and limitations
  *
- * - Only homological dimension 1 is computed.
+ * - Only homological dimension 1 is computed (no @f$H_0@f$ or higher degrees).
+ * - Coefficients are fixed to the field @f$\mathbb{Z}/2\mathbb{Z}@f$.
+ * - The relative-neighborhood-graph construction costs @f$O(n^2)@f$ time in ambient dimension @f$\geq 4@f$
+ *   and for distance matrices (in dimension 2 and 3 it is Delaunay-based and much cheaper). The reduction
+ *   itself is output-sensitive, driven by the number of edges processed before the last bar closes.
  *
  * @section reducedripsexamples Examples
  *

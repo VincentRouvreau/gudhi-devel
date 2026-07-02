@@ -2,13 +2,10 @@
  *    See file LICENSE or go to https://gudhi.inria.fr/licensing/ for full license details.
  *    Author(s):       Thomas Burnett, Musashi Koyama
  *
- *    Algorithm:       M. Koyama, F. Mémoli, V. Robins, K. Turner, "Computation of degree-1 persistent
- *                     homology on larger point-clouds using the Reduced Vietoris-Rips filtration".
- *
  *    Copyright (C) 2026 Thomas Burnett, Musashi Koyama
  *
  *    Modification(s):
- *    - YYYY/MM Author: Description of the modification
+ *      - YYYY/MM Author: Description of the modification
  */
 
 /**
@@ -23,6 +20,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <iterator>
 #include <optional>
 #include <utility>
@@ -39,6 +37,9 @@ namespace reduced_rips {
 
 // Spatial search over the cloud. In dimension <= 3 it uses GUDHI's Kd_tree_search. In dimension >= 4,
 // it falls back to a flat brute-force scan over the Cloud. Every distance comparison uses l2_dist_2.
+// `Index` is the module's stored-index type (std::uint32_t by default): the returned point indices are
+// narrowed to it, since every index is < n.
+template <class Index = std::uint32_t>
 class Euclidean_kd_tree {
   using Cloud = detail::Cloud;
 
@@ -51,6 +52,12 @@ class Euclidean_kd_tree {
     tree_.emplace(kd_points_);
   }
 
+  Euclidean_kd_tree(const Euclidean_kd_tree&) = delete;
+  Euclidean_kd_tree& operator=(const Euclidean_kd_tree&) = delete;
+  Euclidean_kd_tree(Euclidean_kd_tree&&) = delete;
+  Euclidean_kd_tree& operator=(Euclidean_kd_tree&&) = delete;
+  ~Euclidean_kd_tree() = default;
+
   // True when queries fall back to a flat scan (no kd-tree). The tree can't restrict a spatial query by point
   // index, so index-bounded searches take a different path in brute-force mode.
   [[nodiscard]] bool brute_force() const { return !tree_; }
@@ -61,12 +68,15 @@ class Euclidean_kd_tree {
   // this list must be an exact prefix of it. Exactly `budget` in the common tie-free case, fewer when a tie
   // straddles the boundary (the whole boundary tie group is dropped). The engine backstops a short list with the
   // full neighbor list. A query that is itself a Cloud point is returned as the nearest (distance 0). Callers
-  // filter that out.
-  std::vector<std::size_t> nearest_neighbors(const double* query, std::size_t budget) const {
+  // filter that out. The ordering keys are computed in T, the scalar the heap orders by, so this prefix agrees
+  // with the exhaustive T-keyed scans. The CGAL candidate search itself runs in double and only selects which points
+  // reach the tie-trim below.
+  template <class T>
+  std::vector<Index> nearest_neighbors(const double* query, std::size_t budget) const {
     if (!tree_) {
-      std::vector<double> dist(pm_.n);
-      for (std::size_t i = 0; i < pm_.n; ++i) dist[i] = detail::l2_dist_2<double>(pm_[i], query, pm_.dim);
-      return detail::nearest_within_budget(0, pm_.n, budget, [&dist](std::size_t x) { return dist[x]; });
+      std::vector<T> dist(pm_.n);
+      for (std::size_t i = 0; i < pm_.n; ++i) dist[i] = detail::l2_dist_2<T>(pm_[i], query, pm_.dim);
+      return detail::nearest_within_budget<Index>(0, pm_.n, budget, [&dist](Index x) { return dist[x]; });
     }
     // CGAL's k-nearest search orders equal distances arbitrarily, so its raw top-k is not the canonical
     // (distance, index) prefix. Ask for one extra point and drop the whole tie group at the farthest distance:
@@ -74,21 +84,20 @@ class Euclidean_kd_tree {
     // used, so what remains is a deterministic prefix of the l2_dist_2 ordering (exactly budget unless ties shorten
     // it). This mirrors the nearest_within_budget rule used by the brute-force and matrix paths.
     Kd_point center(query, query + pm_.dim);
-    std::vector<std::pair<std::size_t, double>> near;
-    double d_max = 0.0;
+    std::vector<std::pair<Index, T>> near;
+    T d_max = T(0);
     for (auto nb : tree_->k_nearest_neighbors(center, static_cast<unsigned int>(budget + 1), true)) {
-      auto d = detail::l2_dist_2<double>(pm_[static_cast<std::size_t>(nb.first)], query, pm_.dim);
-      near.emplace_back(static_cast<std::size_t>(nb.first), d);
+      auto d = detail::l2_dist_2<T>(pm_[static_cast<std::size_t>(nb.first)], query, pm_.dim);
+      near.emplace_back(static_cast<Index>(nb.first), d);
       d_max = std::max(d_max, d);
     }
-    near.erase(std::remove_if(near.begin(), near.end(),
-                              [d_max](const std::pair<std::size_t, double>& pr) { return pr.second >= d_max; }),
-               near.end());
-    std::sort(near.begin(), near.end(),
-              [](const std::pair<std::size_t, double>& x, const std::pair<std::size_t, double>& y) {
-                return x.second != y.second ? x.second < y.second : x.first < y.first;
-              });
-    std::vector<std::size_t> result;
+    near.erase(
+        std::remove_if(near.begin(), near.end(), [d_max](const std::pair<Index, T>& pr) { return pr.second >= d_max; }),
+        near.end());
+    std::sort(near.begin(), near.end(), [](const std::pair<Index, T>& x, const std::pair<Index, T>& y) {
+      return x.second != y.second ? x.second < y.second : x.first < y.first;
+    });
+    std::vector<Index> result;
     result.reserve(near.size());
     for (const auto& pr : near) result.push_back(pr.first);
     return result;
@@ -98,20 +107,22 @@ class Euclidean_kd_tree {
   // returned squared distances are in the scalar type T; the CGAL tree searches in double, and each survivor's
   // distance is recomputed in T afterwards.
   template <class T>
-  std::vector<std::pair<std::size_t, T>> points_in_squared_ball(const double* query, T squared_radius) const {
-    std::vector<std::pair<std::size_t, T>> result;
+  std::vector<std::pair<Index, T>> points_in_squared_ball(const double* query, T squared_radius) const {
+    std::vector<std::pair<Index, T>> result;
     if (!tree_) {
       for (std::size_t i = 0; i < pm_.n; ++i) {
         T d = detail::l2_dist_2<T>(pm_[i], query, pm_.dim);
-        if (d <= squared_radius) result.emplace_back(i, d);
+        if (d <= squared_radius) result.emplace_back(static_cast<Index>(i), d);
       }
       return result;
     }
     Kd_point center(query, query + pm_.dim);
-    std::vector<std::size_t> found;
+    thread_local std::vector<std::size_t> found;  // per-worker scratch, reused across lune queries
+    found.clear();
     tree_->all_near_neighbors2(center, squared_radius, squared_radius, std::back_inserter(found));
     result.reserve(found.size());
-    for (std::size_t idx : found) result.emplace_back(idx, detail::l2_dist_2<T>(pm_[idx], query, pm_.dim));
+    for (std::size_t idx : found)
+      result.emplace_back(static_cast<Index>(idx), detail::l2_dist_2<T>(pm_[idx], query, pm_.dim));
     return result;
   }
 
