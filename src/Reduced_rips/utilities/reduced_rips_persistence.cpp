@@ -8,6 +8,7 @@
  *    - YYYY/MM Author: Description of the modification
  */
 
+#include <algorithm>
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -96,7 +97,10 @@ int main(int argc, char** argv) {
     std::clog << clock;
   }
 
-  const auto& barcode = ph1.persistence();
+  auto barcode = ph1.persistence();
+  // Return with longest bars first, rather than the engine's ascending-by-death order.
+  std::sort(barcode.begin(), barcode.end(),
+            [](const auto& x, const auto& y) { return (x[1] - x[0]) > (y[1] - y[0]); });
 
   std::ostream* out = &std::cout;
   std::ofstream ofs;
