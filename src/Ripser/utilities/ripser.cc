@@ -2,6 +2,7 @@
  *    Modification(s):
  *      - YYYY/MM Author: Description of the modification
  *      - 2024 Marc Glisse: Heavy refactoring
+ *      - 2026/08 Vincent Rouvreau: Add read OFF file and output persistence file
 */
 
 /*
@@ -74,6 +75,7 @@ enum file_format {
   UPPER_DISTANCE_MATRIX,
   DISTANCE_MATRIX,
   POINT_CLOUD,
+  OFF,
   DIPHA,
   SPARSE,
   BINARY
@@ -113,6 +115,15 @@ Euclidean_distance_matrix read_point_cloud(std::istream& input_stream) {
     << d << std::endl;
 
   return eucl_dist;
+}
+
+Euclidean_distance_matrix read_off_point_cloud(std::istream& input_stream) {
+  // Remove the 2 first lines (aka. the header). Could be improved by removing comment lines.
+  std::string line;
+  std::getline(input_stream, line);
+  std::getline(input_stream, line);
+  
+  return read_point_cloud(input_stream);
 }
 
 Sparse_distance_matrix read_sparse_distance_matrix(std::istream& input_stream) {
@@ -224,6 +235,8 @@ Compressed_lower_distance_matrix read_file(std::istream& input_stream, const fil
       return read_distance_matrix(input_stream);
     case POINT_CLOUD:
       return read_point_cloud(input_stream);
+    case OFF:
+      return read_off_point_cloud(input_stream);
     case DIPHA:
       return read_dipha(input_stream);
     default:
@@ -247,6 +260,7 @@ void print_usage_and_exit(int exit_code) {
     << "                     upper-distance (upper triangular distance matrix)" << std::endl
     << "         (default:)  distance       (distance matrix; only lower triangular part is read)" << std::endl
     << "                     point-cloud    (point cloud in Euclidean space)" << std::endl
+    << "                     off            (point cloud in Euclidean space in OFF format)" << std::endl
     << "                     dipha          (distance matrix in DIPHA file format)" << std::endl
     << "                     sparse         (sparse distance matrix in sparse triplet format)"
     << std::endl
@@ -254,6 +268,7 @@ void print_usage_and_exit(int exit_code) {
     << std::endl
     << "  --dim <k>        compute persistent homology up to dimension k" << std::endl
     << "  --threshold <t>  compute Rips complexes up to diameter t" << std::endl
+    << "  --output         filename to ouput the data - standard output otherwise" << std::endl
     << "  --modulus <p>    compute homology with coefficients in the prime field Z/pZ"
     << std::endl
     << "  --ratio <r>      only show persistence pairs with death/birth ratio > r" << std::endl
@@ -270,6 +285,7 @@ int main(int argc, char** argv) {
   value_t threshold = std::numeric_limits<value_t>::max();
   float ratio = 1;
   coefficient_t modulus = 2;
+  std::string output;
 
   for (int i = 1; i < argc; ++i) {
     const std::string arg(argv[i]);
@@ -285,6 +301,8 @@ int main(int argc, char** argv) {
       std::size_t next_pos;
       threshold = std::stof(parameter, &next_pos);
       if (next_pos != parameter.size()) print_usage_and_exit(-1);
+    } else if (arg == "--output") {
+      output = std::string(argv[++i]);
     } else if (arg == "--ratio") {
       std::string parameter = std::string(argv[++i]);
       std::size_t next_pos;
@@ -300,6 +318,8 @@ int main(int argc, char** argv) {
         format = DISTANCE_MATRIX;
       else if (parameter.rfind("point", 0) == 0)
         format = POINT_CLOUD;
+      else if (parameter.rfind("off", 0) == 0)
+        format = OFF;
       else if (parameter == "dipha")
         format = DIPHA;
       else if (parameter == "sparse")
@@ -325,18 +345,26 @@ int main(int argc, char** argv) {
     exit(-1);
   }
 
-  auto output_dim = [](dimension_t dim) {
-    std::cout << "persistence intervals in dim " << (int)dim << ":" << std::endl;
+  std::ofstream ofs;
+  std::reference_wrapper<std::ostream> os = std::clog;
+  
+  if (!output.empty()) {
+      ofs.open(output);
+      os = ofs;   // reference_wrapper *can* be reassigned
+  }
+
+  auto output_dim = [os](dimension_t dim) {
+    os.get() << "persistence intervals in dim " << (int)dim << ":" << std::endl;
   };
-  auto output_pair = [ratio](value_t birth, value_t death) {
+  auto output_pair = [os, modulus, ratio](value_t birth, value_t death) {
 #ifdef GUDHI_INDICATE_PROGRESS
     // Not necessary if we redirect stdout
     std::cerr << Gudhi::ripser::clear_line << std::flush;
 #endif
     if (death == std::numeric_limits<value_t>::infinity())
-      std::cout << " [" << birth << ", )" << std::endl;
+      os.get() << modulus << "  " << birth << " inf\n";
     else if (death > birth * ratio)
-      std::cout << " [" << birth << "," << death << ")" << std::endl;
+      os.get() << modulus << "  " << birth << " " << death << "\n";
   };
   if (format == SPARSE) {
     Sparse_distance_matrix dist =
@@ -387,5 +415,9 @@ int main(int argc, char** argv) {
       ripser(Sparse_distance_matrix(std::move(dist), threshold), dim_max, threshold, modulus, output_dim, output_pair);
     }
   }
+  // Close output file if required
+  if (ofs.is_open())
+    ofs.close();
+
   return 0;
 }
