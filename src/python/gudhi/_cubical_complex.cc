@@ -18,6 +18,10 @@
 #include <nanobind/stl/pair.h>
 #include <nanobind/ndarray.h>
 
+#include <boost/mpl/list.hpp>
+#include <boost/mpl/for_each.hpp>
+#include <boost/mpl/identity.hpp>
+
 #include <gudhi/Bitmap_cubical_complex.h>
 #include <gudhi/Bitmap_cubical_complex_base.h>
 #include <gudhi/Bitmap_cubical_complex_periodic_boundary_conditions_base.h>
@@ -28,29 +32,30 @@ namespace nb = nanobind;
 namespace Gudhi {
 namespace cubical_complex {
 
-class Cubical_complex_interface : public Bitmap_cubical_complex<Bitmap_cubical_complex_base<double>>
+template <class T>
+class Cubical_complex_interface : public Bitmap_cubical_complex<Bitmap_cubical_complex_base<T>>
 {
-  using Base = Bitmap_cubical_complex<Bitmap_cubical_complex_base<double>>;
+  using Base = Bitmap_cubical_complex<Bitmap_cubical_complex_base<T>>;
 
  public:
   using Base::Base;  // inheriting constructors
 
   explicit Cubical_complex_interface(const std::string& perseus_style_file) : Base(perseus_style_file.c_str()) {}
-  
+
   explicit Cubical_complex_interface(nb::ndarray<const int, nb::ndim<1>, nb::c_contig >& dim,
-                                     nb::ndarray<const double, nb::ndim<1>, nb::c_contig >& cells,
+                                     nb::ndarray<const T, nb::ndim<1>, nb::c_contig >& cells,
                                      bool input_top_cells)
     : Base(std::vector<unsigned>(dim.data(), dim.data() + dim.size()),
-           std::vector<double>(cells.data(), cells.data() + cells.size()),
+           std::vector<T>(cells.data(), cells.data() + cells.size()),
            input_top_cells) {}
   // TODO: nanobind is probably making a copy here (to verify), as it is only used privately we could think
   // at another strategy?
   // But as the vector is probably very small (number of dimensions), it is perhaps not worth it.
   const std::vector<unsigned>& shape() { return this->sizes; };
 
-  nanobind::ndarray<double, nanobind::numpy> get_numpy_array()
+  nanobind::ndarray<T, nanobind::numpy> get_numpy_array()
   {
-    return nanobind::ndarray<double, nanobind::numpy>(Base::data.data(), {Base::data.size()});
+    return nanobind::ndarray<T, nanobind::numpy>(Base::data.data(), {Base::data.size()});
   }
 };
 
@@ -84,8 +89,8 @@ class Periodic_cubical_complex_interface
 }  // namespace cubical_complex
 }  // namespace Gudhi
 
-using CC = Gudhi::cubical_complex::Cubical_complex_interface;
-using CPers = Gudhi::Persistent_cohomology_interface<CC>;
+// using CC = Gudhi::cubical_complex::Cubical_complex_interface<double>;
+// using CPers = Gudhi::Persistent_cohomology_interface<CC>;
 
 using PCC = Gudhi::cubical_complex::Periodic_cubical_complex_interface;
 using PCPers = Gudhi::Persistent_cohomology_interface<PCC>;
@@ -94,7 +99,66 @@ NB_MODULE(_cubical_complex_ext, m)
 {
   m.attr("__license__") = "MIT";
   
-  nb::class_<CC>(m, "_Bitmap_cubical_complex_interface")
+  // Cubical complex interface for double and float
+  typedef boost::mpl::list<
+      boost::mpl::identity<Gudhi::cubical_complex::Cubical_complex_interface<double>>,
+      boost::mpl::identity<Gudhi::cubical_complex::Cubical_complex_interface<float>>
+  > Cubical_complex_interfaces;
+
+  auto add_class_for_cubical_complex_interface = [&m](auto identity_tag) {
+      using CC = typename decltype(identity_tag)::type;
+      using Filtration_value = typename CC::Filtration_value;
+
+      // Keep the original name for backward compatibility
+      std::string class_name = "_Bitmap_cubical_complex_interface";
+      std::string persistence_class_name = "_Cubical_complex_persistence_interface";
+      if constexpr (std::is_same_v<Filtration_value, float>) {
+          class_name = "_Bitmap_cubical_complex_interface_float";
+          persistence_class_name = "_Cubical_complex_persistence_interface_float";
+      }
+
+      nb::class_<CC>(m, class_name.c_str())
+          .def(nb::init<nb::ndarray<const int, nb::ndim<1>, nb::c_contig >&,
+                        nb::ndarray<const Filtration_value, nb::ndim<1>, nb::c_contig >&,
+                        bool>(),
+               nb::call_guard<nb::gil_scoped_release>())
+          .def(nb::init<const std::string&>(), nb::call_guard<nb::gil_scoped_release>())
+          .def("num_simplices", &CC::num_simplices, nb::call_guard<nb::gil_scoped_release>(), R"doc(
+    This function returns the number of all cubes in the complex.
+    
+    :returns:  int -- the number of all cubes in the complex.
+               )doc")
+          .def("dimension",
+               nb::overload_cast<>(&CC::dimension, nb::const_),
+               nb::call_guard<nb::gil_scoped_release>(),
+               R"doc(
+    This function returns the dimension of the complex.
+    
+    :returns:  int -- the complex dimension.
+               )doc")
+          .def("_shape", &CC::shape)
+          .def("_get_numpy_array", &CC::get_numpy_array, nb::rv_policy::reference_internal);
+
+      using CPers = Gudhi::Persistent_cohomology_interface<CC>;
+      nb::class_<CPers>(m, persistence_class_name.c_str())
+          .def(nb::init<CC&, bool>(), nb::call_guard<nb::gil_scoped_release>())
+          .def("_compute_persistence", &CPers::compute_persistence, nb::call_guard<nb::gil_scoped_release>())
+          .def("_get_persistence", &CPers::get_persistence)
+          .def("_cofaces_of_cubical_persistence_pairs",
+               &CPers::cofaces_of_cubical_persistence_pairs,
+               nb::call_guard<nb::gil_scoped_release>())
+          .def("_vertices_of_cubical_persistence_pairs",
+               &CPers::vertices_of_cubical_persistence_pairs,
+               nb::call_guard<nb::gil_scoped_release>())
+          .def("_betti_numbers", &CPers::betti_numbers)
+          .def("_persistent_betti_numbers", &CPers::persistent_betti_numbers)
+          .def("_intervals_in_dimension", &CPers::intervals_in_dimension);
+
+  };
+
+  boost::mpl::for_each<Cubical_complex_interfaces>(add_class_for_cubical_complex_interface);
+
+  /* nb::class_<CC>(m, "_Bitmap_cubical_complex_interface")
       .def(nb::init<nb::ndarray<const int, nb::ndim<1>, nb::c_contig >&,
                     nb::ndarray<const double, nb::ndim<1>, nb::c_contig >&,
                     bool>(),
@@ -128,7 +192,7 @@ This function returns the dimension of the complex.
            nb::call_guard<nb::gil_scoped_release>())
       .def("_betti_numbers", &CPers::betti_numbers)
       .def("_persistent_betti_numbers", &CPers::persistent_betti_numbers)
-      .def("_intervals_in_dimension", &CPers::intervals_in_dimension);
+      .def("_intervals_in_dimension", &CPers::intervals_in_dimension);*/
 
   nb::class_<PCC>(m, "_Periodic_cubical_complex_interface")
       .def(nb::init<const std::vector<unsigned int>&, const std::vector<double>&, const std::vector<bool>&, bool>(),

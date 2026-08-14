@@ -43,10 +43,11 @@ auto wrap_persistence_1d(nb::ndarray<const T, nb::ndim<1> > data)
   return _wrap_as_numpy_array(std::move(dgm));
 }
 
-nb::list wrap_persistence_2d(nb::ndarray<const double, nb::ndim<2>, nb::c_contig> data, double min_persistence)
+template <class T>
+nb::list wrap_persistence_2d(nb::ndarray<const T, nb::ndim<2>, nb::c_contig> data, T min_persistence)
 {
-  std::vector<std::array<double, 2> > dgm0;
-  std::vector<std::array<double, 2> > dgm1;
+  std::vector<std::array<T, 2> > dgm0;
+  std::vector<std::array<T, 2> > dgm1;
   // rough upper bound: a bar for each possible square that do not touch anything else
   // + the rows and columns on the boundary are implicitly collapsed
   dgm0.reserve((data.shape(0) + 1) * (data.shape(1) + 1) / 4);
@@ -55,21 +56,21 @@ nb::list wrap_persistence_2d(nb::ndarray<const double, nb::ndim<2>, nb::c_contig
   dgm1.reserve(((data.shape(0) - 2) * (data.shape(1) - 2) + 1) / 2);
   {
     nb::gil_scoped_release release;
-    double mini = Gudhi::cubical_complex::persistence_on_rectangle_from_top_cells(
-        static_cast<double const*>(data.data()),
+    T mini = Gudhi::cubical_complex::persistence_on_rectangle_from_top_cells(
+        static_cast<T const*>(data.data()),
         static_cast<unsigned int>(data.shape(0)),
         static_cast<unsigned int>(data.shape(1)),
-        [&](double b, double d) {
+        [&](T b, T d) {
           if (d - b > min_persistence) {
-            dgm0.emplace_back(std::array<double, 2>{b, d});
+            dgm0.emplace_back(std::array<T, 2>{b, d});
           }
         },
-        [&](double b, double d) {
+        [&](T b, T d) {
           if (d - b > min_persistence) {
-            dgm1.emplace_back(std::array<double, 2>{b, d});
+            dgm1.emplace_back(std::array<T, 2>{b, d});
           }
         });
-    dgm0.emplace_back(std::array<double, 2>{mini, std::numeric_limits<double>::infinity()});
+    dgm0.emplace_back(std::array<T, 2>{mini, std::numeric_limits<T>::infinity()});
   }
   if (dgm0.size() < dgm0.capacity() / 2) dgm0.shrink_to_fit();
   if (dgm1.size() < dgm1.capacity() / 2) dgm1.shrink_to_fit();
@@ -84,5 +85,8 @@ NB_MODULE(_pers_cub_low_dim_ext, m)
   m.attr("__license__") = "MIT";
   m.def("_persistence_on_a_line", &wrap_persistence_1d<float>, nb::arg().noconvert());
   m.def("_persistence_on_a_line", &wrap_persistence_1d<double>);
-  m.def("_persistence_on_rectangle_from_top_cells", &wrap_persistence_2d);
+  m.def("_persistence_on_rectangle_from_top_cells", &wrap_persistence_2d<float>,
+        nb::arg("data").noconvert(), nb::arg("min_persistence"));
+  m.def("_persistence_on_rectangle_from_top_cells", &wrap_persistence_2d<double>,
+        nb::arg("data"), nb::arg("min_persistence"));
 }

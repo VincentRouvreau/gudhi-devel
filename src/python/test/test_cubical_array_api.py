@@ -59,7 +59,6 @@ def test_cubical_persistence_function_array_api_with_torch_gradients():
 
 
 def test_cubical_persistence_function_array_api_with_jax_gradients():
-    jax.config.update('jax_enable_x64', True)
     X = jnp.array([[0.,2.,2.],[2.,2.,2.],[2.,2.,1.]])
     
     def compute_loss(X):

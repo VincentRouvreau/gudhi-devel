@@ -16,7 +16,13 @@ import warnings
 from typing import Literal, Iterable, Optional
 
 from ..cubical_complex import CubicalComplex
-from .._cubical_complex_ext import _Bitmap_cubical_complex_interface, _Cubical_complex_persistence_interface
+from .._cubical_complex_ext import (
+    _Bitmap_cubical_complex_interface,
+    _Cubical_complex_persistence_interface,
+    _Bitmap_cubical_complex_interface_float,
+    _Cubical_complex_persistence_interface_float,
+)
+
 from .._pers_cub_low_dim_ext import (
     _persistence_on_a_line,
     _persistence_on_rectangle_from_top_cells,
@@ -54,15 +60,24 @@ def _persistence_from_cells_without_autodiff(
             diags = _persistence_on_rectangle_from_top_cells(cells, min_persistence)
         return [xp.asarray(diags[i]) if i in (0, 1) else xp.empty((0, 2)) for i in homology_dimensions]
 
-    if input_is_from_top_cells:
-        cubical_complex = CubicalComplex(top_dimensional_cells=cells)
+    xp = array_api_namespace
+    # Compute pixels associated to positive and negative simplices
+    # Don't compute gradient for this operation
+    Xflat = xp.reshape(cells, [-1])
+    # We reverse the dimensions because CubicalComplex uses Fortran ordering
+    Xdim = xp.asarray(cells.shape[::-1])
+
+    if Xflat.dtype == xp.float64:
+      cc = _Bitmap_cubical_complex_interface(Xdim, Xflat, input_is_from_top_cells)
+      pers = _Cubical_complex_persistence_interface(cc, True)
+    elif Xflat.dtype == xp.float32:
+        cc = _Bitmap_cubical_complex_interface_float(Xdim, Xflat, input_is_from_top_cells)
+        pers = _Cubical_complex_persistence_interface_float(cc, True)
     else:
-        cubical_complex = CubicalComplex(vertices=cells)
-    cubical_complex.compute_persistence(
-        homology_coeff_field=homology_coeff_field,
-        min_persistence=min_persistence,
-    )
-    return [xp.asarray(cubical_complex.persistence_intervals_in_dimension(dim)) for dim in homology_dimensions]
+        raise TypeError(f"Unknown cells type {Xflat.dtype}")
+    pers._compute_persistence(homology_coeff_field, 0.0)
+
+    return [xp.asarray(pers._intervals_in_dimension(dim)) for dim in homology_dimensions]
 
 
 def _persistence_from_cells_with_autodiff(
@@ -92,8 +107,14 @@ def _persistence_from_cells_with_autodiff(
     # index of minimum pixel value for essential persistence diagram
     index_essential = xp.argmin(Xflat)
 
-    cc = _Bitmap_cubical_complex_interface(Xdim, Xflat, input_is_from_top_cells)
-    pers = _Cubical_complex_persistence_interface(cc, True)
+    if Xflat.dtype == xp.float64:
+      cc = _Bitmap_cubical_complex_interface(Xdim, Xflat, input_is_from_top_cells)
+      pers = _Cubical_complex_persistence_interface(cc, True)
+    elif Xflat.dtype == xp.float32:
+        cc = _Bitmap_cubical_complex_interface_float(Xdim, Xflat, input_is_from_top_cells)
+        pers = _Cubical_complex_persistence_interface_float(cc, True)
+    else:
+        raise TypeError(f"Unknown cells type {Xflat.dtype}")
     pers._compute_persistence(homology_coeff_field, 0.0)
 
     # TODO: verify the return type of cofaces_of_cubical_persistence_pairs() by nanobind
