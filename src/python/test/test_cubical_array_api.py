@@ -72,7 +72,11 @@ def test_cubical_persistence_function_array_api_with_jax_gradients():
         return loss
     
     grads = jax.grad(compute_loss)(X)
-    np_grads = np.asarray(grads[0])
+    # Output is different from torch
+    # np_grads = np.asarray(grads[0])
+    # Here we need to do
+    # Or: jax.grad(compute_loss, argnums=(0,))(X)
+    np_grads = np.asarray(grads)
     np_expected_grads = np.asarray([[ 0.0000,  0.0000,  0.0000],
                                  [ 0.0000,  0.5000,  0.0000],
                                  [ 0.0000,  0.0000, -0.5000]])
