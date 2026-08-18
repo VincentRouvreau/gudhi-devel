@@ -90,6 +90,8 @@ class CubicalPersistence(BaseEstimator, TransformerMixin):
 
     def __transform(self, cells):
         cells = np.asarray(cells)
+        if not np.issubdtype(type(cells.flat[0]), np.floating):
+            cells = cells.astype("float64")
         if len(cells.shape) == 1 and self.min_persistence >= 0:
             res = _persistence_on_a_line(cells)
             if self.min_persistence > 0:
