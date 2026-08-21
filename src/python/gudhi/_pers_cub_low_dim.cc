@@ -18,7 +18,6 @@
 
 #include <boost/range/counting_range.hpp>
 #include <boost/range/adaptor/transformed.hpp>
-#include <boost/mpl/for_each.hpp>
 
 #include <gudhi/Persistence_on_a_line.h>
 #include <gudhi/Persistence_on_rectangle.h>
@@ -28,8 +27,7 @@
 namespace nb = nanobind;
 
 template <class Filtration_value>
-auto wrap_persistence_1d(nb::ndarray<const Filtration_value, nb::ndim<1> > data)
-{
+auto wrap_persistence_1d(nb::ndarray<const Filtration_value, nb::ndim<1> > data) {
   auto data_view = data.view();
   auto cnt = boost::counting_range<nb::ssize_t>(0, data_view.shape(0));
   auto proj = [&data_view](nb::ssize_t i) { return data_view(i); };
@@ -47,8 +45,7 @@ auto wrap_persistence_1d(nb::ndarray<const Filtration_value, nb::ndim<1> > data)
 
 template <class Filtration_value>
 nb::list wrap_persistence_2d(nb::ndarray<const Filtration_value, nb::ndim<2>, nb::c_contig> data,
-                             Filtration_value min_persistence)
-{
+                             Filtration_value min_persistence) {
   std::vector<std::array<Filtration_value, 2> > dgm0;
   std::vector<std::array<Filtration_value, 2> > dgm1;
   // rough upper bound: a bar for each possible square that do not touch anything else
@@ -86,14 +83,16 @@ nb::list wrap_persistence_2d(nb::ndarray<const Filtration_value, nb::ndim<2>, nb
 NB_MODULE(_pers_cub_low_dim_ext, m)
 {
   m.attr("__license__") = "MIT";
-  boost::mpl::for_each<Filtration_value_types_supported::List>([&m](auto identity_tag) {
-    using Filtration_value = typename decltype(identity_tag)::type;
-    m.def("_persistence_on_a_line", &wrap_persistence_1d<Filtration_value>, nb::arg().noconvert());
-    // Do not modify nb::arg("data") with nb::arg("data").noconvert().
-    // It is required when a nb::f_contig is given as an input. Nanobind will convert it to a nb::c_contig
-    m.def("_persistence_on_rectangle_from_top_cells",
-          &wrap_persistence_2d<double>,
-          nb::arg("data"),
+  Gudhi::for_each_filtration_value_type(Gudhi::Supported::List{},
+    [&m](auto identity_tag) {
+      using Filtration_value = typename decltype(identity_tag)::type;
+      m.def("_persistence_on_a_line", &wrap_persistence_1d<Filtration_value>, nb::arg().noconvert());
+      // Do not modify nb::arg("data").noconvert()
+      // When calling this function user must pass a c_contig ndarray
+      m.def("_persistence_on_rectangle_from_top_cells",
+          &wrap_persistence_2d<Filtration_value>,
+          nb::arg("data").noconvert(),
           nb::arg("min_persistence"));
     });
+
 }

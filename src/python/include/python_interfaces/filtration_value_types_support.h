@@ -8,58 +8,74 @@
  *      - YYYY/MM Author: Description of the modification
  */
 
+#ifndef INCLUDE_FILTRATION_VALUE_TYPES_SUPPORT_H_
+#define INCLUDE_FILTRATION_VALUE_TYPES_SUPPORT_H_
+
 #include <string>
 #include <type_traits>  // for std::is_same_v
 
-#include <boost/mpl/list.hpp>
-#include <boost/mpl/identity.hpp>
-#include <boost/mpl/transform.hpp>
-#include <boost/mpl/placeholders.hpp>
+namespace Gudhi {
 
-// Developper notice:
-// If you need to add a new type to Filtration_value_types_supported, you will also have to add a condition to
-// get_string_filtration_type() for the python class name to be suffixed with the type. The class names must be
-// different (for example, _Bitmap_cubical_complex_interface and _Bitmap_cubical_complex_interface_float32)
-template<class Filtration_value>
-constexpr std::string get_string_filtration_type()
-{
-  if constexpr (std::is_same_v<Filtration_value, float>)
-    return std::string("_float32");
-  // for backward compatibility
-  return std::string("");
-}
+  // Developper notice:
+  // If you need to add a new type:
+  // 1. you have to add a condition to get_class_name_for_filtration_type() for the python class name to be suffixed
+  //    with the type as the class names must be different.
+  // 2. you need to add the new type in Supported::List
+  // 
+  // Supported_for_data_structure::List is automatically updated (nothing to be done here)
 
-struct Filtration_value_types_supported {
-  using List = boost::mpl::list<boost::mpl::identity<float>,
-                                boost::mpl::identity<double>>;
-};
+  template<class Filtration_value>
+  constexpr std::string get_class_name_for_filtration_type(const std::string& root_class_name)
+  {
+    if constexpr (std::is_same_v<Filtration_value, float>)
+      return root_class_name + std::string("_float32");
+    if constexpr (std::is_same_v<Filtration_value, double>)
+      return root_class_name + std::string("_float64");
+  }
 
+  // To get the identity of a type
+  template<class T>
+  struct identity { using type = T; };
 
-// Data_structure must accept Filtration_value as a template parameter (Data_structure<Filtration_value> shall compile)
-// Then boost::mpl::for_each<Data_structure_filtration_supported<Data_structure>::List>(my_lambda);
-// will call my_lambda for all Data_structure<Filtration_value>, where Filtration_value is one of
-// Filtration_value_types_supported
-// 
-// Equivalent to:
-//
-// template<template<typename> class Data_structure>
-// struct Data_structure_filtration_supported {
-//   using List = boost::mpl::list<
-//     boost::mpl::identity<Data_structure<float>>,
-//     boost::mpl::identity<Data_structure<double>>
-//   >;
-// };
-template<template<typename> class Data_structure>
-struct Data_structure_filtration_supported {
+  // A list of Types
+  template<class... Ts>
+  struct type_list {};
 
-  // metafunction: identity<T> -> identity<Data_structure<T>>
-  template<typename Wrapped>
-  struct wrap {
-    using type = boost::mpl::identity<Data_structure<typename Wrapped::type>>;
+  struct Supported {
+    using List = type_list<float, double>;
   };
 
-  using List = typename boost::mpl::transform<
-      typename Filtration_value_types_supported::List,
-      wrap<boost::mpl::_1>
-    >::type;
-};
+  // Data_structure must accept Filtration_value as a template parameter (Data_structure<Filtration_value> shall compile)
+  // Then for_each_filtration_value_type(Supported_for_data_structure<Data_structure>::List>,my_lambda);
+  // will call my_lambda for all Data_structure<Filtration_value>, where Filtration_value is one of
+  // Supported
+  // 
+  // Equivalent to:
+  //
+  // template<template<typename> class Data_structure>
+  // struct Supported_for_data_structure {
+  //   using List = type_list<Data_structure<float>, Data_structure<double>>;
+  // };
+  template<template<typename> class Data_structure>
+  struct Supported_for_data_structure {
+   private:
+    // metafunction (partial specialization): type_list<Ts...> -> type_list<Data_structure<Ts>...>
+    template<class L> struct wrap;
+    template<class... Ts>
+    struct wrap<type_list<Ts...>> {
+      using type = type_list<Data_structure<Ts>...>;
+    };
+
+   public:
+    using List = typename wrap<typename Supported::List>::type;
+  };
+
+  // Calls f(identity<T>{}) for every T in the list
+  template<class... Ts, class F>
+  void for_each_filtration_value_type(type_list<Ts...>, F&& f) {
+    (f(identity<Ts>{}), ...);
+  }
+
+}  // namespace Gudhi
+
+#endif  // INCLUDE_FILTRATION_VALUE_TYPES_SUPPORT_H_

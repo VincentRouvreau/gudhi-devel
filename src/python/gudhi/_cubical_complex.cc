@@ -92,10 +92,10 @@ NB_MODULE(_cubical_complex_ext, m)
       using CC = typename decltype(identity_tag)::type;
       using Filtration_value = typename CC::Filtration_value;
 
-      std::string class_name = std::string("_Bitmap_cubical_complex_interface") +
-                                 get_string_filtration_type<Filtration_value>();
-      std::string persistence_class_name = std::string("_Cubical_complex_persistence_interface") +
-                                 get_string_filtration_type<Filtration_value>();
+      std::string class_name =
+        Gudhi::get_class_name_for_filtration_type<Filtration_value>("_Bitmap_cubical_complex_interface");
+      std::string persistence_class_name =
+        Gudhi::get_class_name_for_filtration_type<Filtration_value>("_Cubical_complex_persistence_interface");
 
       nb::class_<CC>(m, class_name.c_str())
           .def(nb::init<const std::vector<unsigned int>&, const std::vector<Filtration_value>&, bool>(),
@@ -134,19 +134,20 @@ NB_MODULE(_cubical_complex_ext, m)
 
   };
 
-  boost::mpl::for_each<
-    Data_structure_filtration_supported<Gudhi::cubical_complex::Cubical_complex_interface>::List
-  >(add_class_for_cubical_complex_interface);
-
+  Gudhi::for_each_filtration_value_type(
+    Gudhi::Supported_for_data_structure<Gudhi::cubical_complex::Cubical_complex_interface>::List{},
+    add_class_for_cubical_complex_interface
+  );
+  
   // Periodic_cubical_complex
   auto add_class_for_periodic_cubical_complex_interface = [&m](auto identity_tag) {
       using PCC = typename decltype(identity_tag)::type;
       using Filtration_value = typename PCC::Filtration_value;
 
-      std::string class_name = std::string("_Periodic_cubical_complex_interface") +
-                                 get_string_filtration_type<Filtration_value>();
-      std::string persistence_class_name = std::string("_Periodic_cubical_complex_persistence_interface") +
-                                 get_string_filtration_type<Filtration_value>();
+      std::string class_name =
+        Gudhi::get_class_name_for_filtration_type<Filtration_value>("_Periodic_cubical_complex_interface");
+      std::string persistence_class_name = 
+        Gudhi::get_class_name_for_filtration_type<Filtration_value>("_Periodic_cubical_complex_persistence_interface");
       
       nb::class_<PCC>(m, class_name.c_str())
           .def(nb::init<const std::vector<unsigned int>&, const std::vector<Filtration_value>&, const std::vector<bool>&, bool>(),
@@ -187,8 +188,9 @@ NB_MODULE(_cubical_complex_ext, m)
 
   };
   
-  boost::mpl::for_each<
-    Data_structure_filtration_supported<Gudhi::cubical_complex::Periodic_cubical_complex_interface>::List
-  >(add_class_for_periodic_cubical_complex_interface);
+  Gudhi::for_each_filtration_value_type(
+    Gudhi::Supported_for_data_structure<Gudhi::cubical_complex::Periodic_cubical_complex_interface>::List{},
+    add_class_for_periodic_cubical_complex_interface
+  );
 
 }
