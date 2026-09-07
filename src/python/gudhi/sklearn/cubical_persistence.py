@@ -153,7 +153,9 @@ class CubicalPersistence(BaseEstimator, TransformerMixin):
                 diags = _persistence_on_rectangle_from_top_cells(cells, self.min_persistence)
             return [diags[i] if i in (0, 1) else np.empty((0, 2)) for i in self._dim_list]
 
-        cells = np.asarray(cells, order="F")
+        cells = np.asarray(cells)
+        if not cells.flags.f_contiguous:
+            cells = cells.T
         dimensions = cells.shape
         cells = cells.ravel(order="F")
         CubicalComplexItf = self._DTYPE_CUBICAL_COMPLEX_MAP[cells.dtype]
