@@ -368,7 +368,7 @@ class PeriodicCubicalComplex(_Periodic_cubical_complex_interface):
         :param persistence_file: Name of the file.
         :type persistence_file: string
 
-        :note: intervals_in_dim function requires :func:`compute_persistence` function to be launched first.
+        :note: write_persistence_diagram method requires :func:`compute_persistence` method to be launched first.
         """
         if self._pers == None:
             raise RuntimeError(
