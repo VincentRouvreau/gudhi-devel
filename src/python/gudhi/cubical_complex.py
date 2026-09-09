@@ -356,7 +356,7 @@ class CubicalComplex(_Bitmap_cubical_complex_interface):
     def write_persistence_diagram(self, persistence_file):
         """This function writes the persistence intervals of the cubical complex in a user given file name.
 
-        :param persistence_file: Name of the file.
+        :param persistence_file: Name of the `persistence diagram <fileformats.html#persistence-diagram>`_ file.
         :type persistence_file: string
 
         :note: write_persistence_diagram method requires :func:`compute_persistence` method to be launched first.
