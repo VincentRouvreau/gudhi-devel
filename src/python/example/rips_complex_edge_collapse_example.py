@@ -21,9 +21,9 @@ from gudhi.datasets.generators import points
 print("#####################################################################")
 print("RipsComplex (only the one-skeleton) creation from tore3D_300.off file")
 
-gudhi.random.set_seed(42)
+gd.random.set_seed(42)
 point_cloud = points.c_2_torus(n_samples=300, major_radius=2., minor_radius=1.)
-rips_complex = gd.RipsComplex(points=point_cloud, max_edge_length=12.0)
+rips_complex = gd.RipsComplex(points=point_cloud)
 simplex_tree = rips_complex.create_simplex_tree(max_dimension=1)
 print(f"1. Rips complex has {simplex_tree.num_simplices()} simplices - {simplex_tree.num_vertices()} vertices.")
 

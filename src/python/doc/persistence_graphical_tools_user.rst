@@ -41,6 +41,7 @@ This function can display the persistence result as a diagram:
     :include-source:
 
     import matplotlib.pyplot as plt
+    import numpy as np
     import gudhi
     from gudhi.datasets.generators import points
     
@@ -49,8 +50,9 @@ This function can display the persistence result as a diagram:
     
     simplex_tree = gudhi.RipsComplex(points=point_cloud, max_edge_length=0.67).create_simplex_tree(max_dimension=3)
     diags = simplex_tree.persistence(min_persistence=0.01)
-    # Save the persistence results in a file
-    simplex_tree.write_persistence_diagram("2-torus.pers")
+    # Save the H1 persistence results in a file
+    diags_H1 = simplex_tree.persistence_intervals_in_dimension(1)
+    np.save("2_torus_H1.npy", diags_H1)
     ax = gudhi.plot_persistence_diagram(diags)
     # We can modify the title, aspect, etc.
     ax.set_title("Persistence diagram of a torus")
@@ -83,10 +85,11 @@ If you want more information on a specific dimension, for instance:
     :include-source:
 
     import matplotlib.pyplot as plt
+    import numpy as np
     import gudhi
 
-    # "2-torus.pers" obtained from write_persistence_diagram method - cf. "Show persistence as a diagram"
-    birth_death = gudhi.read_persistence_intervals_in_dimension(persistence_file="2-torus.pers", only_this_dim=1)
+    # "2_torus_H1.npy" obtained from np.save method - cf. "Show persistence as a diagram"
+    birth_death = np.load("2_torus_H1.npy")
     # Use subplots to display diagram and density side by side
     fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(12, 5))
     gudhi.plot_persistence_diagram(persistence=birth_death, axes=axes[0])
