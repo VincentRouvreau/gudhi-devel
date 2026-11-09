@@ -1,0 +1,240 @@
+/*    This file is part of the Gudhi Library - https://gudhi.inria.fr/ - which is released under MIT.
+ *    See file LICENSE or go to https://gudhi.inria.fr/licensing/ for full license details.
+ *    Author(s):       Hannah Schreiber
+ *
+ *    Copyright (C) 2026 Inria
+ *
+ *    Modification(s):
+ *      - YYYY/MM Author: Description of the modification
+ */
+
+/**
+ * @file complex_pcoh_interfaces.h
+ * @author Hannah Schreiber
+ * @brief Contains the @ref Gudhi::Complex_pcoh_interface class and the @ref Gudhi::Dimension_threshold_pcoh_interface
+ * class.
+ */
+
+#ifndef PY_COMPLEX_PCOH_INTERFACE_H_INCLUDED
+#define PY_COMPLEX_PCOH_INTERFACE_H_INCLUDED
+
+#include <cstddef>
+#include <iterator>
+#include <set>
+#include <utility>
+#include <vector>
+
+// #include <boost/range/adaptor/filtered.hpp>
+
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/pair.h>
+
+// Must come BEFORE any boost/range headers
+namespace std {
+template <>
+struct iterator_traits<nanobind::iterator> {
+  using difference_type = std::ptrdiff_t;
+  using value_type = nanobind::handle;
+  using pointer = const nanobind::handle *;
+  using reference = const nanobind::handle &;
+  using iterator_category = std::input_iterator_tag;  // single-pass only
+};
+}  // namespace std
+
+#include <boost/range/iterator_range_core.hpp>
+#include <boost/range/adaptor/transformed.hpp>
+
+#include <gudhi/Debug_utils.h>
+
+namespace Gudhi {
+
+class Complex_pcoh_interface {
+ public:
+  using Complex = nanobind::object;
+  using Simplex_key = std::uint32_t;    /**< Simplex_key type */
+  using Simplex_handle = std::uint32_t; /**< Simplex_handle type. Has to go from 0 to num_simplices */
+  using Filtration_value = double;      /**< Internal filtration value type */
+  using Dimension = int;                /**< Internal dimension type */
+
+  Complex_pcoh_interface(Complex &cpx)
+      : cpx_(cpx),
+        null_key_(-1),
+        null_simplex_(nanobind::cast<Simplex_handle>(cpx_.attr("null_handle")())),
+        num_simplices_(nanobind::cast<std::size_t>(cpx_.attr("num_cells")())),
+        filtration_f_(cpx_.attr("filtration")),
+        dimension_f_(cpx_.attr("dimension")),
+        endpoints_f_(cpx_.attr("endpoints")),
+        filtration_simplex_range_f_(cpx_.attr("filtration_cell_range")),
+        boundary_simplex_range_f_(cpx_.attr("boundary_cell_range")),
+        max_dim_(nanobind::cast<Dimension>(dimension_f_())),
+        handleToKey_(num_simplices_, null_key_),
+        keyToHandle_(num_simplices_, null_simplex_) {}
+
+  Complex_pcoh_interface(Complex_pcoh_interface &other) : Complex_pcoh_interface(other.cpx_) {}
+
+  [[nodiscard]] std::size_t num_simplices() const { return num_simplices_; }
+
+  [[nodiscard]] Filtration_value filtration(Simplex_handle sh) const {
+    return nanobind::cast<Filtration_value>(filtration_f_(sh));
+  }
+
+  [[nodiscard]] Dimension dimension() const { return max_dim_; }
+
+  [[nodiscard]] Dimension dimension(Simplex_handle sh) const { return nanobind::cast<Dimension>(dimension_f_(sh)); }
+
+  void assign_key(Simplex_handle sh, Simplex_key key) {
+    if (sh == null_simplex_ && key == null_key_) return;
+    if (sh == null_simplex_) {
+      handleToKey_[keyToHandle_[key]] = null_key_;
+      keyToHandle_[key] = null_simplex_;
+      return;
+    }
+    if (key == null_key_) {
+      keyToHandle_[handleToKey_[sh]] = null_simplex_;
+      handleToKey_[sh] = null_key_;
+      return;
+    }
+    keyToHandle_[key] = sh;
+    handleToKey_[sh] = key;
+  }
+
+  [[nodiscard]] Simplex_key key(Simplex_handle sh) const {
+    if (sh == null_simplex_) return null_key_;
+    return handleToKey_[sh];
+  }
+
+  [[nodiscard]] Simplex_key null_key() const { return null_key_; }
+
+  [[nodiscard]] Simplex_handle simplex(Simplex_key key) const {
+    if (key == null_key_) return null_simplex_;
+    return keyToHandle_[key];
+  }
+
+  [[nodiscard]] Simplex_handle null_simplex() const { return null_simplex_; }
+
+  // only used in update_cohomology_groups_edge, so not used without optimizations
+  [[nodiscard]] std::pair<Simplex_handle, Simplex_handle> endpoints(Simplex_handle sh) const {
+    auto p = nanobind::cast<nanobind::tuple>(endpoints_f_(sh));
+    return std::make_pair(nanobind::cast<Simplex_handle>(p[0]), nanobind::cast<Simplex_handle>(p[1]));
+  }
+
+  [[nodiscard]] auto filtration_simplex_range() const {
+    nanobind::object iterable = filtration_simplex_range_f_();
+    return boost::make_iterator_range(nanobind::iter(iterable), nanobind::iterator::sentinel()) |
+           boost::adaptors::transformed(
+               [&](const nanobind::handle &item) -> Simplex_handle { return nanobind::cast<Simplex_handle>(item); });
+  }
+
+  [[nodiscard]] auto boundary_simplex_range(Simplex_handle sh) const {
+    nanobind::object iterable = boundary_simplex_range_f_(sh);
+    return boost::make_iterator_range(nanobind::iter(iterable), nanobind::iterator::sentinel()) |
+           boost::adaptors::transformed(
+               [&](const nanobind::handle &item) -> Simplex_handle { return nanobind::cast<Simplex_handle>(item); });
+  }
+
+  [[nodiscard]] auto simplex_vertex_range(Simplex_handle sh) const {
+    // Warning: exponential recursion. Could be improved by remembering faces already visited.
+    // But I don't know if this is better for small dimensions. Make a case distinction perhaps?
+    auto rec_get_vertices = [&](const auto &self, Simplex_handle b_sh, std::set<Simplex_handle> &vertices) -> void {
+      auto r = boundary_simplex_range(b_sh);
+      if (std::begin(r) == std::end(r)) {
+        vertices.insert(b_sh);
+        return;
+      }
+
+      // r invalidates for some reasons, so boundary_simplex_range has to be recalled
+      for (auto bb_sh : boundary_simplex_range(b_sh)) {
+        self(self, bb_sh, vertices);
+      }
+    };
+    std::set<Simplex_handle> vertices;
+    rec_get_vertices(rec_get_vertices, sh, vertices);
+    return vertices;
+  }
+
+ private:
+  Complex cpx_;
+
+  using F = decltype(cpx_.attr(""));
+
+  Simplex_key null_key_;
+  Simplex_handle null_simplex_;
+  std::size_t num_simplices_;
+  F filtration_f_;
+  F dimension_f_;
+  F endpoints_f_;
+  F filtration_simplex_range_f_;
+  F boundary_simplex_range_f_;
+  Dimension max_dim_;
+
+  std::vector<Simplex_key> handleToKey_;
+  std::vector<Simplex_handle> keyToHandle_;
+};
+
+template <class FilteredComplex>
+class Dimension_threshold_pcoh_interface {
+ public:
+  using Complex = FilteredComplex;
+  using Simplex_key = typename FilteredComplex::Simplex_key;           /**< Simplex_key type */
+  using Simplex_handle = typename FilteredComplex::Simplex_handle;     /**< Simplex_handle type. */
+  using Filtration_value = typename FilteredComplex::Filtration_value; /**< Filtration value type */
+  using Dimension = int;                                               /**< Internal dimension type */
+
+  Dimension_threshold_pcoh_interface(Complex &cpx, Dimension maxDim) : cpx_(&cpx), maxDim_(maxDim), numSimplices_(0) {
+    numToHandle_.reserve(cpx.num_simplices());
+    for (const auto &sh : cpx.filtration_simplex_range()) {
+      if (static_cast<Dimension>(cpx.dimension(sh)) <= maxDim) {
+        numToHandle_.push_back(sh);
+        ++numSimplices_;
+      }
+    }
+  }
+
+  // friend void swap(Dimension_threshold_pcoh_interface &be1, Dimension_threshold_pcoh_interface &be2) noexcept {
+  //   std::swap(be1.cpx_, be2.cpx_);
+  //   std::swap(be1.maxDim_, be2.maxDim_);
+  //   std::swap(be1.numSimplices_, be2.numSimplices_);
+  //   be1.keyToHandle_.swap(be2.keyToHandle_);
+  // }
+
+  [[nodiscard]] std::size_t num_simplices() const { return numSimplices_; }
+
+  [[nodiscard]] Filtration_value filtration(Simplex_handle sh) { return cpx_->filtration(sh); }
+
+  [[nodiscard]] Dimension dimension() const { return maxDim_; }
+
+  [[nodiscard]] Dimension dimension(Simplex_handle sh) const { return cpx_->dimension(sh); }
+
+  void assign_key(Simplex_handle sh, Simplex_key key) { return cpx_->assign_key(sh, key); }
+
+  [[nodiscard]] Simplex_key key(Simplex_handle sh) const { return cpx_->key(sh); }
+
+  [[nodiscard]] Simplex_key null_key() const { return cpx_->null_key(); }
+
+  [[nodiscard]] Simplex_handle simplex(Simplex_key key) {
+    if (key == null_key()) return null_simplex();
+    return numToHandle_[key];
+  }
+
+  [[nodiscard]] Simplex_handle null_simplex() const { return cpx_->null_simplex(); }
+
+  // only used in update_cohomology_groups_edge, so not used without optimizations
+  [[nodiscard]] std::pair<Simplex_handle, Simplex_handle> endpoints(Simplex_handle sh) { return cpx_->endpoints(sh); }
+
+  [[nodiscard]] const std::vector<Simplex_handle>& filtration_simplex_range() const { return numToHandle_; }
+
+  [[nodiscard]] auto boundary_simplex_range(Simplex_handle sh) { return cpx_->boundary_simplex_range(sh); }
+
+  [[nodiscard]] auto simplex_vertex_range(Simplex_handle sh) const { return cpx_->simplex_vertex_range(sh); }
+
+ private:
+  Complex *cpx_;
+  Dimension maxDim_;
+  std::size_t numSimplices_;
+  // because of simplex(key)...
+  std::vector<Simplex_handle> numToHandle_;
+};
+
+}  // namespace Gudhi
+
+#endif  // PY_COMPLEX_PCOH_INTERFACE_H_INCLUDED

@@ -1,0 +1,1 @@
+nanobind_add_module_with_targets(_persistence_objects_ext _persistence_objects.cc TARGETS TBB::tbb)
