@@ -23,9 +23,9 @@ from pathlib import Path
 if os.name == 'nt':
     os.add_dll_directory(Path(__file__).parent)
 
-from .cubical_complex import CubicalComplex
-from .periodic_cubical_complex import PeriodicCubicalComplex
-from .simplex_tree import SimplexTree
+from .data_structures import CubicalComplex
+from .data_structures import PeriodicCubicalComplex
+from .data_structures import SimplexTree
 from .rips_complex import RipsComplex
 from .witness_complex import WitnessComplex
 from .strong_witness_complex import StrongWitnessComplex

@@ -18,7 +18,7 @@ from typing import Literal, Optional
 from collections.abc import Sequence
 
 from gudhi import _delaunay_complex_ext as t
-from gudhi.simplex_tree import SimplexTree
+from gudhi.data_structures.simplex_tree import SimplexTree
 
 
 # DelaunayComplex python interface

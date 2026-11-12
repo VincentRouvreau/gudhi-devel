@@ -20,7 +20,7 @@ from numpy.typing import ArrayLike
 import warnings
 from collections.abc import Callable, Sequence
 
-from gudhi import _simplex_tree_ext as t
+from . import _simplex_tree_ext as t
 
 
 # SimplexTree python interface

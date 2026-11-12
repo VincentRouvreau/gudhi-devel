@@ -13,7 +13,7 @@ __license__ = "MIT"
 
 
 from gudhi import _strong_witness_complex_ext as t
-from gudhi.simplex_tree import SimplexTree
+from gudhi.data_structures.simplex_tree import SimplexTree
 
 
 # StrongWitnessComplex python interface

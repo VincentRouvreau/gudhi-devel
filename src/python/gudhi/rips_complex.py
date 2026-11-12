@@ -17,7 +17,7 @@ from collections.abc import Sequence
 from numpy.typing import ArrayLike
 
 from gudhi import _rips_complex_ext as t
-from gudhi.simplex_tree import SimplexTree
+from gudhi.data_structures.simplex_tree import SimplexTree
 
 
 # RipsComplex python interface

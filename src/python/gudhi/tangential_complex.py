@@ -15,7 +15,7 @@ import os
 import warnings
 
 from gudhi import _tangential_complex_ext as t
-from gudhi.simplex_tree import SimplexTree
+from gudhi.data_structures.simplex_tree import SimplexTree
 
 
 # TangentialComplex python interface
