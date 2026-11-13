@@ -55,10 +55,10 @@ regular Rips complex.
 
 Another option which is especially useful if you want to compute persistent homology in "high" dimension (2 or more,
 sometimes even 1), is to build the Rips complex only up to dimension 1 (a graph), then use
-:func:`~gudhi.SimplexTree.collapse_edges` to reduce the size of this graph, and finally call
-:func:`~gudhi.SimplexTree.expansion` to get a simplicial complex of a suitable dimension to compute its homology. This
-trick gives the same persistence diagram as one would get with a plain use of `RipsComplex`, with a complex that is
-often significantly smaller and thus faster to process.
+:func:`~gudhi.data_structures.SimplexTree.collapse_edges` to reduce the size of this graph, and finally call
+:func:`~gudhi.data_structures.SimplexTree.expansion` to get a simplicial complex of a suitable dimension to compute its
+homology. This trick gives the same persistence diagram as one would get with a plain use of `RipsComplex`, with a
+complex that is often significantly smaller and thus faster to process.
 
 Finally, if you are only interested in the persistence diagram of a Rips complex, you should consider using
 :class:`~gudhi.sklearn.RipsPersistence` instead, which directly returns the diagram and can be faster
@@ -140,23 +140,23 @@ you can achieve the same result without this class for more flexibility
 
 .. testcode::
 
-   import gudhi
+   from gudhi.data_structures import SimplexTree
    from scipy.spatial.distance import cdist
    points = [[1, 1], [7, 0], [4, 6], [9, 6], [0, 14], [2, 19], [9, 17]]
    distance_matrix = cdist(points, points)
-   cplx = gudhi.SimplexTree.create_from_array(distance_matrix, max_filtration=12.0)
+   cplx = SimplexTree.create_from_array(distance_matrix, max_filtration=12.0)
    cplx.expansion(2)
 
 or
 
 .. testcode::
 
-   import gudhi
+   from gudhi.data_structures import SimplexTree
    from scipy.spatial import cKDTree
    points = [[1, 1], [7, 0], [4, 6], [9, 6], [0, 14], [2, 19], [9, 17]]
    tree = cKDTree(points)
    edges = tree.sparse_distance_matrix(tree, max_distance=12.0, output_type="coo_matrix")
-   cplx = gudhi.SimplexTree()
+   cplx = SimplexTree()
    cplx.insert_edges_from_coo_matrix(edges)
    cplx.expansion(2)
 

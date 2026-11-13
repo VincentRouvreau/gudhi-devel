@@ -160,8 +160,8 @@ NB_MODULE(_delaunay_complex_ext, m)
       .def(nb::init<const Sequence2D&, bool, bool>(), nb::call_guard<nb::gil_scoped_release>())
       .def("create_simplex_tree", &gdci::create_simplex_tree, nb::call_guard<nb::gil_scoped_release>())
       .def("get_point", &gdci::get_point, nb::arg("vertex"), R"doc(
-This function returns the point corresponding to a given vertex from the :class:`~gudhi.SimplexTree` (the
-same as the k-th input point, where `k=vertex`)
+This function returns the point corresponding to a given vertex from the :class:`~gudhi.data_structures.SimplexTree`
+(the same as the k-th input point, where `k=vertex`)
 
 Args:
     vertex: The vertex.
