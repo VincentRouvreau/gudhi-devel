@@ -22,7 +22,7 @@ from scipy.spatial.distance import pdist, squareform
 
 from .._ripser_ext import _lower, _full, _sparse, _lower_to_coo, _lower_cone_radius
 from ..flag_filtration.edge_collapse import reduce_graph
-from .. import SimplexTree
+from ..data_structures import SimplexTree
 
 
 # Mermaid sequence diagram - https://mermaid-js.github.io/mermaid-live-editor/

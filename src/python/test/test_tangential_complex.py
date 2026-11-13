@@ -9,7 +9,7 @@
       - YYYY/MM Author: Description of the modification
 """
 
-from gudhi import TangentialComplex, SimplexTree
+from gudhi import TangentialComplex
 
 
 def test_tangential():
