@@ -17,7 +17,7 @@ __license__ = "GPL v3"
 from typing import Literal, Optional
 from collections.abc import Sequence
 
-from gudhi import _delaunay_complex_ext as t
+from gudhi.filtrations import _delaunay_complex_ext as t
 from gudhi.data_structures.simplex_tree import SimplexTree
 
 

@@ -309,7 +309,7 @@ The following example computes the weighted Rips filtration associated with a di
 
 .. testcode::
 
-    from gudhi.weighted_rips_complex import WeightedRipsComplex
+    from gudhi.filtrations import WeightedRipsComplex
     dist = [[], [1]]
     weights = [1, 100]
     w_rips = WeightedRipsComplex(distance_matrix=dist, weights=weights)
@@ -334,7 +334,7 @@ Remark that `DTMRipsComplex <rips_complex_user.html#dtm-rips-complex>`_ class pr
     import numpy as np
     from scipy.spatial.distance import cdist
     from gudhi.point_cloud.dtm import DistanceToMeasure
-    from gudhi.weighted_rips_complex import WeightedRipsComplex
+    from gudhi.filtrations import WeightedRipsComplex
     pts = np.array([[2.0, 2.0], [0.0, 1.0], [3.0, 4.0]])
     dist = cdist(pts,pts)
     dtm = DistanceToMeasure(2, q=2, metric="precomputed")
@@ -362,7 +362,7 @@ for some experiments.
 .. testcode::
 
     import numpy as np
-    from gudhi.dtm_rips_complex import DTMRipsComplex
+    from gudhi.filtrations import DTMRipsComplex
     pts = np.array([[2.0, 2.0], [0.0, 1.0], [3.0, 4.0]])
     dtm_rips = DTMRipsComplex(points=pts, k=2)
     st = dtm_rips.create_simplex_tree(max_dimension=2)

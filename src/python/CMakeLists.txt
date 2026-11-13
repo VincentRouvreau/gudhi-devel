@@ -221,6 +221,7 @@ add_subdirectory("gudhi")
 add_subdirectory("gudhi/clustering")
 add_subdirectory("gudhi/datasets/generators")
 add_subdirectory("gudhi/data_structures")
+add_subdirectory("gudhi/filtrations")
 
 # Path separator management for windows
 if (WIN32)
