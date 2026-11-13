@@ -13,7 +13,7 @@
 __license__ = "GPL v3"  # Because of AlphaComplex
 
 
-from gudhi import AlphaComplex
+from gudhi.filtrations import AlphaComplex
 
 
 print("#####################################################################")

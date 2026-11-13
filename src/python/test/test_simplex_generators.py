@@ -13,7 +13,7 @@ import numpy as np
 import pytest
 
 from gudhi.data_structures import SimplexTree
-from gudhi import RipsComplex
+from gudhi.filtrations import RipsComplex
 
 
 def test_flag_generators():
